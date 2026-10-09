@@ -40,14 +40,14 @@ const stepNames = [
 /// All Kulay state: mode, readers, the screen, the story being read, and the
 /// next story being written in the background.
 class ReadingController extends ChangeNotifier {
-  ReadingController({required this.repo, required this.engine, required this.prefs, this.tierInfo});
+  ReadingController({required this.repo, required this.engine, required this.prefs, this.modelName});
 
   final ReadingRepository repo;
   final StoryEngine engine;
   final SharedPreferences prefs;
 
-  /// The current model tier. Basic (0.5B) writes fewer drafts, then falls back to a saved story.
-  final ({bool basic, String model}) Function()? tierInfo;
+  /// The current model's name.
+  final String Function()? modelName;
 
   KulayMode? get mode => KulayMode.values.asNameMap()[prefs.getString('kulay.mode')];
   bool get hasPin => prefs.getString('kulay.pin') != null;
@@ -281,9 +281,8 @@ class ReadingController extends ChangeNotifier {
       onStep?.call(2, 'This story is already being written. Almost ready.');
       return running.$2;
     }
-    final tier = tierInfo?.call();
-    engine.maxDrafts = tier?.basic ?? false ? 3 : 4;
-    if (tier != null) engine.modelName = tier.model;
+    final model = modelName?.call();
+    if (model != null) engine.modelName = model;
     final future = engine
         .makeStory(level, topic, job: job, onStep: onStep)
         .then((s) => repo.saveStory(s))
@@ -333,13 +332,13 @@ class ReadingController extends ChangeNotifier {
         id = await repo.unread(r.id, r.level, null) ?? await repo.anyStory(r.level);
         if (id == null) {
           error = e is ModelUnavailableException
-              ? 'The AI could not start on this computer, and there are no saved stories for this color yet. Try Basic quality in Settings.'
+              ? 'The AI could not start on this computer, and there are no saved stories for this color yet.'
               : "Couldn't write a story. Try another topic.";
           notifyListeners();
           return;
         }
         notice = e is ModelUnavailableException
-            ? 'The AI could not start, so here is a saved story. If this keeps happening, choose Basic quality in Settings.'
+            ? 'The AI could not start, so here is a saved story.'
             : 'Here is a ready story while the AI rests.';
       }
     }
@@ -540,8 +539,8 @@ class ReadingController extends ChangeNotifier {
     teacherBusy = true;
     notifyListeners();
     try {
-      final tier = tierInfo?.call();
-      if (tier != null) engine.modelName = tier.model;
+      final model = modelName?.call();
+      if (model != null) engine.modelName = model;
       final s = await engine.makeTeacherStory(
         t.length > 60 ? t.substring(0, 60) : t,
         text,
