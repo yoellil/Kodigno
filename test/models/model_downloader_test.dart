@@ -24,6 +24,11 @@ void main() {
       var start = 0;
       if (lastRange != null) {
         start = int.parse(RegExp(r'bytes=(\d+)-').firstMatch(lastRange!)!.group(1)!);
+        if (start >= data.length) {
+          req.response.statusCode = 416; // range not satisfiable
+          await req.response.close();
+          return;
+        }
         req.response.statusCode = 206;
       }
       final body = data.sublist(start);
@@ -69,6 +74,13 @@ void main() {
         throwsA(isA<ChecksumMismatch>()));
     expect(target.existsSync(), isFalse);
     expect(File('${target.path}.part').existsSync(), isFalse);
+  });
+
+  test('a .part file that already holds every byte is verified, not re-requested', () async {
+    final target = File('${dir.path}/m.gguf');
+    await File('${target.path}.part').writeAsBytes(data);
+    await ModelDownloader().download(url: url(), target: target, sha256Hex: hash).drain();
+    expect(await target.readAsBytes(), data);
   });
 
   test('resumes from an existing .part file using a Range header', () async {

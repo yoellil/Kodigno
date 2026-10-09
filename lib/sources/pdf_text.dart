@@ -5,6 +5,11 @@ abstract class PdfTextExtractor {
   Future<String> extract(String path);
 }
 
+/// PDFs often yield U+FFFD for symbols the font can't map (©, bullets);
+/// drop them and the double spaces they leave behind.
+String cleanPdfText(String text) =>
+    text.replaceAll('�', '').replaceAll(RegExp(r'[ 	]{2,}'), ' ');
+
 class PdfrxTextExtractor implements PdfTextExtractor {
   @override
   Future<String> extract(String path) async {
@@ -15,7 +20,7 @@ class PdfrxTextExtractor implements PdfTextExtractor {
         final text = await page.loadText();
         if (text != null) buf.writeln(text.fullText);
       }
-      return buf.toString().trim();
+      return cleanPdfText(buf.toString()).trim();
     } finally {
       await doc.dispose();
     }

@@ -40,7 +40,7 @@ class FlipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final duration = reduceMotion(context)
         ? Duration.zero
-        : const Duration(milliseconds: 480);
+        : const Duration(milliseconds: 560);
     return TweenAnimationBuilder<double>(
       tween: Tween(end: showBack ? 1.0 : 0.0),
       duration: duration,
@@ -50,10 +50,10 @@ class FlipCard extends StatelessWidget {
         return Transform(
           alignment: Alignment.center,
           transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.0005) // gentle perspective
+            ..setEntry(3, 2, 0.0008) // gentle perspective
             ..scaleByDouble(
-              1 - 0.1 * math.sin(math.pi * t),
-              1 - 0.1 * math.sin(math.pi * t),
+              1 + 0.04 * math.sin(math.pi * t), // lifts toward you mid-turn
+              1 + 0.04 * math.sin(math.pi * t),
               1,
               1,
             )
@@ -106,7 +106,11 @@ class _FlashDeckState extends State<FlashDeck>
   }
 
   /// Moves the top card to [target] x-offset, then runs [then].
-  Future<void> _animateTo(double target, {VoidCallback? then}) async {
+  Future<void> _animateTo(
+    double target, {
+    VoidCallback? then,
+    Curve curve = Curves.easeOutCubic,
+  }) async {
     final from = _dx;
     if (reduceMotion(context)) {
       setState(() => _dx = target);
@@ -117,10 +121,10 @@ class _FlashDeckState extends State<FlashDeck>
     final anim = Tween<double>(
       begin: from,
       end: target,
-    ).animate(CurvedAnimation(parent: _slide, curve: Curves.easeOutCubic));
+    ).animate(CurvedAnimation(parent: _slide, curve: curve));
     void tick() => setState(() => _dx = anim.value);
     _slide
-      ..duration = const Duration(milliseconds: 260)
+      ..duration = Duration(milliseconds: target == 0 ? 360 : 260)
       ..reset()
       ..addListener(tick);
     await _slide.forward();
@@ -134,7 +138,7 @@ class _FlashDeckState extends State<FlashDeck>
     final target = _i + step;
     if (_busy) return;
     if (target < 0 || target >= _n) {
-      _animateTo(0); // nothing that way: spring back
+      _animateTo(0, curve: Motion.pop); // nothing that way: spring back
       return;
     }
     _animateTo(
@@ -152,15 +156,42 @@ class _FlashDeckState extends State<FlashDeck>
   void _release(double velocity) {
     final dir = swipeDirection(dx: _dx, velocity: velocity);
     if (dir == 0) {
-      _animateTo(0);
+      _animateTo(0, curve: Motion.pop);
     } else {
       _go(-dir); // swipe left (-1) => next (+1)
     }
   }
 
+  /// A card waiting [k] slots below the top. [rise] (0..1) moves every waiting
+  /// card one slot up, so at 1 the first one sits exactly where the next top
+  /// card will be: the swap at the end of a swipe is invisible.
+  Widget _underCard(int k, double rise) {
+    final d = k - rise;
+    final panel = Panel(
+      key: ValueKey('under$k'),
+      color: Color.lerp(K.lavender, Colors.white, 0.3 * d)!,
+      child: const SizedBox.expand(),
+    );
+    return Positioned.fill(
+      child: Transform.translate(
+        offset: Offset(0, 16.0 * d),
+        child: Transform.scale(
+          scale: 1 - 0.045 * d,
+          alignment: Alignment.bottomCenter,
+          child: k == 3 ? Opacity(opacity: rise, child: panel) : panel,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final card = widget.cards[_i];
+    final rise = Curves.easeOut.transform(
+      (_dx.abs() / (_width * 0.5)).clamp(0.0, 1.0),
+    );
+    // Going back from the last card still needs one card to rise.
+    final under = math.min(3, math.max(_n - 1 - _i, _dx > 0 && _i > 0 ? 1 : 0));
     return Focus(
       autofocus: true,
       onKeyEvent: (_, e) {
@@ -199,22 +230,12 @@ class _FlashDeckState extends State<FlashDeck>
                     alignment: Alignment.center,
                     clipBehavior: Clip.none,
                     children: [
-                      // Cards waiting underneath, peeking out below the top card.
-                      for (var k = math.min(2, _n - 1 - _i); k >= 1; k--)
-                        Positioned.fill(
-                          child: Transform.translate(
-                            offset: Offset(0, 16.0 * k),
-                            child: Transform.scale(
-                              scale: 1 - 0.045 * k,
-                              alignment: Alignment.bottomCenter,
-                              child: Panel(
-                                color: K.pastels[(_i + k) % K.pastels.length],
-                                child: const SizedBox.expand(),
-                              ),
-                            ),
-                          ),
-                        ),
+                      // Cards waiting underneath; they rise a slot as the top card leaves.
+                      for (var k = under; k >= 1; k--) _underCard(k, rise),
                       Positioned.fill(
+                        key: const ValueKey(
+                          'top',
+                        ), // stack size changes mid-drag
                         child: GestureDetector(
                           onTap: _flip,
                           onHorizontalDragUpdate: (d) {
@@ -227,31 +248,18 @@ class _FlashDeckState extends State<FlashDeck>
                             offset: Offset(_dx, 0),
                             child: Transform.rotate(
                               angle: _dx / 1100,
-                              child: TweenAnimationBuilder<double>(
-                                key: ValueKey(
-                                  _i,
-                                ), // new card pops up from the stack
-                                tween: Tween(
-                                  begin: reduceMotion(context) ? 1 : 0.94,
-                                  end: 1,
+                              child: FlipCard(
+                                key: ValueKey('flip$_i'),
+                                showBack: _back,
+                                front: _Face(
+                                  text: card.front,
+                                  label: 'question',
+                                  color: K.lavender,
                                 ),
-                                duration: Motion.medium,
-                                curve: Motion.pop,
-                                builder: (_, s, child) =>
-                                    Transform.scale(scale: s, child: child),
-                                child: FlipCard(
-                                  key: ValueKey('flip$_i'),
-                                  showBack: _back,
-                                  front: _Face(
-                                    text: card.front,
-                                    label: 'question',
-                                    color: K.lavender,
-                                  ),
-                                  back: _Face(
-                                    text: card.back,
-                                    label: 'answer',
-                                    color: K.yellow,
-                                  ),
+                                back: _Face(
+                                  text: card.back,
+                                  label: 'answer',
+                                  color: K.yellow,
                                 ),
                               ),
                             ),

@@ -5,7 +5,12 @@ import '../models/tier.dart';
 import 'ai_engine.dart';
 
 class LlmAiEngine implements AiEngine {
-  LlmAiEngine(this.runtime, this.tier, {this.maxChunks = 6, this.maxAttempts = 3});
+  LlmAiEngine(
+    this.runtime,
+    this.tier, {
+    this.maxChunks = 6,
+    this.maxAttempts = 3,
+  });
 
   final LlmRuntime runtime;
   final Tier tier;
@@ -13,8 +18,10 @@ class LlmAiEngine implements AiEngine {
   final int maxAttempts;
 
   @override
-  Future<GeneratedSet> generate(String notes,
-      {void Function(double fraction)? onProgress}) async {
+  Future<GeneratedSet> generate(
+    String notes, {
+    void Function(double fraction)? onProgress,
+  }) async {
     final chunks = chunkText(notes, tier.chunkChars).take(maxChunks).toList();
     final questions = <QuizQuestion>[];
     final cards = <Flashcard>[];
@@ -39,17 +46,27 @@ class LlmAiEngine implements AiEngine {
   }
 
   Future<GeneratedSet?> _generateChunk(String chunk) async {
-    final prompt = buildPrompt(chunk,
-        questions: tier.questionsPerChunk, cards: tier.cardsPerChunk);
+    final prompt = buildPrompt(
+      chunk,
+      questions: tier.questionsPerChunk,
+      cards: tier.cardsPerChunk,
+    );
     for (var i = 0; i < maxAttempts; i++) {
       try {
         final set = parseGeneratedSet(await runtime.complete(prompt));
         // Small models sometimes parrot the prompt's example: drop those items.
         final cleaned = GeneratedSet(
-          [for (final q in set.questions) if (q.prompt.trim() != exampleQuestionPrompt) q],
-          [for (final c in set.flashcards) if (c.front.trim() != exampleCardFront) c],
+          [
+            for (final q in set.questions)
+              if (q.prompt.trim() != exampleQuestionPrompt) q,
+          ],
+          [
+            for (final c in set.flashcards)
+              if (c.front.trim() != exampleCardFront) c,
+          ],
         );
-        if (cleaned.questions.isEmpty && cleaned.flashcards.isEmpty) continue; // retry
+        if (cleaned.questions.isEmpty && cleaned.flashcards.isEmpty)
+          continue; // retry
         return cleaned;
       } on FormatException {
         continue; // malformed output: retry

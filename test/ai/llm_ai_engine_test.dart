@@ -7,9 +7,16 @@ import 'package:kodigno/models/tier.dart';
 import '../helpers/fake_llm_runtime.dart';
 
 const _tier = Tier(
-  id: 'low', label: 'Basic quality', model: 'm', url: 'u', sha256: 's',
-  maxRamMb: 3500, sizeMb: 400, chunkChars: 50,
-  questionsPerChunk: 1, cardsPerChunk: 1,
+  id: 'low',
+  label: 'Basic quality',
+  model: 'm',
+  url: 'u',
+  sha256: 's',
+  maxRamMb: 3500,
+  sizeMb: 400,
+  chunkChars: 50,
+  questionsPerChunk: 1,
+  cardsPerChunk: 1,
 );
 
 String _json(String q) =>
@@ -32,16 +39,23 @@ void main() {
 
   test('throws GenerationFailed after 3 bad attempts', () async {
     final rt = FakeLlmRuntime(['x', 'y', 'z']);
-    expect(LlmAiEngine(rt, _tier).generate('short notes'),
-        throwsA(isA<GenerationFailed>()));
+    expect(
+      LlmAiEngine(rt, _tier).generate('short notes'),
+      throwsA(isA<GenerationFailed>()),
+    );
   });
 
-  test('empty notes throws GenerationFailed without calling the model', () async {
-    final rt = FakeLlmRuntime([]);
-    await expectLater(LlmAiEngine(rt, _tier).generate('   '),
-        throwsA(isA<GenerationFailed>()));
-    expect(rt.prompts, isEmpty);
-  });
+  test(
+    'empty notes throws GenerationFailed without calling the model',
+    () async {
+      final rt = FakeLlmRuntime([]);
+      await expectLater(
+        LlmAiEngine(rt, _tier).generate('   '),
+        throwsA(isA<GenerationFailed>()),
+      );
+      expect(rt.prompts, isEmpty);
+    },
+  );
 
   test('a failed chunk is skipped if another chunk succeeds', () async {
     final notes = '${'a' * 45}\n${'b' * 45}'; // 2 chunks at chunkChars 50
@@ -50,13 +64,16 @@ void main() {
     expect(set.questions.single.prompt, 'Q2');
   });
 
-  test('duplicate questions across chunks are removed (case-insensitive)', () async {
-    final notes = '${'a' * 45}\n${'b' * 45}';
-    final rt = FakeLlmRuntime([_json('Same?'), _json('same?')]);
-    final set = await LlmAiEngine(rt, _tier).generate(notes);
-    expect(set.questions, hasLength(1));
-    expect(set.flashcards, hasLength(1));
-  });
+  test(
+    'duplicate questions across chunks are removed (case-insensitive)',
+    () async {
+      final notes = '${'a' * 45}\n${'b' * 45}';
+      final rt = FakeLlmRuntime([_json('Same?'), _json('same?')]);
+      final set = await LlmAiEngine(rt, _tier).generate(notes);
+      expect(set.questions, hasLength(1));
+      expect(set.flashcards, hasLength(1));
+    },
+  );
 
   test('chunk count is capped at maxChunks', () async {
     final notes = List.generate(20, (i) => '${'x' * 45}$i').join('\n');
@@ -75,8 +92,10 @@ void main() {
 
   test('ModelUnavailableException propagates without retry', () async {
     final rt = FakeLlmRuntime([ModelUnavailableException('oom'), _json('Q')]);
-    await expectLater(LlmAiEngine(rt, _tier).generate('short notes'),
-        throwsA(isA<ModelUnavailableException>()));
+    await expectLater(
+      LlmAiEngine(rt, _tier).generate('short notes'),
+      throwsA(isA<ModelUnavailableException>()),
+    );
     expect(rt.prompts, hasLength(1));
   });
 

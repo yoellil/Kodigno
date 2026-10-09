@@ -14,10 +14,12 @@ Future<void> _pump(WidgetTester t, {List<Flashcard> cards = _cards}) async {
   t.view.devicePixelRatio = 1.0;
   t.view.physicalSize = const Size(1000, 900);
   addTearDown(t.view.reset);
-  await t.pumpWidget(MaterialApp(
-    theme: kTheme(),
-    home: Scaffold(body: FlashDeck(cards: cards)),
-  ));
+  await t.pumpWidget(
+    MaterialApp(
+      theme: kTheme(),
+      home: Scaffold(body: FlashDeck(cards: cards)),
+    ),
+  );
   await t.pumpAndSettle();
 }
 
@@ -53,7 +55,9 @@ void main() {
     expect(find.text('F1'), findsOneWidget);
   });
 
-  testWidgets('Space flips; arrows move between cards and reset the flip', (t) async {
+  testWidgets('Space flips; arrows move between cards and reset the flip', (
+    t,
+  ) async {
     await _pump(t);
     expect(find.text('1 / 2'), findsOneWidget);
     await t.sendKeyEvent(LogicalKeyboardKey.space);
@@ -71,7 +75,9 @@ void main() {
     expect(find.text('F1'), findsOneWidget);
   });
 
-  testWidgets('swipe left goes to the next card, swipe right goes back', (t) async {
+  testWidgets('swipe left goes to the next card, swipe right goes back', (
+    t,
+  ) async {
     await _pump(t);
     await t.fling(find.text('F1'), const Offset(-500, 0), 2000);
     await t.pumpAndSettle();
@@ -81,7 +87,9 @@ void main() {
     expect(find.text('1 / 2'), findsOneWidget);
   });
 
-  testWidgets('swiping past the end snaps back and stays on the last card', (t) async {
+  testWidgets('swiping past the end snaps back and stays on the last card', (
+    t,
+  ) async {
     await _pump(t);
     await t.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await t.pumpAndSettle();
@@ -91,8 +99,59 @@ void main() {
     expect(find.text('F2'), findsOneWidget);
   });
 
+  testWidgets(
+    'next card rises toward the top slot while the top card is dragged away',
+    (t) async {
+      await _pump(
+        t,
+        cards: const [
+          Flashcard(front: 'F1', back: 'B1'),
+          Flashcard(front: 'F2', back: 'B2'),
+          Flashcard(front: 'F3', back: 'B3'),
+        ],
+      );
+      final rest = t.getRect(find.byKey(const ValueKey('under1')));
+      final g = await t.startGesture(t.getCenter(find.text('F1')));
+      await g.moveBy(const Offset(-30, 0)); // past the touch slop
+      await g.moveBy(const Offset(-270, 0));
+      await t.pump();
+      final mid = t.getRect(find.byKey(const ValueKey('under1')));
+      expect(mid.width, greaterThan(rest.width));
+      expect(mid.top, lessThan(rest.top));
+      await g.up();
+      await t.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'the card that took the top slot continues where the stack card left off',
+    (t) async {
+      await _pump(
+        t,
+        cards: const [
+          Flashcard(front: 'F1', back: 'B1'),
+          Flashcard(front: 'F2', back: 'B2'),
+          Flashcard(front: 'F3', back: 'B3'),
+        ],
+      );
+      final g = await t.startGesture(t.getCenter(find.text('F1')));
+      await g.moveBy(const Offset(-30, 0));
+      await g.moveBy(const Offset(-670, 0));
+      await t.pump();
+      final risen = t.getRect(find.byKey(const ValueKey('under1')));
+      await g.up();
+      await t.pumpAndSettle();
+      final top = t.getRect(find.byType(FlipCard));
+      expect((top.top - risen.top).abs(), lessThan(1));
+      expect((top.width - risen.width).abs(), lessThan(1));
+    },
+  );
+
   testWidgets('a single card has no stack and no crash', (t) async {
-    await _pump(t, cards: const [Flashcard(front: 'only', back: 'one')]);
+    await _pump(
+      t,
+      cards: const [Flashcard(front: 'only', back: 'one')],
+    );
     expect(find.text('1 / 1'), findsOneWidget);
     await t.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await t.pumpAndSettle();

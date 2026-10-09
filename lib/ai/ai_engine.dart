@@ -7,7 +7,10 @@ abstract class LlmRuntime {
 
 abstract class AiEngine {
   /// [onProgress] gets chunksDone / totalChunks (0..1) after each chunk.
-  Future<GeneratedSet> generate(String notes, {void Function(double fraction)? onProgress});
+  Future<GeneratedSet> generate(
+    String notes, {
+    void Function(double fraction)? onProgress,
+  });
   Future<void> dispose();
 }
 

@@ -17,7 +17,10 @@ class _FakeProcess implements Process {
   final _exit = Completer<int>();
   bool killed = false;
 
-  static Future<_FakeProcess> serve(int port, {Duration loadingFor = Duration.zero}) async {
+  static Future<_FakeProcess> serve(
+    int port, {
+    Duration loadingFor = Duration.zero,
+  }) async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
     final started = DateTime.now();
     server.listen((req) async {
@@ -28,11 +31,15 @@ class _FakeProcess implements Process {
         final body = jsonDecode(await utf8.decoder.bind(req).join());
         final prompt = body['messages'][0]['content'];
         req.response.headers.contentType = ContentType.json;
-        req.response.write(jsonEncode({
-          'choices': [
-            {'message': {'content': 'echo:$prompt'}}
-          ]
-        }));
+        req.response.write(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {'content': 'echo:$prompt'},
+              },
+            ],
+          }),
+        );
       } else {
         req.response.statusCode = 404;
       }
@@ -73,29 +80,40 @@ void main() {
 
   int portOf(List<String> args) => int.parse(args[args.indexOf('--port') + 1]);
 
-  test('starts the server, waits for health, returns completion text', () async {
-    late _FakeProcess proc;
-    final rt = LlamaServerRuntime(
-      serverExe: 'llama-server.exe',
-      modelPath: model.path,
-      pollInterval: const Duration(milliseconds: 10),
-      spawn: (exe, args) async =>
-          proc = await _FakeProcess.serve(portOf(args), loadingFor: const Duration(milliseconds: 80)),
-    );
-    expect(await rt.complete('hi'), 'echo:hi');
-    expect(await rt.complete('again'), 'echo:again'); // reuses the same server
-    await rt.dispose();
-    expect(proc.killed, isTrue);
-  });
+  test(
+    'starts the server, waits for health, returns completion text',
+    () async {
+      late _FakeProcess proc;
+      final rt = LlamaServerRuntime(
+        serverExe: 'llama-server.exe',
+        modelPath: model.path,
+        pollInterval: const Duration(milliseconds: 10),
+        spawn: (exe, args) async => proc = await _FakeProcess.serve(
+          portOf(args),
+          loadingFor: const Duration(milliseconds: 80),
+        ),
+      );
+      expect(await rt.complete('hi'), 'echo:hi');
+      expect(
+        await rt.complete('again'),
+        'echo:again',
+      ); // reuses the same server
+      await rt.dispose();
+      expect(proc.killed, isTrue);
+    },
+  );
 
-  test('missing model file throws ModelUnavailableException without spawning', () {
-    final rt = LlamaServerRuntime(
-      serverExe: 'x',
-      modelPath: 'C:/nope/missing.gguf',
-      spawn: (_, _) => throw StateError('must not spawn'),
-    );
-    expect(rt.complete('hi'), throwsA(isA<ModelUnavailableException>()));
-  });
+  test(
+    'missing model file throws ModelUnavailableException without spawning',
+    () {
+      final rt = LlamaServerRuntime(
+        serverExe: 'x',
+        modelPath: 'C:/nope/missing.gguf',
+        spawn: (_, _) => throw StateError('must not spawn'),
+      );
+      expect(rt.complete('hi'), throwsA(isA<ModelUnavailableException>()));
+    },
+  );
 
   test('server that exits while loading throws ModelUnavailableException', () {
     final rt = LlamaServerRuntime(
@@ -126,8 +144,33 @@ void main() {
     );
     expect(await rt.complete('ok'), 'echo:ok');
     proc.kill(); // simulates a crash / out-of-memory kill
-    await expectLater(rt.complete('again'), throwsA(isA<ModelUnavailableException>()));
+    await expectLater(
+      rt.complete('again'),
+      throwsA(isA<ModelUnavailableException>()),
+    );
   });
+
+  test(
+    'kills a server left over from a crashed run, then records its own pid',
+    () async {
+      final pidFile = File('${model.parent.path}/llama.pid')
+        ..writeAsStringSync('4242');
+      final killed = <int>[];
+      final rt = LlamaServerRuntime(
+        serverExe: 'x',
+        modelPath: model.path,
+        pollInterval: const Duration(milliseconds: 10),
+        pidFile: pidFile.path,
+        killPid: (pid) async => killed.add(pid),
+        spawn: (_, args) async => _FakeProcess.serve(portOf(args)),
+      );
+      await rt.complete('hi');
+      expect(killed, [4242]);
+      expect(pidFile.readAsStringSync(), '1'); // _FakeProcess.pid
+      await rt.dispose();
+      expect(pidFile.existsSync(), isFalse);
+    },
+  );
 
   test('bundled() points at llama/llama-server.exe next to the executable', () {
     final rt = LlamaServerRuntime.bundled('m.gguf');

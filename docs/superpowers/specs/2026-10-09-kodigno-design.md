@@ -78,16 +78,21 @@ Once, with progress, resume, and SHA-256 verification. A model counts as install
 
 ## 5. UI design system
 
-Reference: the user supplied a screenshot of a modern study app (lavender canvas, pastel cards, heavy black display type, yellow pill buttons, large stat numbers). Kodigno copies the look and feel, not the other app's branding, copy, mascot, or artwork.
+Reference: the user supplied a screenshot of a modern study app (pastel cards, heavy black display type, yellow pill buttons, large stat numbers). Kodigno copies the look and feel, not the other app's branding, copy, mascot, or artwork.
 
 ### Tokens (approximate, from the reference; tune by eye)
-- Canvas lavender `#D0CFF7`; lavender card `#A9A7F2`; yellow `#F7C61C`; pink `#F2A7A5`; mint `#A6E3C3`; blue `#2D4DE8`; ink `#0F0F0F`; tile grey `#F3F3F3`; white panels.
+- Canvas is white (the lavender in the reference screenshots was only their backdrop); pastels are for cards and accents. Lavender card `#A9A7F2`; yellow `#F7C61C`; pink `#F2A7A5`; mint `#A6E3C3`; blue `#2D4DE8`; ink `#0F0F0F`; tile grey `#F3F3F3`; white panels.
 - Type: Bricolage Grotesque (open font, bundled as an asset because the app is offline). Display text at weight 800 with tight tracking; body at 500.
 - Shape: 24–32 px rounded panels, pill buttons. Primary action = yellow pill with dark text; secondary = dark pill.
 - Source-type tag on library cards (IMAGE / PDF / DOCX / TEXT); card color cycles through yellow, lavender, pink, mint.
 
+### Motion
+- Shared durations and curves in `lib/ui/motion.dart`; screens fade/rise in with a short stagger, stat numbers count up, progress bars animate, stickers (`KSticker`) decorate headers, confetti on a good quiz score.
+- Reduce motion: when the OS asks for it, every animation collapses to an instant change.
+- No infinite animations (keeps widget tests deterministic and saves battery).
+
 ### Layout
-- Desktop (>= 800 px wide): rounded white sidebar (logo, Library, Create, Settings) beside a rounded white content panel on the lavender canvas.
+- Desktop (>= 800 px wide): white sidebar (logo, Library, Create, Settings) beside the content area on the white canvas.
 - Narrow (< 800 px): same screens with a bottom navigation bar. Built now so Phase 2 mobile reuses it.
 
 ### Screens (map to the reference)
@@ -97,7 +102,7 @@ Reference: the user supplied a screenshot of a modern study app (lavender canvas
 - **Set detail**: tiles Notes / Flashcards (N cards) / Quiz (N questions) / Podcast (disabled), "Start studying" yellow pill.
 - **Quiz**: progress bar, "4 / 12", lavender question card, lettered options A–D, selected option turns yellow with a check, Next button.
 - **Results**: "quiz complete", huge percentage, "10 of 12 correct", two stat circles (correct / to review), list of missed questions with right answers.
-- **Flashcards**: large flip card with prev/next.
+- **Flashcards**: large lavender card that flips (3D turn) to a yellow answer; swipe or arrow keys move through the deck; waiting cards rise a slot as the top card leaves; Space or tap flips.
 - **Settings / Setup**: model tier, download, progress.
 
 ## 6. Data model (SQLite)
@@ -127,9 +132,10 @@ Derived: last score % per set; "answered this week" = sum of `total` of attempts
 
 ## 9. Prerequisites and risks
 
-- **Visual Studio with the "Desktop development with C++" workload is required to build Windows apps and is not installed on the dev PC.** Android SDK is also absent (not needed until Phase 2).
+- Building Windows apps needs Visual Studio with the "Desktop development with C++" workload and Windows Developer Mode (plugin symlinks). Android SDK is not needed until Phase 2.
 - Bundled binaries add roughly 50–100 MB to the app; their licenses must be shipped.
 - CPU-only inference may be slow on weak laptops; the tier system and chunk cap are the mitigations, and real timings go in the device test log.
 - Qwen 0.5B output quality may be poor; retry and validation reduce, not remove, bad output.
-- PDF text extraction relies on a Flutter PDF package whose API must be confirmed at implementation time.
+- PDF text extraction uses pdfrx; unmappable symbols come out as U+FFFD and are stripped.
+- A bundled `llama-server` that outlives the app (crash, killed process) is stopped on the next start via a pid file.
 - The YouTube source (Phase 4) is the one place the offline promise has an exception; it needs its own explicit opt-in design.

@@ -29,22 +29,28 @@ class ModelDownloader {
       final req = await client.getUrl(url);
       if (have > 0) req.headers.set(HttpHeaders.rangeHeader, 'bytes=$have-');
       final res = await req.close();
-      if (res.statusCode != 200 && res.statusCode != 206) {
-        throw HttpException('HTTP ${res.statusCode}', uri: url);
-      }
-      final resumed = res.statusCode == 206;
-      final start = resumed ? have : 0;
-      final total = start + res.contentLength;
-      final sink = part.openWrite(mode: resumed ? FileMode.append : FileMode.write);
-      var received = start;
-      try {
-        await for (final chunk in res) {
-          sink.add(chunk);
-          received += chunk.length;
-          yield DownloadProgress(received, total);
+      // 416 with a partial file: it already holds every byte (the app stopped
+      // before the checksum). Fall through and verify it.
+      if (res.statusCode == 416 && have > 0) {
+        await res.drain<void>();
+      } else {
+        if (res.statusCode != 200 && res.statusCode != 206) {
+          throw HttpException('HTTP ${res.statusCode}', uri: url);
         }
-      } finally {
-        await sink.close();
+        final resumed = res.statusCode == 206;
+        final start = resumed ? have : 0;
+        final total = start + res.contentLength;
+        final sink = part.openWrite(mode: resumed ? FileMode.append : FileMode.write);
+        var received = start;
+        try {
+          await for (final chunk in res) {
+            sink.add(chunk);
+            received += chunk.length;
+            yield DownloadProgress(received, total);
+          }
+        } finally {
+          await sink.close();
+        }
       }
     } finally {
       client.close(force: true);
