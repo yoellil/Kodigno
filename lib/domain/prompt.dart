@@ -332,6 +332,7 @@ List<String> pickDistractors(String correct, List<String> pool, Random random,
     final l = a.toLowerCase();
     if (l.isEmpty ||
         isPlaceholderAnswer(l) ||
+        RegExp(r'^(?:an? |the )?(?:random|unknown|different|other|another|some|any|unrelated|various)\b').hasMatch(l) ||
         looksLikeCitation(l) ||
         (_wordCount(c) >= 4 && _wordCount(l) * 2 < _wordCount(c)) || // a short choice next to a long answer stands out
 

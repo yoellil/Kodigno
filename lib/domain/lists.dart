@@ -60,17 +60,18 @@ Set<String> _words(String s) => {
         m[0]!.endsWith('s') ? m[0]!.substring(0, m[0]!.length - 1) : m[0]!,
     };
 
-typedef NotesList = ({String heading, List<String> items});
+typedef NotesList = ({String heading, List<String> items, bool ordered});
 
 /// Runs of bulleted or numbered lines in [text], each with the (up to two)
 /// ordinary lines just above it.
-List<({List<String> items, List<String> above})> _runs(String text) {
-  final runs = <({List<String> items, List<String> above})>[];
+List<({List<String> items, List<String> above, bool ordered})> _runs(String text) {
+  final runs = <({List<String> items, List<String> above, bool ordered})>[];
   List<String>? cur;
   var curAbove = <String>[];
+  var curOrdered = false;
   final recent = <String>[];
   void close() {
-    if (cur != null) runs.add((items: cur!, above: curAbove));
+    if (cur != null) runs.add((items: cur!, above: curAbove, ordered: curOrdered));
     cur = null;
   }
 
@@ -80,6 +81,7 @@ List<({List<String> items, List<String> above})> _runs(String text) {
       if (cur == null) {
         cur = <String>[];
         curAbove = List.of(recent);
+        curOrdered = RegExp(r'^\s*\d').hasMatch(line);
       }
       cur!.add(m[1]!);
     } else if (cur != null && RegExp(r'^\s*[a-z(]').hasMatch(line)) {
@@ -105,6 +107,7 @@ List<NotesList> notesLists(String notes) => [
               .map((l) => l.replaceAll(RegExp(r'\s*:$'), ''))
               .firstWhere(isGoodTitle, orElse: () => ''),
           items: [for (final x in r.items) _tidy(x)].where((x) => x.isNotEmpty).toList(),
+          ordered: r.ordered,
         ),
     ];
 
