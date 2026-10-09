@@ -29,11 +29,11 @@ void main() {
     expect(chunks.map((c) => c.length), [100, 100, 50]);
   });
 
-  test('facts prompt has the notes and the count', () {
-    final p = buildFactsPrompt('Mitosis notes', facts: 4);
-    expect(p, contains('Mitosis notes'));
-    expect(p, contains('up to 4 key facts'));
-    expect(p, contains('"facts"'));
+  test('fact check prompt has the notes passages and the question, but no choices', () {
+    final p = buildCheckPrompt('Where was Rizal born?', ['Rizal was born in Calamba.', 'Manila is the capital.']);
+    expect(p, contains('Rizal was born in Calamba.\nManila is the capital.'));
+    expect(p, contains('QUESTION: Where was Rizal born?\n'));
+    expect(checkSchema()['required'], ['answer']);
   });
 
   test('qa prompt numbers the facts', () {
@@ -179,6 +179,10 @@ void _vague() {
     expect(isVague('The importance of freedom and nationalism'), isTrue);
     expect(isVague('The reasons behind freedom'), isTrue);
     expect(isVague('Why was Rizal executed?'), isFalse);
+    // the facts the question was written from, which the student never sees
+    expect(isVague('What is another important credential, according to Fact 2?'), isTrue);
+    expect(isVague('Which certification is mentioned in the fact?'), isTrue);
+    expect(isVague('Why does the fact that DNA is copied matter?'), isFalse);
   });
 
   group('answerInFact', () {

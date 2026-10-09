@@ -2,6 +2,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kodigno/domain/nlp.dart';
 
 void main() {
+  test('sameAnswer: the model\'s own answer matches the key, or not', () {
+    expect(sameAnswer('Calamba', 'Calamba'), isTrue);
+    expect(sameAnswer('at the bottom of the class', 'Placed at the bottom'), isTrue);
+    expect(sameAnswer('the threat that data poses', 'The threat that data poses if used against people'), isTrue);
+    expect(sameAnswer('his mother', "His father's classmate Leon Monroy"), isFalse);
+    expect(sameAnswer('June 1874', 'June 1872'), isFalse); // every number of the key
+    expect(sameAnswer('the', 'The atom'), isFalse); // holds it, but says nothing
+    expect(sameAnswer('village', 'age'), isFalse);
+  });
+
   test('terms are the meaningful words, stemmed, with no stop words', () {
     expect(terms('The copyrights of Developers are protected'), ['copyright', 'developer', 'protect']);
     expect(terms('It is to be in a of the'), isEmpty);

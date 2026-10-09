@@ -63,7 +63,7 @@ Set<String> _words(String s) => {
 typedef NotesList = ({String heading, List<String> items, bool ordered});
 
 /// Runs of bulleted or numbered lines in [text], each with the (up to two)
-/// ordinary lines just above it.
+/// ordinary lines just above it on the same page (no empty line between).
 List<({List<String> items, List<String> above, bool ordered})> _runs(String text) {
   final runs = <({List<String> items, List<String> above, bool ordered})>[];
   List<String>? cur;
@@ -75,8 +75,14 @@ List<({List<String> items, List<String> above, bool ordered})> _runs(String text
     cur = null;
   }
 
+  var wraps = false;
   for (final line in text.split('\n')) {
     final m = _listLine.firstMatch(line);
+    // A line that goes on from the one above: it starts in lower case, or the PDF
+    // reader left a space at the end of the line above ("...accompanied by " /
+    // "Paciano went to Manila"), so it is not a title over the next list.
+    final goesOn = RegExp(r'^\s*[a-z(]').hasMatch(line) || (wraps && line.trim().isNotEmpty);
+    wraps = line.endsWith(' ');
     if (m != null && RegExp(r'[A-Za-z]{3,}').hasMatch(m[1]!)) {
       if (cur == null) {
         cur = <String>[];
@@ -84,13 +90,15 @@ List<({List<String> items, List<String> above, bool ordered})> _runs(String text
         curOrdered = RegExp(r'^\s*\d').hasMatch(line);
       }
       cur!.add(m[1]!);
-    } else if (cur != null && RegExp(r'^\s*[a-z(]').hasMatch(line)) {
+    } else if (cur != null && goesOn) {
       cur![cur!.length - 1] = '${cur!.last} ${line.trim()}'; // wrapped line
     } else {
       close();
       if (line.trim().isNotEmpty) {
         recent.add(line.trim());
         if (recent.length > 2) recent.removeAt(0);
+      } else {
+        recent.clear(); // a new page: the lines of the last one are not its titles
       }
     }
   }

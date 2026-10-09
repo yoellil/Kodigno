@@ -28,6 +28,17 @@ Cybersecurity - A World of Experts and Criminals Cybersecurity Essentials v1.1
 ''';
 
 void main() {
+  test('a wrapped line is not a slide title, and a title takes only its own page\'s bullets', () {
+    // The PDF reader leaves a space at the end of a line that wraps.
+    const notes = '• Travels in the Philippines by \nDr. Feodor Jagor\n\n'
+        '• June 1874\n• Rizal returned to the Ateneo\n• He won only one gold medal in Latin\n';
+    expect(extractDefinitions(notes).map((d) => d.term), isNot(contains('Dr. Feodor Jagor')));
+    const ownPage = 'Extra-curricular activities in Ateneo\n• President of the Academy of Spanish Literature\n'
+        '• Secretary of the Academy of Natural Sciences\n\n• Secretary of the Marian Congregation\n';
+    expect(extractDefinitions(ownPage).single.definition,
+        '• President of the Academy of Spanish Literature\n• Secretary of the Academy of Natural Sciences');
+  });
+
   final defs = {for (final d in extractDefinitions(_slides)) d.term: d.definition};
 
   test('"Term - definition" bullets, joined across wrapped lines, first sentence only', () {

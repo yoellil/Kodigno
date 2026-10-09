@@ -96,4 +96,22 @@ void main() {
     expect(withoutQuestionEcho('It protects inventions', 'What does a copyright cover?'), 'It protects inventions');
     expect(withoutQuestionEcho('Calamba', 'Where was Rizal born?'), 'Calamba');
   });
+
+  test('withoutQuestionEcho drops the subject the question already names, and its verb', () {
+    expect(withoutQuestionEcho('The CVE database is an example of a national database', 'What is the CVE database?'),
+        'An example of a national database');
+    expect(withoutQuestionEcho('State-sponsored hackers steal government secrets and sabotage networks',
+            'What do state-sponsored hackers do?'),
+        'Steal government secrets and sabotage networks');
+    expect(withoutQuestionEcho('The Internet of Things enables people to connect billions of devices',
+            'What does the Internet of Things (IoT) enable?'),
+        'People to connect billions of devices');
+    // one named word, or too little left, is not an echo
+    expect(withoutQuestionEcho('InfraGard shares cyber intelligence', 'What does InfraGard share?'),
+        'InfraGard shares cyber intelligence');
+    expect(withoutQuestionEcho('External attacks exploit weaknesses', 'What do external attacks do?'),
+        'External attacks exploit weaknesses');
+    expect(withoutQuestionEcho('Network services like DNS and HTTP', 'Which services are prime targets?'),
+        'Network services like DNS and HTTP');
+  });
 }
