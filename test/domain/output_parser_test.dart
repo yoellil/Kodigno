@@ -2,9 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kodigno/domain/output_parser.dart';
 
 void main() {
-  test('parseFacts reads JSON wrapped in prose and drops placeholders', () {
-    final f = parseFacts('Sure!\n{"facts":["<fact 1> Fact one.","<fact 2>"," "]}\nDone.');
-    expect(f, ['Fact one.']);
+  test('parseCheck reads the fact check\'s answer, "none" as null', () {
+    expect(parseCheck('Sure!\n{"answer":"Calamba"}\nDone.'), 'Calamba');
+    expect(parseCheck('{"answer":"None."}'), isNull);
+    expect(() => parseCheck('{"answer":" "}'), throwsFormatException);
+    expect(() => parseCheck('I cannot do that'), throwsFormatException);
   });
 
   test('parseQa keeps complete pairs only', () {
@@ -25,9 +27,8 @@ void main() {
   });
 
   test('throw when nothing usable, not JSON, or truncated', () {
-    expect(() => parseFacts('{"facts":[]}'), throwsFormatException);
     expect(() => parseQa('{"items":[]}'), throwsFormatException);
-    expect(() => parseFacts('I cannot do that'), throwsFormatException);
+    expect(() => parseQa('I cannot do that'), throwsFormatException);
     expect(() => parseQa('{"items":[{"question":"Q"'), throwsFormatException);
   });
 

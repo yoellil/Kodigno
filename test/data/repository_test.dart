@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kodigno/data/database.dart';
 import 'package:kodigno/data/repository.dart';
 import 'package:kodigno/domain/models.dart';
+import 'package:kodigno/domain/source_ref.dart';
 import 'package:kodigno/domain/summary.dart';
 
 void main() {
@@ -157,6 +158,59 @@ void main() {
     expect(await tablesOf(mine), contains('saved_words'));
   });
 
+  test('the page behind each card and question is saved and read back', () async {
+    const withSources = GeneratedSet([
+      QuizQuestion(
+        prompt: 'Q',
+        choices: ['a', 'b'],
+        answerIndex: 1,
+        source: SourceRef(kind: SourceKind.copied, pages: [3], score: 1, quote: 'A line.'),
+      ),
+      QuizQuestion(prompt: 'No source', choices: ['a', 'b'], answerIndex: 0),
+    ], [
+      Flashcard(front: 'f', back: 'b', source: SourceRef(kind: SourceKind.unmatched, pages: [7], score: 0.1)),
+      Flashcard(front: 'g', back: 'c'),
+    ]);
+    final id = await repo.saveSet('Bio', withSources);
+    final d = await repo.getSet(id);
+    final q = d.questions.firstWhere((x) => x.prompt == 'Q');
+    expect(SourceRef.decode(q.source)!.kind, SourceKind.copied);
+    expect(SourceRef.decode(q.source)!.page, 3);
+    expect(SourceRef.decode(q.source)!.quote, 'A line.');
+    expect(SourceRef.decode(d.questions.firstWhere((x) => x.prompt == 'No source').source), isNull);
+    final c = d.flashcards.firstWhere((x) => x.front == 'f');
+    expect(SourceRef.decode(c.source)!.kind, SourceKind.unmatched); // flagged, and kept
+    expect(SourceRef.decode(c.source)!.page, 7);
+    expect(d.flashcards.firstWhere((x) => x.front == 'g').source, '');
+  });
+
+  test('a version-4 database gets the source columns on cards and questions, and keeps its rows', () async {
+    final old = AppDatabase(NativeDatabase.memory(setup: (raw) {
+      raw.execute(studySetsSql(withSummary: true));
+      raw.execute("INSERT INTO study_sets (title) VALUES ('Old set')");
+      raw.execute('CREATE TABLE question_rows (id INTEGER PRIMARY KEY AUTOINCREMENT, study_set_id INTEGER NOT NULL, '
+          "type TEXT NOT NULL DEFAULT 'multiple_choice', prompt TEXT NOT NULL, choices TEXT NOT NULL, "
+          "answer_index INTEGER NOT NULL, explanation TEXT NOT NULL DEFAULT '')");
+      raw.execute('CREATE TABLE flashcard_rows (id INTEGER PRIMARY KEY AUTOINCREMENT, study_set_id INTEGER NOT NULL, '
+          'front TEXT NOT NULL, back TEXT NOT NULL)');
+      raw.execute("INSERT INTO question_rows (study_set_id, prompt, choices, answer_index) VALUES (1, 'Q', '[\"a\",\"b\"]', 0)");
+      raw.execute("INSERT INTO flashcard_rows (study_set_id, front, back) VALUES (1, 'f', 'b')");
+      raw.execute('CREATE TABLE readers (id INTEGER PRIMARY KEY AUTOINCREMENT)');
+      raw.execute('CREATE TABLE stories (id INTEGER PRIMARY KEY AUTOINCREMENT)');
+      raw.execute('CREATE TABLE reading_attempts (id INTEGER PRIMARY KEY AUTOINCREMENT, wpm INTEGER)');
+      raw.execute('CREATE TABLE saved_words (id INTEGER PRIMARY KEY AUTOINCREMENT)');
+      raw.execute('PRAGMA user_version = 4');
+    }));
+    addTearDown(old.close);
+    final d = await StudyRepository(old).getSet(1);
+    expect(d.questions.single.prompt, 'Q');
+    expect(d.questions.single.source, ''); // not looked up for old rows
+    expect(d.flashcards.single.front, 'f');
+    expect(d.flashcards.single.source, '');
+    expect(await columnsOf(old, 'question_rows'), contains('source'));
+    expect(await columnsOf(old, 'flashcard_rows'), contains('source'));
+  });
+
   test('library lists newest first with stats and last score percent', () async {
     final now = DateTime(2026, 10, 9, 12);
     final a = await repo.saveSet('One', set);
@@ -191,5 +245,42 @@ void main() {
     expect(await repo.attemptsFor(id), isEmpty);
     expect(await db.select(db.questionRows).get(), isEmpty);
     expect(await db.select(db.flashcardRows).get(), isEmpty);
+  });
+
+  group('flashcards the student writes or corrects', () {
+    test('addFlashcard saves a trimmed card to the set and returns its id', () async {
+      final setId = await repo.saveSet('Bio', set);
+      final id = await repo.addFlashcard(setId, '  Mitochondria ', ' Makes ATP.  ');
+      final cards = (await repo.getSet(setId)).flashcards;
+      expect(cards, hasLength(2));
+      final added = cards.firstWhere((c) => c.id == id);
+      expect((added.front, added.back), ('Mitochondria', 'Makes ATP.'));
+    });
+
+    test('updateFlashcard rewrites one card and leaves the others alone', () async {
+      final setId = await repo.saveSet('Bio', set);
+      final other = await repo.addFlashcard(setId, 'Nucleus', 'Holds the DNA.');
+      final first = (await repo.getSet(setId)).flashcards.first;
+      expect(await repo.updateFlashcard(first.id, 'Corrected term', ' Corrected answer '), isTrue);
+      final cards = {for (final c in (await repo.getSet(setId)).flashcards) c.id: c};
+      expect((cards[first.id]!.front, cards[first.id]!.back), ('Corrected term', 'Corrected answer'));
+      expect(cards[other]!.front, 'Nucleus');
+    });
+
+    test('a blank side is refused, and a card that is gone returns false', () async {
+      final setId = await repo.saveSet('Bio', set);
+      expect(() => repo.addFlashcard(setId, 'Term', '   '), throwsArgumentError);
+      final id = (await repo.getSet(setId)).flashcards.first.id;
+      expect(() => repo.updateFlashcard(id, '', 'x'), throwsArgumentError);
+      expect(await repo.updateFlashcard(9999, 'a', 'b'), isFalse);
+      expect((await repo.getSet(setId)).flashcards.first.front, 'f'); // unchanged
+    });
+
+    test('deleting the set removes its added cards too', () async {
+      final setId = await repo.saveSet('Bio', set);
+      await repo.addFlashcard(setId, 'Nucleus', 'Holds the DNA.');
+      await repo.deleteSet(setId);
+      expect(await db.select(db.flashcardRows).get(), isEmpty);
+    });
   });
 }

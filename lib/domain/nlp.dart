@@ -83,6 +83,13 @@ double _cosine(Map<String, double> a, Map<String, double> b) {
   return na == 0 || nb == 0 ? 0 : dot / (sqrt(na) * sqrt(nb));
 }
 
+/// A text as weighted terms, to compare it with many others without reading
+/// each again.
+Map<String, double> vectorOf(String s, Map<String, double> idf) => _tfidf(s, idf);
+
+/// How alike two [vectorOf] vectors are, 0 to 1.
+double cosineOf(Map<String, double> a, Map<String, double> b) => _cosine(a, b);
+
 /// How alike two texts are in their vocabulary, 0 (nothing shared) to 1.
 double similarity(String a, String b, Map<String, double> idf) =>
     _cosine(_tfidf(a, idf), _tfidf(b, idf));
@@ -210,6 +217,29 @@ List<String> condense(
 }) {
   final total = items.fold<int>(0, (n, s) => n + s.length + 1);
   if (total <= maxChars) return items;
+  final score = centrality(items, keyTerms: keyTerms, idf: idf);
+  final n = items.length;
+  final order = List.generate(n, (i) => i)..sort((a, b) => score[b].compareTo(score[a]));
+  final picked = <int>[];
+  var used = 0;
+  for (final i in order) {
+    if (used + items[i].length + 1 > maxChars) {
+      // Leftover room is not worth filling with a line that ranks lower.
+      if (picked.length >= 2) break;
+      continue;
+    }
+    picked.add(i);
+    used += items[i].length + 1;
+  }
+  if (picked.isEmpty) picked.add(order.first);
+  picked.sort();
+  return [for (final i in picked) items[i]];
+}
+
+/// How central each of [items] is, about 0 to 1.25 (TextRank over TF-IDF
+/// vectors, plus a small lift for items that carry one of [keyTerms]).
+List<double> centrality(List<String> items, {List<String> keyTerms = const [], Map<String, double>? idf}) {
+  if (items.isEmpty) return const [];
   final idfMap = idf ?? const <String, double>{};
   final vectors = [for (final it in items) _tfidf(it, idfMap)];
   final n = items.length;
@@ -235,26 +265,33 @@ List<String> condense(
 
   final best = rank.reduce(max);
   final lowered = [for (final it in items) it.toLowerCase()];
-  final score = [
+  return [
     for (var i = 0; i < n; i++)
       (best == 0 ? 0 : rank[i] / best) +
           0.25 * min(2, keyTerms.where((t) => lowered[i].contains(t)).length) / 2,
   ];
-  final order = List.generate(n, (i) => i)..sort((a, b) => score[b].compareTo(score[a]));
-  final picked = <int>[];
-  var used = 0;
-  for (final i in order) {
-    if (used + items[i].length + 1 > maxChars) {
-      // Leftover room is not worth filling with a line that ranks lower.
-      if (picked.length >= 2) break;
-      continue;
-    }
-    picked.add(i);
-    used += items[i].length + 1;
-  }
-  if (picked.isEmpty) picked.add(order.first);
-  picked.sort();
-  return [for (final i in picked) items[i]];
+}
+
+/// True if [given] (the model's own answer) says what [key] says: it has every
+/// number of the key, and one holds the other or it has at least half of the
+/// key's meaningful words. "His mother" is not "Leon Monroy".
+bool sameAnswer(String given, String key) {
+  String norm(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+  final g = norm(given), k = norm(key);
+  if (g.isEmpty || k.isEmpty) return false;
+  if (!RegExp(r'\d+').allMatches(k).every((n) => RegExp('\\b${n[0]}\\b').hasMatch(g))) return false;
+  final mine = terms(given).toSet(), keys = terms(key).toSet();
+  if (g == k || ((' $g '.contains(' $k ') || ' $k '.contains(' $g ')) && mine.isNotEmpty)) return true;
+  return keys.isNotEmpty && mine.intersection(keys).length * 2 >= keys.length;
+}
+
+/// The [k] of [items] most alike [query] in vocabulary (TF-IDF cosine), best
+/// first. Only items that share something with it. The passages a fact check reads.
+List<String> retrieve(String query, List<String> items, Map<String, double> idf, {int k = 4}) {
+  final q = _tfidf(query, idf);
+  final scored = [for (final it in items) (it, _cosine(q, _tfidf(it, idf)))]
+    ..sort((a, b) => b.$2.compareTo(a.$2));
+  return [for (final (it, s) in scored.take(k)) if (s > 0) it];
 }
 
 final _negation = RegExp(
@@ -281,6 +318,39 @@ bool contradicts(String claim, List<String> sourceItems) {
   if (best == null || bestScore < 0.45) return false;
   if (c.intersection(terms(best).toSet()).length < 3) return false;
   return _negation.hasMatch(claim) != _negation.hasMatch(best);
+}
+
+/// Only the plain negators: "without" ("...without asking the owner") and
+/// "unable" do not flip a statement the way these do.
+final _plainNegation = RegExp(r"\b(?:not|no|never|cannot|neither|nor)\b|n['’]t\b", caseSensitive: false);
+
+/// True if exactly one of [a] and [b] has a plain "not", "no" or "never". Two
+/// statements about the same thing that differ in this are likely opposites.
+bool plainNegationDiffers(String a, String b) => _plainNegation.hasMatch(a) != _plainNegation.hasMatch(b);
+
+/// The line of [sourceItems] that [claim] seems to say the opposite of, or null.
+/// Stricter than [contradicts], for telling a student something about their own
+/// words: the claim must share at least 5 of its meaningful words with the line
+/// and be mostly made of that line's words, and only a plain "not", "no" or
+/// "never" on one side and not the other counts.
+String? oppositeLine(String claim, List<String> sourceItems) {
+  final c = terms(claim).toSet();
+  if (c.length < 5) return null;
+  String? best;
+  var bestScore = 0.0;
+  var bestShared = 0;
+  for (final it in sourceItems) {
+    final t = terms(it).toSet();
+    final shared = c.where(t.contains).length;
+    final score = shared / c.length;
+    if (score > bestScore) {
+      bestScore = score;
+      bestShared = shared;
+      best = it;
+    }
+  }
+  if (best == null || bestScore < 0.5 || bestShared < 5) return null;
+  return _plainNegation.hasMatch(claim) != _plainNegation.hasMatch(best) ? best : null;
 }
 
 List<String> _wordsOf(String s) =>

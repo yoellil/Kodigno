@@ -57,11 +57,12 @@ class StudyRepository {
               choices: jsonEncode(q.choices),
               answerIndex: q.answerIndex,
               explanation: Value(q.explanation),
+              source: Value(q.source?.encode() ?? ''),
             ));
       }
       for (final c in set.flashcards) {
         await db.into(db.flashcardRows).insert(FlashcardRowsCompanion.insert(
-            studySetId: id, front: c.front, back: c.back));
+            studySetId: id, front: c.front, back: c.back, source: Value(c.source?.encode() ?? '')));
       }
       return id;
     });
@@ -78,6 +79,7 @@ class StudyRepository {
     for (final a in attempts) {
       if (a.total > 0) last[a.studySetId] = (a.score * 100 / a.total).round();
     }
+    final answers = await db.select(db.reviewLog).get(); // practice counts toward the streak too
     final weekAgo = now.subtract(const Duration(days: 7));
     final answered = attempts
         .where((a) => a.takenAt.isAfter(weekAgo))
@@ -88,7 +90,7 @@ class StudyRepository {
       LibraryStats(
         sets: sets.length,
         answeredThisWeek: answered,
-        streakDays: computeStreak(attempts.map((a) => a.takenAt), now),
+        streakDays: computeStreak([...attempts.map((a) => a.takenAt), ...answers.map((a) => a.at)], now),
       ),
     );
   }
@@ -106,6 +108,26 @@ class StudyRepository {
     final qs = await (db.select(db.questionRows)..where((t) => t.studySetId.equals(id))).get();
     final cs = await (db.select(db.flashcardRows)..where((t) => t.studySetId.equals(id))).get();
     return StudySetDetail(set, qs, cs);
+  }
+
+  /// Adds a card the student wrote to set [setId]; returns its id. Throws
+  /// [ArgumentError] if either side is blank.
+  Future<int> addFlashcard(int setId, String front, String back) {
+    final f = front.trim(), b = back.trim();
+    if (f.isEmpty || b.isEmpty) throw ArgumentError('A card needs both a term and a definition.');
+    return db
+        .into(db.flashcardRows)
+        .insert(FlashcardRowsCompanion.insert(studySetId: setId, front: f, back: b));
+  }
+
+  /// Saves the student's corrections to card [id], whether the AI or the student wrote it.
+  /// Returns false if the card no longer exists. Throws [ArgumentError] if either side is blank.
+  Future<bool> updateFlashcard(int id, String front, String back) async {
+    final f = front.trim(), b = back.trim();
+    if (f.isEmpty || b.isEmpty) throw ArgumentError('A card needs both a term and a definition.');
+    final changed = await (db.update(db.flashcardRows)..where((t) => t.id.equals(id)))
+        .write(FlashcardRowsCompanion(front: Value(f), back: Value(b)));
+    return changed > 0;
   }
 
   /// Saves [summary] as the set's lesson, replacing any earlier one.

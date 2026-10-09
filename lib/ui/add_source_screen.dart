@@ -154,9 +154,6 @@ class _AddSourceBodyState extends State<AddSourceBody> {
             onTap: () => _pick(['docx'])).enter(context, index: 3),
         _SourceTile(Icons.notes, K.mint, 'Text', '.txt & .md',
             onTap: () => _pick(['txt', 'md'])).enter(context, index: 4),
-        const _SourceTile(Icons.mic_none, K.pink, 'Record', 'live lecture').enter(context, index: 5),
-        const _SourceTile(Icons.smart_display_outlined, K.yellow, 'YouTube', 'paste a link')
-            .enter(context, index: 6),
       ]),
       if (_path != null) ...[
         const SizedBox(height: 26),

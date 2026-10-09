@@ -6,9 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai/ai_engine.dart';
 import 'ai/llm_ai_engine.dart';
+import 'domain/card_assist.dart';
 import 'data/repository.dart';
 import 'domain/models.dart';
+import 'domain/source_attach.dart';
+import 'domain/source_ref.dart';
 import 'domain/summary.dart';
+import 'study/teach_judge.dart';
 import 'models/device_profiler.dart';
 import 'models/model_manager.dart';
 import 'models/tier.dart';
@@ -27,7 +31,7 @@ class SummaryFailed implements Exception {
   String toString() => message;
 }
 
-class AppController extends ChangeNotifier {
+class AppController extends ChangeNotifier implements TeachBackModel {
   AppController({
     required this.tiers,
     required this.profiler,
@@ -153,11 +157,14 @@ class AppController extends ChangeNotifier {
           set = await engine.generate(notes, onProgress: (f) => progress(0.6, 0.4, f));
         }
       }
-      return await repo.saveSet(title, set,
+      // Each piece of the lesson, each card and each question gets the page it
+      // rests on, found in the pages of the file (none, for files without pages).
+      final locator = _locatorFor(notes);
+      return await repo.saveSet(title, attachSources(set, locator),
           sourceType: sourceType,
           sourceText: notes,
           sourcePaths: sourcePaths,
-          summary: lesson);
+          summary: lesson?.withSources(locator));
     } on ModelUnavailableException {
       await _dropEngine();
       fallbackOffer = tiers.lower(tier!);
@@ -187,6 +194,50 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  /// A suggestion for the missing side of a flashcard (marked with where it came from): the definition for [term], or the
+  /// term for [definition], with the set's [notes] for context. Throws
+  /// [CardAssistFailed] with a message fit to show the user.
+  Future<CardSuggestion> suggestCard({
+    required AssistField want,
+    String term = '',
+    String definition = '',
+    String notes = '',
+    String setTitle = '',
+  }) async {
+    final given = want == AssistField.definition ? term : definition;
+    if (given.trim().isEmpty) {
+      throw CardAssistFailed(want == AssistField.definition
+          ? 'Type the term first, then ask the AI for its definition.'
+          : 'Type the definition first, then ask the AI for the term.');
+    }
+    if (!modelReady) throw CardAssistFailed('The AI model is not set up yet. Open Settings to download it.');
+    try {
+      final reply = await (await runtime()).chat(
+        buildCardAssistMessages(
+            want: want, term: term, definition: definition, notes: notes, setTitle: setTitle),
+        maxTokens: 160,
+        temperature: 0.2,
+        schema: cardAssistSchema(want),
+      );
+      var s = parseCardAssist(reply, want);
+      if (s.isEmpty) {
+        throw CardAssistFailed("The AI wasn't sure about that one. Try adding a little more detail, or write it yourself.");
+      }
+      if (want == AssistField.definition) s = withoutEchoedTerm(s, term);
+      // The subject is the typed term, or for a suggested term the term itself.
+      return CardSuggestion(s, fromNotes: mentionedIn(want == AssistField.definition ? term : s, notes));
+    } on CardAssistFailed {
+      rethrow;
+    } on ModelUnavailableException {
+      await _dropEngine();
+      throw CardAssistFailed('The AI model could not run. Close other apps and try again.');
+    } on FormatException {
+      throw CardAssistFailed("The AI's answer was not usable. Try again.");
+    } catch (_) {
+      throw CardAssistFailed("Couldn't get a suggestion. Try again.");
+    }
+  }
+
   /// The current tier's model server, shared with Kulay so only one runs.
   Future<LlmRuntime> runtime() async {
     final e = await _engineForTier();
@@ -204,10 +255,11 @@ class AppController extends ChangeNotifier {
     summaryFraction = 0;
     notifyListeners();
     try {
-      return await (await _engineForTier()).summarize(notes, onProgress: (f) {
+      final lesson = await (await _engineForTier()).summarize(notes, onProgress: (f) {
         summaryFraction = f;
         notifyListeners();
       });
+      return lesson.withSources(_locatorFor(notes));
     } on ModelUnavailableException {
       await _dropEngine();
       throw SummaryFailed('The AI model could not run. Close other apps and try again.');
@@ -217,6 +269,52 @@ class AppController extends ChangeNotifier {
       summarizing = false;
       notifyListeners();
     }
+  }
+
+  // ---- Teach-Back: the model's part. It never throws: if the model cannot be used,
+  // the check falls back to comparing words.
+
+  @override
+  bool get available => modelReady && tier != null;
+
+  /// The smallest model writes the key ideas but is not asked to judge.
+  @override
+  bool get canJudge => available && tier!.id != 'low';
+
+  @override
+  Future<List<String>> concepts(String slideText, {String? topic}) async {
+    if (!available) return const [];
+    try {
+      return await (await _engineForTier()).topicConcepts(slideText, topic: topic);
+    } on ModelUnavailableException {
+      await _dropEngine();
+      return const [];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  @override
+  Future<TeachBackJudgement?> judge({
+    required List<String> concepts,
+    required String answer,
+    required String slideText,
+  }) async {
+    if (!available) return null;
+    try {
+      return await (await _engineForTier()).judgeExplanation(concepts: concepts, answer: answer, slideText: slideText);
+    } on ModelUnavailableException {
+      await _dropEngine();
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Finds the page behind a piece of material, or null if [notes] has no page markers.
+  SourceLocator? _locatorFor(String notes) {
+    final pages = parsePages(notes);
+    return pages.isEmpty ? null : SourceLocator(pages);
   }
 
   Future<AiEngine> _engineForTier() async {

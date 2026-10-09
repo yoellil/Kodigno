@@ -6,6 +6,28 @@ String _pages(List<String> pages) => pages.join('\n\n');
 const _longBody = 'This slide explains the idea in a sentence that is long enough to be a real slide of content.';
 
 void main() {
+  group('course headings and page headings', () {
+    test('isCourseHeading is true for outcomes, module labels and references, not for subjects', () {
+      for (final h in ['Intended Learning Outcomes', 'Learning Objectives', 'Module 3', 'Subtopic 1', 'References', 'Bibliography']) {
+        expect(isCourseHeading(h), isTrue, reason: h);
+      }
+      for (final h in ['Patents', 'Trade Secrets', 'Privacy Protection and the Law', 'Outcomes of the Cavite Mutiny']) {
+        expect(isCourseHeading(h), isFalse, reason: h);
+      }
+    });
+
+    test('pageHeadingKeys gives the tidied heading of each page', () {
+      const notes = 'Patents\n- A patent permits its owner to exclude the public from making, using, or selling an invention.\n\n'
+          'GeneralAgreementonTariffsandTrade\n- The General Agreement on Tariffs and Trade was a multilateral agreement.\n\n'
+          '- A bullet page with no heading of its own, only a long sentence that goes on for a while.\n';
+      final keys = pageHeadingKeys(notes);
+      expect(keys, contains(headingKey('Patents')));
+      expect(keys, contains(headingKey('General Agreement on Tariffs and Trade')));
+      expect(keys.length, 2);
+      expect(pageHeadingKeys('Just one block of plain text with no headings at all.'), isEmpty);
+    });
+  });
+
   group('headings', () {
     test('isHeadingLine wants a short line of capitalised words, no full stop, no bullet', () {
       expect(isHeadingLine('Copyright Term'), isTrue);

@@ -1,3 +1,6 @@
+import 'nlp.dart';
+import 'topics.dart';
+
 /// A term and its definition, taken word for word from the notes.
 typedef Definition = ({String term, String definition});
 
@@ -12,12 +15,15 @@ final _sentenceEnd = RegExp(r'[.!?:]$');
 
 /// The notes' lines joined back into paragraphs. A bullet starts a new one, and
 /// so does a capital letter after a line that ended a sentence or was short
-/// (a slide title). Other lines are a sentence wrapped onto the next line.
-/// [bullet] says whether the paragraph began with a bullet.
-List<({String text, bool bullet})> _paragraphs(String text) {
-  final out = <({String text, bool bullet})>[];
+/// (a slide title), unless the PDF reader left a space at the end of the line
+/// above, which it does when a line wraps ("Travels in the Philippines by " /
+/// "Dr. Feodor Jagor"). Other lines are a sentence wrapped onto the next line.
+/// [bullet] says whether the paragraph began with a bullet, [newPage] whether
+/// an empty line (a new page) came before it.
+List<({String text, bool bullet, bool newPage})> _paragraphs(String text) {
+  final out = <({String text, bool bullet, bool newPage})>[];
   var cur = '';
-  var curBullet = false;
+  var curBullet = false, curNewPage = false, newPage = false, wraps = false;
   var last = '';
   for (final raw in text.split('\n')) {
     final l = raw.trim();
@@ -25,19 +31,27 @@ List<({String text, bool bullet})> _paragraphs(String text) {
     final starts = l.isEmpty ||
         isBullet ||
         _yearLine.hasMatch(l) ||
-        (_capital.hasMatch(l) && ((_sentenceEnd.hasMatch(last) && !_abbrevEnd.hasMatch(last)) || last.split(' ').length <= 6));
+        (!wraps &&
+            _capital.hasMatch(l) &&
+            ((_sentenceEnd.hasMatch(last) && !_abbrevEnd.hasMatch(last)) || last.split(' ').length <= 6));
     if (starts && cur.isNotEmpty) {
-      out.add((text: cur, bullet: curBullet));
+      out.add((text: cur, bullet: curBullet, newPage: curNewPage));
       cur = '';
     }
+    if (l.isEmpty) newPage = true;
     final body = l.replaceFirst(_bullet, '');
     if (body.isNotEmpty) {
-      if (cur.isEmpty) curBullet = isBullet;
+      if (cur.isEmpty) {
+        curBullet = isBullet;
+        curNewPage = newPage;
+        newPage = false;
+      }
       cur = cur.isEmpty ? body : '$cur $body';
     }
+    wraps = raw.endsWith(' ');
     last = l;
   }
-  if (cur.isNotEmpty) out.add((text: cur, bullet: curBullet));
+  if (cur.isNotEmpty) out.add((text: cur, bullet: curBullet, newPage: curNewPage));
   return out;
 }
 
@@ -50,7 +64,7 @@ final _patterns = [
 
 /// Words of statements and headings, never part of a term.
 const _notTerms = {
-  'there', 'this', 'these', 'those', 'it', 'they', 'each', 'many', 'more', 'most',
+  'there', 'this', 'these', 'those', 'it', 'they', 'his', 'her', 'each', 'many', 'more', 'most',
   'some', 'such', 'other', 'another', 'we', 'you', 'he', 'she', 'our', 'their', 'its',
   'chapter', 'section', 'module', 'lesson', 'part', 'figure', 'table', 'slide', 'page',
   'click', 'note',
@@ -78,6 +92,7 @@ List<Definition> extractDefinitions(String notes, {bool headingCards = true}) {
           isGoodTitle(m[1]!.trim()) &&
           !_dateLike(term) &&
           _readsAsDefinition(definition) &&
+          definition.split(RegExp(r'\s+')).length >= 6 && // a caption or a label is not a definition
           !term.toLowerCase().split(' ').any(_notTerms.contains) &&
           words.length >= 4 &&
           !titleCase) {
@@ -99,12 +114,17 @@ List<Definition> extractDefinitions(String notes, {bool headingCards = true}) {
     // Bullets that define something themselves are left to their own card.
     if (d == null && headingCards && !p.bullet && _isHeading(p.text)) {
       final bullets = <String>[];
-      for (var j = i + 1; j < paras.length && paras[j].bullet; j++) {
+      // Only the bullets on the heading's own page.
+      for (var j = i + 1; j < paras.length && paras[j].bullet && !paras[j].newPage; j++) {
         if (fromPatterns(paras[j].text) != null) break; // a section title, not a term
         bullets.add(paras[j].text);
       }
-      final isList = isGoodList(bullets);
-      final def = isList ? formatList(bullets) : _explain(p.text.trim(), bullets);
+      final isList = looksLikeCategory(p.text) && p.text.trim().split(' ').length >= 2 && isGoodList(bullets);
+      // A heading with one sentence under it needs a real title (two words, not a name
+      // or a date): "Sanchez" or "Spanish" with a line below is just a wrapped line.
+      final def = isList
+          ? formatList(bullets, bullets: true)
+          : (p.text.trim().split(RegExp(r'\s+')).length >= 2 ? _explain(p.text.trim(), bullets) : null);
       if (def != null) d = (term: p.text.trim(), definition: def);
     }
     if (d != null && seen.add(d.term.toLowerCase())) out.add(d);
@@ -159,10 +179,27 @@ bool _isHeading(String s) {
 /// A title that is a title: not a sentence fragment, a label ("Q: what"), a
 /// caption or a wrapped line that stops mid-thought.
 bool isGoodTitle(String s) {
-  final t = s.trim();
+  var t = s.trim();
+  // A title that is already a question ("Why did Rizal shift to a medical course?") or
+  // starts like a list ("Reasons why ...") may contain a verb.
+  final isQuestion = RegExp(r'^(?:what|why|how|which|who|when|where)\b.*\?$', caseSensitive: false).hasMatch(t);
+  final isReasons = RegExp(r'^(?:reasons|causes|effects|ways|steps|types|kinds|factors|things|examples|facts)\b',
+          caseSensitive: false)
+      .hasMatch(t);
+  if (isQuestion) t = t.substring(0, t.length - 1).trim();
   final words = t.split(RegExp(r'\s+'));
   if (!RegExp(r'^[A-Z"\u201C(\d]').hasMatch(t) || words.length > 12) return false;
-  if (RegExp(r'[.!?:,;&\u2026-]$|[,:;]|\u2026').hasMatch(t)) return false;
+  // A date, a wrapped line of a sentence ("Paciano went to Manila", "Santa Cruz in order
+  // to visit") and a bare surname or language are not slide titles.
+  if (RegExp(r'^\W*(?:1[5-9]|20)\d\d\W*$').hasMatch(t) ||
+      RegExp(r'^(?:' '$_months' r')\b.*\d', caseSensitive: false).hasMatch(t)) {
+    return false;
+  }
+  if (!isQuestion && !isReasons &&
+      RegExp(r'\b(?:in order|' '$_pastVerbs' r')\b|\bto [a-z]+$', caseSensitive: false).hasMatch(t)) {
+    return false;
+  }
+  if (RegExp(r'[.!?:,;&\u2026-]$|[,:;]|\u2026|\s[-\u2013\u2014]\s').hasMatch(t)) return false;
   // a full stop inside is a sentence break, unless it ends "No.", "Dr." or an initial
   if (RegExp(r'(?<!\b(?:No|Nos|Dr|Mr|Mrs|Ms|St|Jr|Sr|Mt|Ma|Prof|Gen|Fig)|\b[A-Z])\.\s').hasMatch(t)) return false;
   if (RegExp(r'^[^"\u201C]*\u201D').hasMatch(t)) return false; // a closing quote with no opening one
@@ -170,7 +207,8 @@ bool isGoodTitle(String s) {
       .hasMatch(t)) {
     return false;
   }
-  return !RegExp(
+  return isQuestion ||
+      !RegExp(
           r'^(?:to|it|its|he|she|they|but|so|then|however|unfortunately|because|when|if|while|although|also|from|this|these)\b',
           caseSensitive: false)
       .hasMatch(t);
@@ -190,6 +228,9 @@ bool _readsAsDefinition(String s) =>
     !RegExp(r'\b1\.\s.*\b2\.\s').hasMatch(s) && // a run-in list belongs on a list card
     !RegExp(r'[?:]$').hasMatch(s) &&
     !RegExp(r'\b(?:of|and|or|to|for|the|a|an|in|on|by|with|that|which)$', caseSensitive: false).hasMatch(s);
+
+const _pastVerbs =
+    'was|were|is|are|went|took|had|has|did|became|got|made|said|saw|came|left|gave|told|wrote|won|lost|began|brought|found|kept|held|knew|thought|stood|ran|sat|asked|called|visited|returned|prayed|studied|attended|joined|decided|wanted|obtained|earned|shifted|failed|passed';
 
 final _months = 'January|February|March|April|May|June|July|August|September|October|November|December';
 
@@ -318,6 +359,56 @@ String shortenDefinition(String s, {int max = 130, bool early = false}) {
   return '$head…';
 }
 
+final _url = RegExp(r'https?:|www\.|\.(?:com|org|net|edu|gov|ph|io)\b', caseSensitive: false);
+final _seam = RegExp(r'[a-z](?=[A-Z])');
+final _listNumber = RegExp(r'\b\d+\.\s+[A-Z]');
+
+/// Verbs a tip or instruction starts with ("Ask for feedback", "Try active
+/// listening"): a heading telling the student what to do, not a term.
+const _tipVerbs = {
+  'ask', 'learn', 'try', 'enroll', 'develop', 'deal', 'join', 'follow', 'consider', 'remember',
+  'avoid', 'ensure', 'keep', 'provide', 'listen', 'practice', 'check', 'choose', 'your',
+};
+
+/// [defs] without the lines that are not really terms, for quiz questions and
+/// term cards: course headings ("Intended Learning Outcomes"), tips ("Ask for
+/// feedback"), website names, fragments ("Here", "Law", "Your choices"), list
+/// numbers and sentences. A slide title stays a term only if its own bullet is
+/// about it ("Patents" followed by "A patent permits...", not "Current
+/// Intellectual Property Issues" followed by a bullet about plagiarism). A heading
+/// the PDF ran together is put right. [text] is the notes the terms came from.
+List<Definition> usableTerms(List<Definition> defs, {String text = ''}) {
+  final vocab = {
+    for (final m in RegExp(r'[A-Za-z]{3,}').allMatches(text)) m[0]!.toLowerCase(),
+  };
+  final headings = pageHeadingKeys(text);
+  final seen = <String>{};
+  final out = <Definition>[];
+  for (final d in defs) {
+    var term = d.term.trim();
+    if (_url.hasMatch(term)) continue;
+    if (_seam.allMatches(term).length >= 2 || RegExp(r'[A-Za-z]\(').hasMatch(term)) {
+      term = tidyHeading(term, vocab: vocab);
+    }
+    if (term.contains(':') || _listNumber.hasMatch(term) || RegExp(r'\s\d{4}$').hasMatch(term)) continue;
+    if (isCourseHeading(term)) continue;
+    final words = term.split(RegExp(r'\s+'));
+    if (words.length >= 2 && _tipVerbs.contains(words.first.toLowerCase())) continue;
+    if (words.first.toLowerCase() == 'your') continue;
+    final isAcronym = words.length == 1 && term == term.toUpperCase() && term.length >= 2;
+    if (words.length == 1 && term.length < 5 && !isAcronym) continue;
+    final key = headingKey(term);
+    // A slide title, or the end of one that wrapped onto two lines.
+    final isTitle = key.length >= 5 && headings.any((h) => h == key || h.endsWith(key));
+    if (isTitle && terms(term).toSet().intersection(terms(d.definition).toSet()).isEmpty) {
+      continue; // a slide title that its bullet does not describe
+    }
+    if (!seen.add(term.toLowerCase())) continue;
+    out.add((term: term, definition: d.definition));
+  }
+  return out;
+}
+
 /// [text] with [term], its long form and its short form in brackets
 /// ("EC-Council Certified Ethical Hacker (CEH)" -> "CEH") blanked out.
 String maskTerm(String text, String term) {
@@ -362,7 +453,45 @@ List<String> relatedTerms(Definition d, List<Definition> all) {
 
 /// [items] as a numbered list, one per line, each kept brief:
 /// "1. Contribute to society\n2. Avoid harm\n3. Be honest".
-String formatList(List<String> items, {int maxItem = 70}) => [
+String formatList(List<String> items, {int maxItem = 70, bool bullets = false}) => [
       for (var i = 0; i < items.length; i++)
-        '${i + 1}. ${shortenDefinition(items[i], max: maxItem, early: true).replaceAll(RegExp(r'[.;,]+$'), '')}',
+        '${bullets ? '\u2022' : '${i + 1}.'} ${shortenDefinition(items[i], max: maxItem, early: true).replaceAll(RegExp(r'[.;,]+$'), '')}',
     ].join('\n');
+
+/// A title that names a group of things ("Extra-curricular activities in Ateneo",
+/// "Three Processes of Eduction", "Reasons why..."): the only kind whose bullets
+/// make a list card. A name, a date or a place with some facts under it is not.
+bool looksLikeCategory(String title) {
+  final t = title.trim();
+  if (!isGoodTitle(t)) return false;
+  if (RegExp(r'^(?:what|why|how|which|who|when|where)\b.*\?$', caseSensitive: false).hasMatch(t)) return true;
+  if (RegExp(r'^(?:reasons|causes|effects|ways|steps|types|kinds|factors|examples)\b', caseSensitive: false).hasMatch(t)) return true;
+  if (RegExp(r'^(?:two|three|four|five|six|seven|eight|nine|ten|\d+)\b', caseSensitive: false).hasMatch(t)) return true;
+  return t.split(RegExp(r'\s+')).any((w) {
+    final x = w.replaceAll(RegExp(r'[^A-Za-z-]'), '');
+    if (x.length < 6 || !x.toLowerCase().endsWith('s') || RegExp("(?:ss|us|is|\u2019s|'s)\$").hasMatch(w)) return false;
+    // a lower-case plural is a noun; a capitalised one only counts with a noun ending
+    return RegExp(r'^[a-z]').hasMatch(x) ||
+        RegExp(r'(?:ions|ies|ers|ors|ments|ings|ances|ences|ples|ures|ives|ases|ests|ents|ages|ods|ades|ities|ules)$', caseSensitive: false)
+            .hasMatch(x);
+  });
+}
+
+/// The question a list card asks: "Extra-curricular activities in Ateneo" ->
+/// "What are the extra-curricular activities in Ateneo?".
+String questionForTitle(String title) {
+  var t = title.trim().replaceAll(RegExp(r'[:?]+$'), '');
+  if (RegExp(r'^(?:what|which|who|when|where|why|how)\b', caseSensitive: false).hasMatch(t)) return '$t?';
+  if (t == t.toUpperCase() && RegExp(r'[A-Z]{3}').hasMatch(t)) return 'What are the "$t"?'; // ALL CAPS: as written
+
+  // A sentence-case title ("Extra-curricular activities in Ateneo") reads as "the extra-curricular
+  // activities in Ateneo"; a Title Case one ("General Ethical Principles") is kept as written.
+  final words = t.split(' ');
+  final lower = words.where((w) => RegExp(r'^[a-z]').hasMatch(w)).length;
+  final first = words.first;
+  final keep = lower * 2 < words.length ||
+      RegExp(r'^[A-Z]{2,}').hasMatch(first) ||
+      RegExp("^[A-Z][a-z]+(?:'s|\u2019s)\$").hasMatch(first);
+  final body = keep || t.isEmpty ? t : t[0].toLowerCase() + t.substring(1);
+  return RegExp("^[A-Z][a-z]+(?:'s|\\u2019s) ").hasMatch(body) ? 'What are $body?' : 'What are the $body?';
+}

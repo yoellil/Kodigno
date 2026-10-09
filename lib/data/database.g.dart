@@ -540,6 +540,16 @@ class $QuestionRowsTable extends QuestionRows
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -549,6 +559,7 @@ class $QuestionRowsTable extends QuestionRows
     choices,
     answerIndex,
     explanation,
+    source,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -618,6 +629,12 @@ class $QuestionRowsTable extends QuestionRows
         ),
       );
     }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
     return context;
   }
 
@@ -655,6 +672,10 @@ class $QuestionRowsTable extends QuestionRows
         DriftSqlType.string,
         data['${effectivePrefix}explanation'],
       )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
     );
   }
 
@@ -672,6 +693,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
   final String choices;
   final int answerIndex;
   final String explanation;
+  final String source;
   const QuestionRow({
     required this.id,
     required this.studySetId,
@@ -680,6 +702,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
     required this.choices,
     required this.answerIndex,
     required this.explanation,
+    required this.source,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -691,6 +714,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
     map['choices'] = Variable<String>(choices);
     map['answer_index'] = Variable<int>(answerIndex);
     map['explanation'] = Variable<String>(explanation);
+    map['source'] = Variable<String>(source);
     return map;
   }
 
@@ -703,6 +727,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
       choices: Value(choices),
       answerIndex: Value(answerIndex),
       explanation: Value(explanation),
+      source: Value(source),
     );
   }
 
@@ -719,6 +744,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
       choices: serializer.fromJson<String>(json['choices']),
       answerIndex: serializer.fromJson<int>(json['answerIndex']),
       explanation: serializer.fromJson<String>(json['explanation']),
+      source: serializer.fromJson<String>(json['source']),
     );
   }
   @override
@@ -732,6 +758,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
       'choices': serializer.toJson<String>(choices),
       'answerIndex': serializer.toJson<int>(answerIndex),
       'explanation': serializer.toJson<String>(explanation),
+      'source': serializer.toJson<String>(source),
     };
   }
 
@@ -743,6 +770,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
     String? choices,
     int? answerIndex,
     String? explanation,
+    String? source,
   }) => QuestionRow(
     id: id ?? this.id,
     studySetId: studySetId ?? this.studySetId,
@@ -751,6 +779,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
     choices: choices ?? this.choices,
     answerIndex: answerIndex ?? this.answerIndex,
     explanation: explanation ?? this.explanation,
+    source: source ?? this.source,
   );
   QuestionRow copyWithCompanion(QuestionRowsCompanion data) {
     return QuestionRow(
@@ -767,6 +796,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
       explanation: data.explanation.present
           ? data.explanation.value
           : this.explanation,
+      source: data.source.present ? data.source.value : this.source,
     );
   }
 
@@ -779,7 +809,8 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
           ..write('prompt: $prompt, ')
           ..write('choices: $choices, ')
           ..write('answerIndex: $answerIndex, ')
-          ..write('explanation: $explanation')
+          ..write('explanation: $explanation, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
@@ -793,6 +824,7 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
     choices,
     answerIndex,
     explanation,
+    source,
   );
   @override
   bool operator ==(Object other) =>
@@ -804,7 +836,8 @@ class QuestionRow extends DataClass implements Insertable<QuestionRow> {
           other.prompt == this.prompt &&
           other.choices == this.choices &&
           other.answerIndex == this.answerIndex &&
-          other.explanation == this.explanation);
+          other.explanation == this.explanation &&
+          other.source == this.source);
 }
 
 class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
@@ -815,6 +848,7 @@ class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
   final Value<String> choices;
   final Value<int> answerIndex;
   final Value<String> explanation;
+  final Value<String> source;
   const QuestionRowsCompanion({
     this.id = const Value.absent(),
     this.studySetId = const Value.absent(),
@@ -823,6 +857,7 @@ class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
     this.choices = const Value.absent(),
     this.answerIndex = const Value.absent(),
     this.explanation = const Value.absent(),
+    this.source = const Value.absent(),
   });
   QuestionRowsCompanion.insert({
     this.id = const Value.absent(),
@@ -832,6 +867,7 @@ class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
     required String choices,
     required int answerIndex,
     this.explanation = const Value.absent(),
+    this.source = const Value.absent(),
   }) : studySetId = Value(studySetId),
        prompt = Value(prompt),
        choices = Value(choices),
@@ -844,6 +880,7 @@ class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
     Expression<String>? choices,
     Expression<int>? answerIndex,
     Expression<String>? explanation,
+    Expression<String>? source,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -853,6 +890,7 @@ class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
       if (choices != null) 'choices': choices,
       if (answerIndex != null) 'answer_index': answerIndex,
       if (explanation != null) 'explanation': explanation,
+      if (source != null) 'source': source,
     });
   }
 
@@ -864,6 +902,7 @@ class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
     Value<String>? choices,
     Value<int>? answerIndex,
     Value<String>? explanation,
+    Value<String>? source,
   }) {
     return QuestionRowsCompanion(
       id: id ?? this.id,
@@ -873,6 +912,7 @@ class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
       choices: choices ?? this.choices,
       answerIndex: answerIndex ?? this.answerIndex,
       explanation: explanation ?? this.explanation,
+      source: source ?? this.source,
     );
   }
 
@@ -900,6 +940,9 @@ class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
     if (explanation.present) {
       map['explanation'] = Variable<String>(explanation.value);
     }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
     return map;
   }
 
@@ -912,7 +955,8 @@ class QuestionRowsCompanion extends UpdateCompanion<QuestionRow> {
           ..write('prompt: $prompt, ')
           ..write('choices: $choices, ')
           ..write('answerIndex: $answerIndex, ')
-          ..write('explanation: $explanation')
+          ..write('explanation: $explanation, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
@@ -969,8 +1013,18 @@ class $FlashcardRowsTable extends FlashcardRows
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
   @override
-  List<GeneratedColumn> get $columns => [id, studySetId, front, back];
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, studySetId, front, back, source];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1013,6 +1067,12 @@ class $FlashcardRowsTable extends FlashcardRows
     } else if (isInserting) {
       context.missing(_backMeta);
     }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
     return context;
   }
 
@@ -1038,6 +1098,10 @@ class $FlashcardRowsTable extends FlashcardRows
         DriftSqlType.string,
         data['${effectivePrefix}back'],
       )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
     );
   }
 
@@ -1052,11 +1116,13 @@ class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
   final int studySetId;
   final String front;
   final String back;
+  final String source;
   const FlashcardRow({
     required this.id,
     required this.studySetId,
     required this.front,
     required this.back,
+    required this.source,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1065,6 +1131,7 @@ class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
     map['study_set_id'] = Variable<int>(studySetId);
     map['front'] = Variable<String>(front);
     map['back'] = Variable<String>(back);
+    map['source'] = Variable<String>(source);
     return map;
   }
 
@@ -1074,6 +1141,7 @@ class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
       studySetId: Value(studySetId),
       front: Value(front),
       back: Value(back),
+      source: Value(source),
     );
   }
 
@@ -1087,6 +1155,7 @@ class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
       studySetId: serializer.fromJson<int>(json['studySetId']),
       front: serializer.fromJson<String>(json['front']),
       back: serializer.fromJson<String>(json['back']),
+      source: serializer.fromJson<String>(json['source']),
     );
   }
   @override
@@ -1097,6 +1166,7 @@ class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
       'studySetId': serializer.toJson<int>(studySetId),
       'front': serializer.toJson<String>(front),
       'back': serializer.toJson<String>(back),
+      'source': serializer.toJson<String>(source),
     };
   }
 
@@ -1105,11 +1175,13 @@ class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
     int? studySetId,
     String? front,
     String? back,
+    String? source,
   }) => FlashcardRow(
     id: id ?? this.id,
     studySetId: studySetId ?? this.studySetId,
     front: front ?? this.front,
     back: back ?? this.back,
+    source: source ?? this.source,
   );
   FlashcardRow copyWithCompanion(FlashcardRowsCompanion data) {
     return FlashcardRow(
@@ -1119,6 +1191,7 @@ class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
           : this.studySetId,
       front: data.front.present ? data.front.value : this.front,
       back: data.back.present ? data.back.value : this.back,
+      source: data.source.present ? data.source.value : this.source,
     );
   }
 
@@ -1128,13 +1201,14 @@ class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
           ..write('id: $id, ')
           ..write('studySetId: $studySetId, ')
           ..write('front: $front, ')
-          ..write('back: $back')
+          ..write('back: $back, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, studySetId, front, back);
+  int get hashCode => Object.hash(id, studySetId, front, back, source);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1142,7 +1216,8 @@ class FlashcardRow extends DataClass implements Insertable<FlashcardRow> {
           other.id == this.id &&
           other.studySetId == this.studySetId &&
           other.front == this.front &&
-          other.back == this.back);
+          other.back == this.back &&
+          other.source == this.source);
 }
 
 class FlashcardRowsCompanion extends UpdateCompanion<FlashcardRow> {
@@ -1150,17 +1225,20 @@ class FlashcardRowsCompanion extends UpdateCompanion<FlashcardRow> {
   final Value<int> studySetId;
   final Value<String> front;
   final Value<String> back;
+  final Value<String> source;
   const FlashcardRowsCompanion({
     this.id = const Value.absent(),
     this.studySetId = const Value.absent(),
     this.front = const Value.absent(),
     this.back = const Value.absent(),
+    this.source = const Value.absent(),
   });
   FlashcardRowsCompanion.insert({
     this.id = const Value.absent(),
     required int studySetId,
     required String front,
     required String back,
+    this.source = const Value.absent(),
   }) : studySetId = Value(studySetId),
        front = Value(front),
        back = Value(back);
@@ -1169,12 +1247,14 @@ class FlashcardRowsCompanion extends UpdateCompanion<FlashcardRow> {
     Expression<int>? studySetId,
     Expression<String>? front,
     Expression<String>? back,
+    Expression<String>? source,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (studySetId != null) 'study_set_id': studySetId,
       if (front != null) 'front': front,
       if (back != null) 'back': back,
+      if (source != null) 'source': source,
     });
   }
 
@@ -1183,12 +1263,14 @@ class FlashcardRowsCompanion extends UpdateCompanion<FlashcardRow> {
     Value<int>? studySetId,
     Value<String>? front,
     Value<String>? back,
+    Value<String>? source,
   }) {
     return FlashcardRowsCompanion(
       id: id ?? this.id,
       studySetId: studySetId ?? this.studySetId,
       front: front ?? this.front,
       back: back ?? this.back,
+      source: source ?? this.source,
     );
   }
 
@@ -1207,6 +1289,9 @@ class FlashcardRowsCompanion extends UpdateCompanion<FlashcardRow> {
     if (back.present) {
       map['back'] = Variable<String>(back.value);
     }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
     return map;
   }
 
@@ -1216,7 +1301,8 @@ class FlashcardRowsCompanion extends UpdateCompanion<FlashcardRow> {
           ..write('id: $id, ')
           ..write('studySetId: $studySetId, ')
           ..write('front: $front, ')
-          ..write('back: $back')
+          ..write('back: $back, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
@@ -3735,6 +3821,2140 @@ class SavedWordsCompanion extends UpdateCompanion<SavedWord> {
   }
 }
 
+class $ReviewStatesTable extends ReviewStates
+    with TableInfo<$ReviewStatesTable, ReviewState> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReviewStatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<int> itemId = GeneratedColumn<int>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _studySetIdMeta = const VerificationMeta(
+    'studySetId',
+  );
+  @override
+  late final GeneratedColumn<int> studySetId = GeneratedColumn<int>(
+    'study_set_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES study_sets (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _boxMeta = const VerificationMeta('box');
+  @override
+  late final GeneratedColumn<int> box = GeneratedColumn<int>(
+    'box',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _dueDayMeta = const VerificationMeta('dueDay');
+  @override
+  late final GeneratedColumn<DateTime> dueDay = GeneratedColumn<DateTime>(
+    'due_day',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastAtMeta = const VerificationMeta('lastAt');
+  @override
+  late final GeneratedColumn<DateTime> lastAt = GeneratedColumn<DateTime>(
+    'last_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _streakMeta = const VerificationMeta('streak');
+  @override
+  late final GeneratedColumn<int> streak = GeneratedColumn<int>(
+    'streak',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lapsesMeta = const VerificationMeta('lapses');
+  @override
+  late final GeneratedColumn<int> lapses = GeneratedColumn<int>(
+    'lapses',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    kind,
+    itemId,
+    studySetId,
+    box,
+    dueDay,
+    lastAt,
+    streak,
+    lapses,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'review_states';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReviewState> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('study_set_id')) {
+      context.handle(
+        _studySetIdMeta,
+        studySetId.isAcceptableOrUnknown(
+          data['study_set_id']!,
+          _studySetIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_studySetIdMeta);
+    }
+    if (data.containsKey('box')) {
+      context.handle(
+        _boxMeta,
+        box.isAcceptableOrUnknown(data['box']!, _boxMeta),
+      );
+    }
+    if (data.containsKey('due_day')) {
+      context.handle(
+        _dueDayMeta,
+        dueDay.isAcceptableOrUnknown(data['due_day']!, _dueDayMeta),
+      );
+    }
+    if (data.containsKey('last_at')) {
+      context.handle(
+        _lastAtMeta,
+        lastAt.isAcceptableOrUnknown(data['last_at']!, _lastAtMeta),
+      );
+    }
+    if (data.containsKey('streak')) {
+      context.handle(
+        _streakMeta,
+        streak.isAcceptableOrUnknown(data['streak']!, _streakMeta),
+      );
+    }
+    if (data.containsKey('lapses')) {
+      context.handle(
+        _lapsesMeta,
+        lapses.isAcceptableOrUnknown(data['lapses']!, _lapsesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {kind, itemId},
+  ];
+  @override
+  ReviewState map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReviewState(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}item_id'],
+      )!,
+      studySetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}study_set_id'],
+      )!,
+      box: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}box'],
+      )!,
+      dueDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}due_day'],
+      ),
+      lastAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_at'],
+      ),
+      streak: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}streak'],
+      )!,
+      lapses: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lapses'],
+      )!,
+    );
+  }
+
+  @override
+  $ReviewStatesTable createAlias(String alias) {
+    return $ReviewStatesTable(attachedDatabase, alias);
+  }
+}
+
+class ReviewState extends DataClass implements Insertable<ReviewState> {
+  final int id;
+  final String kind;
+  final int itemId;
+  final int studySetId;
+  final int box;
+  final DateTime? dueDay;
+  final DateTime? lastAt;
+  final int streak;
+  final int lapses;
+  const ReviewState({
+    required this.id,
+    required this.kind,
+    required this.itemId,
+    required this.studySetId,
+    required this.box,
+    this.dueDay,
+    this.lastAt,
+    required this.streak,
+    required this.lapses,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['kind'] = Variable<String>(kind);
+    map['item_id'] = Variable<int>(itemId);
+    map['study_set_id'] = Variable<int>(studySetId);
+    map['box'] = Variable<int>(box);
+    if (!nullToAbsent || dueDay != null) {
+      map['due_day'] = Variable<DateTime>(dueDay);
+    }
+    if (!nullToAbsent || lastAt != null) {
+      map['last_at'] = Variable<DateTime>(lastAt);
+    }
+    map['streak'] = Variable<int>(streak);
+    map['lapses'] = Variable<int>(lapses);
+    return map;
+  }
+
+  ReviewStatesCompanion toCompanion(bool nullToAbsent) {
+    return ReviewStatesCompanion(
+      id: Value(id),
+      kind: Value(kind),
+      itemId: Value(itemId),
+      studySetId: Value(studySetId),
+      box: Value(box),
+      dueDay: dueDay == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueDay),
+      lastAt: lastAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAt),
+      streak: Value(streak),
+      lapses: Value(lapses),
+    );
+  }
+
+  factory ReviewState.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReviewState(
+      id: serializer.fromJson<int>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      itemId: serializer.fromJson<int>(json['itemId']),
+      studySetId: serializer.fromJson<int>(json['studySetId']),
+      box: serializer.fromJson<int>(json['box']),
+      dueDay: serializer.fromJson<DateTime?>(json['dueDay']),
+      lastAt: serializer.fromJson<DateTime?>(json['lastAt']),
+      streak: serializer.fromJson<int>(json['streak']),
+      lapses: serializer.fromJson<int>(json['lapses']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'kind': serializer.toJson<String>(kind),
+      'itemId': serializer.toJson<int>(itemId),
+      'studySetId': serializer.toJson<int>(studySetId),
+      'box': serializer.toJson<int>(box),
+      'dueDay': serializer.toJson<DateTime?>(dueDay),
+      'lastAt': serializer.toJson<DateTime?>(lastAt),
+      'streak': serializer.toJson<int>(streak),
+      'lapses': serializer.toJson<int>(lapses),
+    };
+  }
+
+  ReviewState copyWith({
+    int? id,
+    String? kind,
+    int? itemId,
+    int? studySetId,
+    int? box,
+    Value<DateTime?> dueDay = const Value.absent(),
+    Value<DateTime?> lastAt = const Value.absent(),
+    int? streak,
+    int? lapses,
+  }) => ReviewState(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    itemId: itemId ?? this.itemId,
+    studySetId: studySetId ?? this.studySetId,
+    box: box ?? this.box,
+    dueDay: dueDay.present ? dueDay.value : this.dueDay,
+    lastAt: lastAt.present ? lastAt.value : this.lastAt,
+    streak: streak ?? this.streak,
+    lapses: lapses ?? this.lapses,
+  );
+  ReviewState copyWithCompanion(ReviewStatesCompanion data) {
+    return ReviewState(
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      studySetId: data.studySetId.present
+          ? data.studySetId.value
+          : this.studySetId,
+      box: data.box.present ? data.box.value : this.box,
+      dueDay: data.dueDay.present ? data.dueDay.value : this.dueDay,
+      lastAt: data.lastAt.present ? data.lastAt.value : this.lastAt,
+      streak: data.streak.present ? data.streak.value : this.streak,
+      lapses: data.lapses.present ? data.lapses.value : this.lapses,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReviewState(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('itemId: $itemId, ')
+          ..write('studySetId: $studySetId, ')
+          ..write('box: $box, ')
+          ..write('dueDay: $dueDay, ')
+          ..write('lastAt: $lastAt, ')
+          ..write('streak: $streak, ')
+          ..write('lapses: $lapses')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    kind,
+    itemId,
+    studySetId,
+    box,
+    dueDay,
+    lastAt,
+    streak,
+    lapses,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReviewState &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.itemId == this.itemId &&
+          other.studySetId == this.studySetId &&
+          other.box == this.box &&
+          other.dueDay == this.dueDay &&
+          other.lastAt == this.lastAt &&
+          other.streak == this.streak &&
+          other.lapses == this.lapses);
+}
+
+class ReviewStatesCompanion extends UpdateCompanion<ReviewState> {
+  final Value<int> id;
+  final Value<String> kind;
+  final Value<int> itemId;
+  final Value<int> studySetId;
+  final Value<int> box;
+  final Value<DateTime?> dueDay;
+  final Value<DateTime?> lastAt;
+  final Value<int> streak;
+  final Value<int> lapses;
+  const ReviewStatesCompanion({
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.studySetId = const Value.absent(),
+    this.box = const Value.absent(),
+    this.dueDay = const Value.absent(),
+    this.lastAt = const Value.absent(),
+    this.streak = const Value.absent(),
+    this.lapses = const Value.absent(),
+  });
+  ReviewStatesCompanion.insert({
+    this.id = const Value.absent(),
+    required String kind,
+    required int itemId,
+    required int studySetId,
+    this.box = const Value.absent(),
+    this.dueDay = const Value.absent(),
+    this.lastAt = const Value.absent(),
+    this.streak = const Value.absent(),
+    this.lapses = const Value.absent(),
+  }) : kind = Value(kind),
+       itemId = Value(itemId),
+       studySetId = Value(studySetId);
+  static Insertable<ReviewState> custom({
+    Expression<int>? id,
+    Expression<String>? kind,
+    Expression<int>? itemId,
+    Expression<int>? studySetId,
+    Expression<int>? box,
+    Expression<DateTime>? dueDay,
+    Expression<DateTime>? lastAt,
+    Expression<int>? streak,
+    Expression<int>? lapses,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (itemId != null) 'item_id': itemId,
+      if (studySetId != null) 'study_set_id': studySetId,
+      if (box != null) 'box': box,
+      if (dueDay != null) 'due_day': dueDay,
+      if (lastAt != null) 'last_at': lastAt,
+      if (streak != null) 'streak': streak,
+      if (lapses != null) 'lapses': lapses,
+    });
+  }
+
+  ReviewStatesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? kind,
+    Value<int>? itemId,
+    Value<int>? studySetId,
+    Value<int>? box,
+    Value<DateTime?>? dueDay,
+    Value<DateTime?>? lastAt,
+    Value<int>? streak,
+    Value<int>? lapses,
+  }) {
+    return ReviewStatesCompanion(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      itemId: itemId ?? this.itemId,
+      studySetId: studySetId ?? this.studySetId,
+      box: box ?? this.box,
+      dueDay: dueDay ?? this.dueDay,
+      lastAt: lastAt ?? this.lastAt,
+      streak: streak ?? this.streak,
+      lapses: lapses ?? this.lapses,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<int>(itemId.value);
+    }
+    if (studySetId.present) {
+      map['study_set_id'] = Variable<int>(studySetId.value);
+    }
+    if (box.present) {
+      map['box'] = Variable<int>(box.value);
+    }
+    if (dueDay.present) {
+      map['due_day'] = Variable<DateTime>(dueDay.value);
+    }
+    if (lastAt.present) {
+      map['last_at'] = Variable<DateTime>(lastAt.value);
+    }
+    if (streak.present) {
+      map['streak'] = Variable<int>(streak.value);
+    }
+    if (lapses.present) {
+      map['lapses'] = Variable<int>(lapses.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReviewStatesCompanion(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('itemId: $itemId, ')
+          ..write('studySetId: $studySetId, ')
+          ..write('box: $box, ')
+          ..write('dueDay: $dueDay, ')
+          ..write('lastAt: $lastAt, ')
+          ..write('streak: $streak, ')
+          ..write('lapses: $lapses')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReviewLogTable extends ReviewLog
+    with TableInfo<$ReviewLogTable, ReviewEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReviewLogTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<int> itemId = GeneratedColumn<int>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _studySetIdMeta = const VerificationMeta(
+    'studySetId',
+  );
+  @override
+  late final GeneratedColumn<int> studySetId = GeneratedColumn<int>(
+    'study_set_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES study_sets (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _correctMeta = const VerificationMeta(
+    'correct',
+  );
+  @override
+  late final GeneratedColumn<bool> correct = GeneratedColumn<bool>(
+    'correct',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("correct" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _chosenMeta = const VerificationMeta('chosen');
+  @override
+  late final GeneratedColumn<int> chosen = GeneratedColumn<int>(
+    'chosen',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
+  @override
+  late final GeneratedColumn<String> mode = GeneratedColumn<String>(
+    'mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _atMeta = const VerificationMeta('at');
+  @override
+  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+    'at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    kind,
+    itemId,
+    studySetId,
+    correct,
+    chosen,
+    mode,
+    at,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'review_log';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReviewEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('study_set_id')) {
+      context.handle(
+        _studySetIdMeta,
+        studySetId.isAcceptableOrUnknown(
+          data['study_set_id']!,
+          _studySetIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_studySetIdMeta);
+    }
+    if (data.containsKey('correct')) {
+      context.handle(
+        _correctMeta,
+        correct.isAcceptableOrUnknown(data['correct']!, _correctMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_correctMeta);
+    }
+    if (data.containsKey('chosen')) {
+      context.handle(
+        _chosenMeta,
+        chosen.isAcceptableOrUnknown(data['chosen']!, _chosenMeta),
+      );
+    }
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modeMeta);
+    }
+    if (data.containsKey('at')) {
+      context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReviewEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReviewEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}item_id'],
+      )!,
+      studySetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}study_set_id'],
+      )!,
+      correct: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}correct'],
+      )!,
+      chosen: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}chosen'],
+      ),
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mode'],
+      )!,
+      at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReviewLogTable createAlias(String alias) {
+    return $ReviewLogTable(attachedDatabase, alias);
+  }
+}
+
+class ReviewEntry extends DataClass implements Insertable<ReviewEntry> {
+  final int id;
+  final String kind;
+  final int itemId;
+  final int studySetId;
+  final bool correct;
+  final int? chosen;
+  final String mode;
+  final DateTime at;
+  const ReviewEntry({
+    required this.id,
+    required this.kind,
+    required this.itemId,
+    required this.studySetId,
+    required this.correct,
+    this.chosen,
+    required this.mode,
+    required this.at,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['kind'] = Variable<String>(kind);
+    map['item_id'] = Variable<int>(itemId);
+    map['study_set_id'] = Variable<int>(studySetId);
+    map['correct'] = Variable<bool>(correct);
+    if (!nullToAbsent || chosen != null) {
+      map['chosen'] = Variable<int>(chosen);
+    }
+    map['mode'] = Variable<String>(mode);
+    map['at'] = Variable<DateTime>(at);
+    return map;
+  }
+
+  ReviewLogCompanion toCompanion(bool nullToAbsent) {
+    return ReviewLogCompanion(
+      id: Value(id),
+      kind: Value(kind),
+      itemId: Value(itemId),
+      studySetId: Value(studySetId),
+      correct: Value(correct),
+      chosen: chosen == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chosen),
+      mode: Value(mode),
+      at: Value(at),
+    );
+  }
+
+  factory ReviewEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReviewEntry(
+      id: serializer.fromJson<int>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      itemId: serializer.fromJson<int>(json['itemId']),
+      studySetId: serializer.fromJson<int>(json['studySetId']),
+      correct: serializer.fromJson<bool>(json['correct']),
+      chosen: serializer.fromJson<int?>(json['chosen']),
+      mode: serializer.fromJson<String>(json['mode']),
+      at: serializer.fromJson<DateTime>(json['at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'kind': serializer.toJson<String>(kind),
+      'itemId': serializer.toJson<int>(itemId),
+      'studySetId': serializer.toJson<int>(studySetId),
+      'correct': serializer.toJson<bool>(correct),
+      'chosen': serializer.toJson<int?>(chosen),
+      'mode': serializer.toJson<String>(mode),
+      'at': serializer.toJson<DateTime>(at),
+    };
+  }
+
+  ReviewEntry copyWith({
+    int? id,
+    String? kind,
+    int? itemId,
+    int? studySetId,
+    bool? correct,
+    Value<int?> chosen = const Value.absent(),
+    String? mode,
+    DateTime? at,
+  }) => ReviewEntry(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    itemId: itemId ?? this.itemId,
+    studySetId: studySetId ?? this.studySetId,
+    correct: correct ?? this.correct,
+    chosen: chosen.present ? chosen.value : this.chosen,
+    mode: mode ?? this.mode,
+    at: at ?? this.at,
+  );
+  ReviewEntry copyWithCompanion(ReviewLogCompanion data) {
+    return ReviewEntry(
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      studySetId: data.studySetId.present
+          ? data.studySetId.value
+          : this.studySetId,
+      correct: data.correct.present ? data.correct.value : this.correct,
+      chosen: data.chosen.present ? data.chosen.value : this.chosen,
+      mode: data.mode.present ? data.mode.value : this.mode,
+      at: data.at.present ? data.at.value : this.at,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReviewEntry(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('itemId: $itemId, ')
+          ..write('studySetId: $studySetId, ')
+          ..write('correct: $correct, ')
+          ..write('chosen: $chosen, ')
+          ..write('mode: $mode, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, kind, itemId, studySetId, correct, chosen, mode, at);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReviewEntry &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.itemId == this.itemId &&
+          other.studySetId == this.studySetId &&
+          other.correct == this.correct &&
+          other.chosen == this.chosen &&
+          other.mode == this.mode &&
+          other.at == this.at);
+}
+
+class ReviewLogCompanion extends UpdateCompanion<ReviewEntry> {
+  final Value<int> id;
+  final Value<String> kind;
+  final Value<int> itemId;
+  final Value<int> studySetId;
+  final Value<bool> correct;
+  final Value<int?> chosen;
+  final Value<String> mode;
+  final Value<DateTime> at;
+  const ReviewLogCompanion({
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.studySetId = const Value.absent(),
+    this.correct = const Value.absent(),
+    this.chosen = const Value.absent(),
+    this.mode = const Value.absent(),
+    this.at = const Value.absent(),
+  });
+  ReviewLogCompanion.insert({
+    this.id = const Value.absent(),
+    required String kind,
+    required int itemId,
+    required int studySetId,
+    required bool correct,
+    this.chosen = const Value.absent(),
+    required String mode,
+    this.at = const Value.absent(),
+  }) : kind = Value(kind),
+       itemId = Value(itemId),
+       studySetId = Value(studySetId),
+       correct = Value(correct),
+       mode = Value(mode);
+  static Insertable<ReviewEntry> custom({
+    Expression<int>? id,
+    Expression<String>? kind,
+    Expression<int>? itemId,
+    Expression<int>? studySetId,
+    Expression<bool>? correct,
+    Expression<int>? chosen,
+    Expression<String>? mode,
+    Expression<DateTime>? at,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (itemId != null) 'item_id': itemId,
+      if (studySetId != null) 'study_set_id': studySetId,
+      if (correct != null) 'correct': correct,
+      if (chosen != null) 'chosen': chosen,
+      if (mode != null) 'mode': mode,
+      if (at != null) 'at': at,
+    });
+  }
+
+  ReviewLogCompanion copyWith({
+    Value<int>? id,
+    Value<String>? kind,
+    Value<int>? itemId,
+    Value<int>? studySetId,
+    Value<bool>? correct,
+    Value<int?>? chosen,
+    Value<String>? mode,
+    Value<DateTime>? at,
+  }) {
+    return ReviewLogCompanion(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      itemId: itemId ?? this.itemId,
+      studySetId: studySetId ?? this.studySetId,
+      correct: correct ?? this.correct,
+      chosen: chosen ?? this.chosen,
+      mode: mode ?? this.mode,
+      at: at ?? this.at,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<int>(itemId.value);
+    }
+    if (studySetId.present) {
+      map['study_set_id'] = Variable<int>(studySetId.value);
+    }
+    if (correct.present) {
+      map['correct'] = Variable<bool>(correct.value);
+    }
+    if (chosen.present) {
+      map['chosen'] = Variable<int>(chosen.value);
+    }
+    if (mode.present) {
+      map['mode'] = Variable<String>(mode.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<DateTime>(at.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReviewLogCompanion(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('itemId: $itemId, ')
+          ..write('studySetId: $studySetId, ')
+          ..write('correct: $correct, ')
+          ..write('chosen: $chosen, ')
+          ..write('mode: $mode, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TeachBackAttemptsTable extends TeachBackAttempts
+    with TableInfo<$TeachBackAttemptsTable, TeachBackAttempt> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TeachBackAttemptsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _studySetIdMeta = const VerificationMeta(
+    'studySetId',
+  );
+  @override
+  late final GeneratedColumn<int> studySetId = GeneratedColumn<int>(
+    'study_set_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES study_sets (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sectionMeta = const VerificationMeta(
+    'section',
+  );
+  @override
+  late final GeneratedColumn<String> section = GeneratedColumn<String>(
+    'section',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sectionIndexMeta = const VerificationMeta(
+    'sectionIndex',
+  );
+  @override
+  late final GeneratedColumn<int> sectionIndex = GeneratedColumn<int>(
+    'section_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _answerMeta = const VerificationMeta('answer');
+  @override
+  late final GeneratedColumn<String> answer = GeneratedColumn<String>(
+    'answer',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _coveredMeta = const VerificationMeta(
+    'covered',
+  );
+  @override
+  late final GeneratedColumn<int> covered = GeneratedColumn<int>(
+    'covered',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _partlyMeta = const VerificationMeta('partly');
+  @override
+  late final GeneratedColumn<int> partly = GeneratedColumn<int>(
+    'partly',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _totalMeta = const VerificationMeta('total');
+  @override
+  late final GeneratedColumn<int> total = GeneratedColumn<int>(
+    'total',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _copiedMeta = const VerificationMeta('copied');
+  @override
+  late final GeneratedColumn<bool> copied = GeneratedColumn<bool>(
+    'copied',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("copied" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _flagCountMeta = const VerificationMeta(
+    'flagCount',
+  );
+  @override
+  late final GeneratedColumn<int> flagCount = GeneratedColumn<int>(
+    'flag_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _checkedByMeta = const VerificationMeta(
+    'checkedBy',
+  );
+  @override
+  late final GeneratedColumn<String> checkedBy = GeneratedColumn<String>(
+    'checked_by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('words'),
+  );
+  static const VerificationMeta _overruledMeta = const VerificationMeta(
+    'overruled',
+  );
+  @override
+  late final GeneratedColumn<String> overruled = GeneratedColumn<String>(
+    'overruled',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _takenAtMeta = const VerificationMeta(
+    'takenAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> takenAt = GeneratedColumn<DateTime>(
+    'taken_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    studySetId,
+    section,
+    sectionIndex,
+    answer,
+    covered,
+    partly,
+    total,
+    copied,
+    flagCount,
+    checkedBy,
+    overruled,
+    takenAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'teach_back_attempts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TeachBackAttempt> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('study_set_id')) {
+      context.handle(
+        _studySetIdMeta,
+        studySetId.isAcceptableOrUnknown(
+          data['study_set_id']!,
+          _studySetIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_studySetIdMeta);
+    }
+    if (data.containsKey('section')) {
+      context.handle(
+        _sectionMeta,
+        section.isAcceptableOrUnknown(data['section']!, _sectionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sectionMeta);
+    }
+    if (data.containsKey('section_index')) {
+      context.handle(
+        _sectionIndexMeta,
+        sectionIndex.isAcceptableOrUnknown(
+          data['section_index']!,
+          _sectionIndexMeta,
+        ),
+      );
+    }
+    if (data.containsKey('answer')) {
+      context.handle(
+        _answerMeta,
+        answer.isAcceptableOrUnknown(data['answer']!, _answerMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_answerMeta);
+    }
+    if (data.containsKey('covered')) {
+      context.handle(
+        _coveredMeta,
+        covered.isAcceptableOrUnknown(data['covered']!, _coveredMeta),
+      );
+    }
+    if (data.containsKey('partly')) {
+      context.handle(
+        _partlyMeta,
+        partly.isAcceptableOrUnknown(data['partly']!, _partlyMeta),
+      );
+    }
+    if (data.containsKey('total')) {
+      context.handle(
+        _totalMeta,
+        total.isAcceptableOrUnknown(data['total']!, _totalMeta),
+      );
+    }
+    if (data.containsKey('copied')) {
+      context.handle(
+        _copiedMeta,
+        copied.isAcceptableOrUnknown(data['copied']!, _copiedMeta),
+      );
+    }
+    if (data.containsKey('flag_count')) {
+      context.handle(
+        _flagCountMeta,
+        flagCount.isAcceptableOrUnknown(data['flag_count']!, _flagCountMeta),
+      );
+    }
+    if (data.containsKey('checked_by')) {
+      context.handle(
+        _checkedByMeta,
+        checkedBy.isAcceptableOrUnknown(data['checked_by']!, _checkedByMeta),
+      );
+    }
+    if (data.containsKey('overruled')) {
+      context.handle(
+        _overruledMeta,
+        overruled.isAcceptableOrUnknown(data['overruled']!, _overruledMeta),
+      );
+    }
+    if (data.containsKey('taken_at')) {
+      context.handle(
+        _takenAtMeta,
+        takenAt.isAcceptableOrUnknown(data['taken_at']!, _takenAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TeachBackAttempt map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TeachBackAttempt(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      studySetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}study_set_id'],
+      )!,
+      section: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}section'],
+      )!,
+      sectionIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}section_index'],
+      )!,
+      answer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}answer'],
+      )!,
+      covered: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}covered'],
+      )!,
+      partly: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}partly'],
+      )!,
+      total: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total'],
+      )!,
+      copied: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}copied'],
+      )!,
+      flagCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}flag_count'],
+      )!,
+      checkedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}checked_by'],
+      )!,
+      overruled: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}overruled'],
+      )!,
+      takenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}taken_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TeachBackAttemptsTable createAlias(String alias) {
+    return $TeachBackAttemptsTable(attachedDatabase, alias);
+  }
+}
+
+class TeachBackAttempt extends DataClass
+    implements Insertable<TeachBackAttempt> {
+  final int id;
+  final int studySetId;
+  final String section;
+  final int sectionIndex;
+  final String answer;
+  final int covered;
+  final int partly;
+  final int total;
+  final bool copied;
+  final int flagCount;
+
+  /// 'model' if the AI model judged it, 'words' if only a comparison of words did.
+  final String checkedBy;
+
+  /// JSON list of the positions of ideas the student said they covered after all.
+  final String overruled;
+  final DateTime takenAt;
+  const TeachBackAttempt({
+    required this.id,
+    required this.studySetId,
+    required this.section,
+    required this.sectionIndex,
+    required this.answer,
+    required this.covered,
+    required this.partly,
+    required this.total,
+    required this.copied,
+    required this.flagCount,
+    required this.checkedBy,
+    required this.overruled,
+    required this.takenAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['study_set_id'] = Variable<int>(studySetId);
+    map['section'] = Variable<String>(section);
+    map['section_index'] = Variable<int>(sectionIndex);
+    map['answer'] = Variable<String>(answer);
+    map['covered'] = Variable<int>(covered);
+    map['partly'] = Variable<int>(partly);
+    map['total'] = Variable<int>(total);
+    map['copied'] = Variable<bool>(copied);
+    map['flag_count'] = Variable<int>(flagCount);
+    map['checked_by'] = Variable<String>(checkedBy);
+    map['overruled'] = Variable<String>(overruled);
+    map['taken_at'] = Variable<DateTime>(takenAt);
+    return map;
+  }
+
+  TeachBackAttemptsCompanion toCompanion(bool nullToAbsent) {
+    return TeachBackAttemptsCompanion(
+      id: Value(id),
+      studySetId: Value(studySetId),
+      section: Value(section),
+      sectionIndex: Value(sectionIndex),
+      answer: Value(answer),
+      covered: Value(covered),
+      partly: Value(partly),
+      total: Value(total),
+      copied: Value(copied),
+      flagCount: Value(flagCount),
+      checkedBy: Value(checkedBy),
+      overruled: Value(overruled),
+      takenAt: Value(takenAt),
+    );
+  }
+
+  factory TeachBackAttempt.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TeachBackAttempt(
+      id: serializer.fromJson<int>(json['id']),
+      studySetId: serializer.fromJson<int>(json['studySetId']),
+      section: serializer.fromJson<String>(json['section']),
+      sectionIndex: serializer.fromJson<int>(json['sectionIndex']),
+      answer: serializer.fromJson<String>(json['answer']),
+      covered: serializer.fromJson<int>(json['covered']),
+      partly: serializer.fromJson<int>(json['partly']),
+      total: serializer.fromJson<int>(json['total']),
+      copied: serializer.fromJson<bool>(json['copied']),
+      flagCount: serializer.fromJson<int>(json['flagCount']),
+      checkedBy: serializer.fromJson<String>(json['checkedBy']),
+      overruled: serializer.fromJson<String>(json['overruled']),
+      takenAt: serializer.fromJson<DateTime>(json['takenAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'studySetId': serializer.toJson<int>(studySetId),
+      'section': serializer.toJson<String>(section),
+      'sectionIndex': serializer.toJson<int>(sectionIndex),
+      'answer': serializer.toJson<String>(answer),
+      'covered': serializer.toJson<int>(covered),
+      'partly': serializer.toJson<int>(partly),
+      'total': serializer.toJson<int>(total),
+      'copied': serializer.toJson<bool>(copied),
+      'flagCount': serializer.toJson<int>(flagCount),
+      'checkedBy': serializer.toJson<String>(checkedBy),
+      'overruled': serializer.toJson<String>(overruled),
+      'takenAt': serializer.toJson<DateTime>(takenAt),
+    };
+  }
+
+  TeachBackAttempt copyWith({
+    int? id,
+    int? studySetId,
+    String? section,
+    int? sectionIndex,
+    String? answer,
+    int? covered,
+    int? partly,
+    int? total,
+    bool? copied,
+    int? flagCount,
+    String? checkedBy,
+    String? overruled,
+    DateTime? takenAt,
+  }) => TeachBackAttempt(
+    id: id ?? this.id,
+    studySetId: studySetId ?? this.studySetId,
+    section: section ?? this.section,
+    sectionIndex: sectionIndex ?? this.sectionIndex,
+    answer: answer ?? this.answer,
+    covered: covered ?? this.covered,
+    partly: partly ?? this.partly,
+    total: total ?? this.total,
+    copied: copied ?? this.copied,
+    flagCount: flagCount ?? this.flagCount,
+    checkedBy: checkedBy ?? this.checkedBy,
+    overruled: overruled ?? this.overruled,
+    takenAt: takenAt ?? this.takenAt,
+  );
+  TeachBackAttempt copyWithCompanion(TeachBackAttemptsCompanion data) {
+    return TeachBackAttempt(
+      id: data.id.present ? data.id.value : this.id,
+      studySetId: data.studySetId.present
+          ? data.studySetId.value
+          : this.studySetId,
+      section: data.section.present ? data.section.value : this.section,
+      sectionIndex: data.sectionIndex.present
+          ? data.sectionIndex.value
+          : this.sectionIndex,
+      answer: data.answer.present ? data.answer.value : this.answer,
+      covered: data.covered.present ? data.covered.value : this.covered,
+      partly: data.partly.present ? data.partly.value : this.partly,
+      total: data.total.present ? data.total.value : this.total,
+      copied: data.copied.present ? data.copied.value : this.copied,
+      flagCount: data.flagCount.present ? data.flagCount.value : this.flagCount,
+      checkedBy: data.checkedBy.present ? data.checkedBy.value : this.checkedBy,
+      overruled: data.overruled.present ? data.overruled.value : this.overruled,
+      takenAt: data.takenAt.present ? data.takenAt.value : this.takenAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TeachBackAttempt(')
+          ..write('id: $id, ')
+          ..write('studySetId: $studySetId, ')
+          ..write('section: $section, ')
+          ..write('sectionIndex: $sectionIndex, ')
+          ..write('answer: $answer, ')
+          ..write('covered: $covered, ')
+          ..write('partly: $partly, ')
+          ..write('total: $total, ')
+          ..write('copied: $copied, ')
+          ..write('flagCount: $flagCount, ')
+          ..write('checkedBy: $checkedBy, ')
+          ..write('overruled: $overruled, ')
+          ..write('takenAt: $takenAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    studySetId,
+    section,
+    sectionIndex,
+    answer,
+    covered,
+    partly,
+    total,
+    copied,
+    flagCount,
+    checkedBy,
+    overruled,
+    takenAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TeachBackAttempt &&
+          other.id == this.id &&
+          other.studySetId == this.studySetId &&
+          other.section == this.section &&
+          other.sectionIndex == this.sectionIndex &&
+          other.answer == this.answer &&
+          other.covered == this.covered &&
+          other.partly == this.partly &&
+          other.total == this.total &&
+          other.copied == this.copied &&
+          other.flagCount == this.flagCount &&
+          other.checkedBy == this.checkedBy &&
+          other.overruled == this.overruled &&
+          other.takenAt == this.takenAt);
+}
+
+class TeachBackAttemptsCompanion extends UpdateCompanion<TeachBackAttempt> {
+  final Value<int> id;
+  final Value<int> studySetId;
+  final Value<String> section;
+  final Value<int> sectionIndex;
+  final Value<String> answer;
+  final Value<int> covered;
+  final Value<int> partly;
+  final Value<int> total;
+  final Value<bool> copied;
+  final Value<int> flagCount;
+  final Value<String> checkedBy;
+  final Value<String> overruled;
+  final Value<DateTime> takenAt;
+  const TeachBackAttemptsCompanion({
+    this.id = const Value.absent(),
+    this.studySetId = const Value.absent(),
+    this.section = const Value.absent(),
+    this.sectionIndex = const Value.absent(),
+    this.answer = const Value.absent(),
+    this.covered = const Value.absent(),
+    this.partly = const Value.absent(),
+    this.total = const Value.absent(),
+    this.copied = const Value.absent(),
+    this.flagCount = const Value.absent(),
+    this.checkedBy = const Value.absent(),
+    this.overruled = const Value.absent(),
+    this.takenAt = const Value.absent(),
+  });
+  TeachBackAttemptsCompanion.insert({
+    this.id = const Value.absent(),
+    required int studySetId,
+    required String section,
+    this.sectionIndex = const Value.absent(),
+    required String answer,
+    this.covered = const Value.absent(),
+    this.partly = const Value.absent(),
+    this.total = const Value.absent(),
+    this.copied = const Value.absent(),
+    this.flagCount = const Value.absent(),
+    this.checkedBy = const Value.absent(),
+    this.overruled = const Value.absent(),
+    this.takenAt = const Value.absent(),
+  }) : studySetId = Value(studySetId),
+       section = Value(section),
+       answer = Value(answer);
+  static Insertable<TeachBackAttempt> custom({
+    Expression<int>? id,
+    Expression<int>? studySetId,
+    Expression<String>? section,
+    Expression<int>? sectionIndex,
+    Expression<String>? answer,
+    Expression<int>? covered,
+    Expression<int>? partly,
+    Expression<int>? total,
+    Expression<bool>? copied,
+    Expression<int>? flagCount,
+    Expression<String>? checkedBy,
+    Expression<String>? overruled,
+    Expression<DateTime>? takenAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (studySetId != null) 'study_set_id': studySetId,
+      if (section != null) 'section': section,
+      if (sectionIndex != null) 'section_index': sectionIndex,
+      if (answer != null) 'answer': answer,
+      if (covered != null) 'covered': covered,
+      if (partly != null) 'partly': partly,
+      if (total != null) 'total': total,
+      if (copied != null) 'copied': copied,
+      if (flagCount != null) 'flag_count': flagCount,
+      if (checkedBy != null) 'checked_by': checkedBy,
+      if (overruled != null) 'overruled': overruled,
+      if (takenAt != null) 'taken_at': takenAt,
+    });
+  }
+
+  TeachBackAttemptsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? studySetId,
+    Value<String>? section,
+    Value<int>? sectionIndex,
+    Value<String>? answer,
+    Value<int>? covered,
+    Value<int>? partly,
+    Value<int>? total,
+    Value<bool>? copied,
+    Value<int>? flagCount,
+    Value<String>? checkedBy,
+    Value<String>? overruled,
+    Value<DateTime>? takenAt,
+  }) {
+    return TeachBackAttemptsCompanion(
+      id: id ?? this.id,
+      studySetId: studySetId ?? this.studySetId,
+      section: section ?? this.section,
+      sectionIndex: sectionIndex ?? this.sectionIndex,
+      answer: answer ?? this.answer,
+      covered: covered ?? this.covered,
+      partly: partly ?? this.partly,
+      total: total ?? this.total,
+      copied: copied ?? this.copied,
+      flagCount: flagCount ?? this.flagCount,
+      checkedBy: checkedBy ?? this.checkedBy,
+      overruled: overruled ?? this.overruled,
+      takenAt: takenAt ?? this.takenAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (studySetId.present) {
+      map['study_set_id'] = Variable<int>(studySetId.value);
+    }
+    if (section.present) {
+      map['section'] = Variable<String>(section.value);
+    }
+    if (sectionIndex.present) {
+      map['section_index'] = Variable<int>(sectionIndex.value);
+    }
+    if (answer.present) {
+      map['answer'] = Variable<String>(answer.value);
+    }
+    if (covered.present) {
+      map['covered'] = Variable<int>(covered.value);
+    }
+    if (partly.present) {
+      map['partly'] = Variable<int>(partly.value);
+    }
+    if (total.present) {
+      map['total'] = Variable<int>(total.value);
+    }
+    if (copied.present) {
+      map['copied'] = Variable<bool>(copied.value);
+    }
+    if (flagCount.present) {
+      map['flag_count'] = Variable<int>(flagCount.value);
+    }
+    if (checkedBy.present) {
+      map['checked_by'] = Variable<String>(checkedBy.value);
+    }
+    if (overruled.present) {
+      map['overruled'] = Variable<String>(overruled.value);
+    }
+    if (takenAt.present) {
+      map['taken_at'] = Variable<DateTime>(takenAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TeachBackAttemptsCompanion(')
+          ..write('id: $id, ')
+          ..write('studySetId: $studySetId, ')
+          ..write('section: $section, ')
+          ..write('sectionIndex: $sectionIndex, ')
+          ..write('answer: $answer, ')
+          ..write('covered: $covered, ')
+          ..write('partly: $partly, ')
+          ..write('total: $total, ')
+          ..write('copied: $copied, ')
+          ..write('flagCount: $flagCount, ')
+          ..write('checkedBy: $checkedBy, ')
+          ..write('overruled: $overruled, ')
+          ..write('takenAt: $takenAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TopicConceptsTable extends TopicConcepts
+    with TableInfo<$TopicConceptsTable, TopicConceptRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TopicConceptsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _studySetIdMeta = const VerificationMeta(
+    'studySetId',
+  );
+  @override
+  late final GeneratedColumn<int> studySetId = GeneratedColumn<int>(
+    'study_set_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES study_sets (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sectionMeta = const VerificationMeta(
+    'section',
+  );
+  @override
+  late final GeneratedColumn<String> section = GeneratedColumn<String>(
+    'section',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conceptsMeta = const VerificationMeta(
+    'concepts',
+  );
+  @override
+  late final GeneratedColumn<String> concepts = GeneratedColumn<String>(
+    'concepts',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    studySetId,
+    section,
+    concepts,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'topic_concepts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TopicConceptRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('study_set_id')) {
+      context.handle(
+        _studySetIdMeta,
+        studySetId.isAcceptableOrUnknown(
+          data['study_set_id']!,
+          _studySetIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_studySetIdMeta);
+    }
+    if (data.containsKey('section')) {
+      context.handle(
+        _sectionMeta,
+        section.isAcceptableOrUnknown(data['section']!, _sectionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sectionMeta);
+    }
+    if (data.containsKey('concepts')) {
+      context.handle(
+        _conceptsMeta,
+        concepts.isAcceptableOrUnknown(data['concepts']!, _conceptsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_conceptsMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {studySetId, section},
+  ];
+  @override
+  TopicConceptRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TopicConceptRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      studySetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}study_set_id'],
+      )!,
+      section: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}section'],
+      )!,
+      concepts: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}concepts'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TopicConceptsTable createAlias(String alias) {
+    return $TopicConceptsTable(attachedDatabase, alias);
+  }
+}
+
+class TopicConceptRow extends DataClass implements Insertable<TopicConceptRow> {
+  final int id;
+  final int studySetId;
+  final String section;
+  final String concepts;
+  final DateTime createdAt;
+  const TopicConceptRow({
+    required this.id,
+    required this.studySetId,
+    required this.section,
+    required this.concepts,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['study_set_id'] = Variable<int>(studySetId);
+    map['section'] = Variable<String>(section);
+    map['concepts'] = Variable<String>(concepts);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  TopicConceptsCompanion toCompanion(bool nullToAbsent) {
+    return TopicConceptsCompanion(
+      id: Value(id),
+      studySetId: Value(studySetId),
+      section: Value(section),
+      concepts: Value(concepts),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory TopicConceptRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TopicConceptRow(
+      id: serializer.fromJson<int>(json['id']),
+      studySetId: serializer.fromJson<int>(json['studySetId']),
+      section: serializer.fromJson<String>(json['section']),
+      concepts: serializer.fromJson<String>(json['concepts']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'studySetId': serializer.toJson<int>(studySetId),
+      'section': serializer.toJson<String>(section),
+      'concepts': serializer.toJson<String>(concepts),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  TopicConceptRow copyWith({
+    int? id,
+    int? studySetId,
+    String? section,
+    String? concepts,
+    DateTime? createdAt,
+  }) => TopicConceptRow(
+    id: id ?? this.id,
+    studySetId: studySetId ?? this.studySetId,
+    section: section ?? this.section,
+    concepts: concepts ?? this.concepts,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  TopicConceptRow copyWithCompanion(TopicConceptsCompanion data) {
+    return TopicConceptRow(
+      id: data.id.present ? data.id.value : this.id,
+      studySetId: data.studySetId.present
+          ? data.studySetId.value
+          : this.studySetId,
+      section: data.section.present ? data.section.value : this.section,
+      concepts: data.concepts.present ? data.concepts.value : this.concepts,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TopicConceptRow(')
+          ..write('id: $id, ')
+          ..write('studySetId: $studySetId, ')
+          ..write('section: $section, ')
+          ..write('concepts: $concepts, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, studySetId, section, concepts, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TopicConceptRow &&
+          other.id == this.id &&
+          other.studySetId == this.studySetId &&
+          other.section == this.section &&
+          other.concepts == this.concepts &&
+          other.createdAt == this.createdAt);
+}
+
+class TopicConceptsCompanion extends UpdateCompanion<TopicConceptRow> {
+  final Value<int> id;
+  final Value<int> studySetId;
+  final Value<String> section;
+  final Value<String> concepts;
+  final Value<DateTime> createdAt;
+  const TopicConceptsCompanion({
+    this.id = const Value.absent(),
+    this.studySetId = const Value.absent(),
+    this.section = const Value.absent(),
+    this.concepts = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  TopicConceptsCompanion.insert({
+    this.id = const Value.absent(),
+    required int studySetId,
+    required String section,
+    required String concepts,
+    this.createdAt = const Value.absent(),
+  }) : studySetId = Value(studySetId),
+       section = Value(section),
+       concepts = Value(concepts);
+  static Insertable<TopicConceptRow> custom({
+    Expression<int>? id,
+    Expression<int>? studySetId,
+    Expression<String>? section,
+    Expression<String>? concepts,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (studySetId != null) 'study_set_id': studySetId,
+      if (section != null) 'section': section,
+      if (concepts != null) 'concepts': concepts,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  TopicConceptsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? studySetId,
+    Value<String>? section,
+    Value<String>? concepts,
+    Value<DateTime>? createdAt,
+  }) {
+    return TopicConceptsCompanion(
+      id: id ?? this.id,
+      studySetId: studySetId ?? this.studySetId,
+      section: section ?? this.section,
+      concepts: concepts ?? this.concepts,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (studySetId.present) {
+      map['study_set_id'] = Variable<int>(studySetId.value);
+    }
+    if (section.present) {
+      map['section'] = Variable<String>(section.value);
+    }
+    if (concepts.present) {
+      map['concepts'] = Variable<String>(concepts.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TopicConceptsCompanion(')
+          ..write('id: $id, ')
+          ..write('studySetId: $studySetId, ')
+          ..write('section: $section, ')
+          ..write('concepts: $concepts, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3748,6 +5968,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $SavedWordsTable savedWords = $SavedWordsTable(this);
+  late final $ReviewStatesTable reviewStates = $ReviewStatesTable(this);
+  late final $ReviewLogTable reviewLog = $ReviewLogTable(this);
+  late final $TeachBackAttemptsTable teachBackAttempts =
+      $TeachBackAttemptsTable(this);
+  late final $TopicConceptsTable topicConcepts = $TopicConceptsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3761,6 +5986,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stories,
     readingAttempts,
     savedWords,
+    reviewStates,
+    reviewLog,
+    teachBackAttempts,
+    topicConcepts,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3798,6 +6027,34 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('saved_words', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'study_sets',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('review_states', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'study_sets',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('review_log', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'study_sets',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('teach_back_attempts', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'study_sets',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('topic_concepts', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -3875,6 +6132,81 @@ final class $$StudySetsTableReferences
     ).filter((f) => f.studySetId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_attemptsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ReviewStatesTable, List<ReviewState>>
+  _reviewStatesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.reviewStates,
+    aliasName: 'study_sets__id__review_states__study_set_id',
+  );
+
+  $$ReviewStatesTableProcessedTableManager get reviewStatesRefs {
+    final manager = $$ReviewStatesTableTableManager(
+      $_db,
+      $_db.reviewStates,
+    ).filter((f) => f.studySetId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_reviewStatesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ReviewLogTable, List<ReviewEntry>>
+  _reviewLogRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.reviewLog,
+    aliasName: 'study_sets__id__review_log__study_set_id',
+  );
+
+  $$ReviewLogTableProcessedTableManager get reviewLogRefs {
+    final manager = $$ReviewLogTableTableManager(
+      $_db,
+      $_db.reviewLog,
+    ).filter((f) => f.studySetId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_reviewLogRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$TeachBackAttemptsTable, List<TeachBackAttempt>>
+  _teachBackAttemptsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.teachBackAttempts,
+        aliasName: 'study_sets__id__teach_back_attempts__study_set_id',
+      );
+
+  $$TeachBackAttemptsTableProcessedTableManager get teachBackAttemptsRefs {
+    final manager = $$TeachBackAttemptsTableTableManager(
+      $_db,
+      $_db.teachBackAttempts,
+    ).filter((f) => f.studySetId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _teachBackAttemptsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$TopicConceptsTable, List<TopicConceptRow>>
+  _topicConceptsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.topicConcepts,
+    aliasName: 'study_sets__id__topic_concepts__study_set_id',
+  );
+
+  $$TopicConceptsTableProcessedTableManager get topicConceptsRefs {
+    final manager = $$TopicConceptsTableTableManager(
+      $_db,
+      $_db.topicConcepts,
+    ).filter((f) => f.studySetId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_topicConceptsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -3991,6 +6323,106 @@ class $$StudySetsTableFilterComposer
           }) => $$AttemptsTableFilterComposer(
             $db: $db,
             $table: $db.attempts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> reviewStatesRefs(
+    Expression<bool> Function($$ReviewStatesTableFilterComposer f) f,
+  ) {
+    final $$ReviewStatesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reviewStates,
+      getReferencedColumn: (t) => t.studySetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReviewStatesTableFilterComposer(
+            $db: $db,
+            $table: $db.reviewStates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> reviewLogRefs(
+    Expression<bool> Function($$ReviewLogTableFilterComposer f) f,
+  ) {
+    final $$ReviewLogTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reviewLog,
+      getReferencedColumn: (t) => t.studySetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReviewLogTableFilterComposer(
+            $db: $db,
+            $table: $db.reviewLog,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> teachBackAttemptsRefs(
+    Expression<bool> Function($$TeachBackAttemptsTableFilterComposer f) f,
+  ) {
+    final $$TeachBackAttemptsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.teachBackAttempts,
+      getReferencedColumn: (t) => t.studySetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TeachBackAttemptsTableFilterComposer(
+            $db: $db,
+            $table: $db.teachBackAttempts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> topicConceptsRefs(
+    Expression<bool> Function($$TopicConceptsTableFilterComposer f) f,
+  ) {
+    final $$TopicConceptsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.topicConcepts,
+      getReferencedColumn: (t) => t.studySetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TopicConceptsTableFilterComposer(
+            $db: $db,
+            $table: $db.topicConcepts,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4156,6 +6588,107 @@ class $$StudySetsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> reviewStatesRefs<T extends Object>(
+    Expression<T> Function($$ReviewStatesTableAnnotationComposer a) f,
+  ) {
+    final $$ReviewStatesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reviewStates,
+      getReferencedColumn: (t) => t.studySetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReviewStatesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.reviewStates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> reviewLogRefs<T extends Object>(
+    Expression<T> Function($$ReviewLogTableAnnotationComposer a) f,
+  ) {
+    final $$ReviewLogTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reviewLog,
+      getReferencedColumn: (t) => t.studySetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReviewLogTableAnnotationComposer(
+            $db: $db,
+            $table: $db.reviewLog,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> teachBackAttemptsRefs<T extends Object>(
+    Expression<T> Function($$TeachBackAttemptsTableAnnotationComposer a) f,
+  ) {
+    final $$TeachBackAttemptsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.teachBackAttempts,
+          getReferencedColumn: (t) => t.studySetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$TeachBackAttemptsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.teachBackAttempts,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> topicConceptsRefs<T extends Object>(
+    Expression<T> Function($$TopicConceptsTableAnnotationComposer a) f,
+  ) {
+    final $$TopicConceptsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.topicConcepts,
+      getReferencedColumn: (t) => t.studySetId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TopicConceptsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.topicConcepts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$StudySetsTableTableManager
@@ -4175,6 +6708,10 @@ class $$StudySetsTableTableManager
             bool questionRowsRefs,
             bool flashcardRowsRefs,
             bool attemptsRefs,
+            bool reviewStatesRefs,
+            bool reviewLogRefs,
+            bool teachBackAttemptsRefs,
+            bool topicConceptsRefs,
           })
         > {
   $$StudySetsTableTableManager(_$AppDatabase db, $StudySetsTable table)
@@ -4237,6 +6774,10 @@ class $$StudySetsTableTableManager
                 questionRowsRefs = false,
                 flashcardRowsRefs = false,
                 attemptsRefs = false,
+                reviewStatesRefs = false,
+                reviewLogRefs = false,
+                teachBackAttemptsRefs = false,
+                topicConceptsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -4244,6 +6785,10 @@ class $$StudySetsTableTableManager
                     if (questionRowsRefs) db.questionRows,
                     if (flashcardRowsRefs) db.flashcardRows,
                     if (attemptsRefs) db.attempts,
+                    if (reviewStatesRefs) db.reviewStates,
+                    if (reviewLogRefs) db.reviewLog,
+                    if (teachBackAttemptsRefs) db.teachBackAttempts,
+                    if (topicConceptsRefs) db.topicConcepts,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -4311,6 +6856,90 @@ class $$StudySetsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (reviewStatesRefs)
+                        await $_getPrefetchedData<
+                          StudySet,
+                          $StudySetsTable,
+                          ReviewState
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StudySetsTableReferences
+                              ._reviewStatesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StudySetsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).reviewStatesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.studySetId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (reviewLogRefs)
+                        await $_getPrefetchedData<
+                          StudySet,
+                          $StudySetsTable,
+                          ReviewEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StudySetsTableReferences
+                              ._reviewLogRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StudySetsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).reviewLogRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.studySetId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (teachBackAttemptsRefs)
+                        await $_getPrefetchedData<
+                          StudySet,
+                          $StudySetsTable,
+                          TeachBackAttempt
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StudySetsTableReferences
+                              ._teachBackAttemptsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StudySetsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).teachBackAttemptsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.studySetId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (topicConceptsRefs)
+                        await $_getPrefetchedData<
+                          StudySet,
+                          $StudySetsTable,
+                          TopicConceptRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StudySetsTableReferences
+                              ._topicConceptsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StudySetsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).topicConceptsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.studySetId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4335,6 +6964,10 @@ typedef $$StudySetsTableProcessedTableManager =
         bool questionRowsRefs,
         bool flashcardRowsRefs,
         bool attemptsRefs,
+        bool reviewStatesRefs,
+        bool reviewLogRefs,
+        bool teachBackAttemptsRefs,
+        bool topicConceptsRefs,
       })
     >;
 typedef $$QuestionRowsTableCreateCompanionBuilder =
@@ -4346,6 +6979,7 @@ typedef $$QuestionRowsTableCreateCompanionBuilder =
       required String choices,
       required int answerIndex,
       Value<String> explanation,
+      Value<String> source,
     });
 typedef $$QuestionRowsTableUpdateCompanionBuilder =
     QuestionRowsCompanion Function({
@@ -4356,6 +6990,7 @@ typedef $$QuestionRowsTableUpdateCompanionBuilder =
       Value<String> choices,
       Value<int> answerIndex,
       Value<String> explanation,
+      Value<String> source,
     });
 
 final class $$QuestionRowsTableReferences
@@ -4416,6 +7051,11 @@ class $$QuestionRowsTableFilterComposer
 
   ColumnFilters<String> get explanation => $composableBuilder(
     column: $table.explanation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4482,6 +7122,11 @@ class $$QuestionRowsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$StudySetsTableOrderingComposer get studySetId {
     final $$StudySetsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4536,6 +7181,9 @@ class $$QuestionRowsTableAnnotationComposer
     column: $table.explanation,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
 
   $$StudySetsTableAnnotationComposer get studySetId {
     final $$StudySetsTableAnnotationComposer composer = $composerBuilder(
@@ -4596,6 +7244,7 @@ class $$QuestionRowsTableTableManager
                 Value<String> choices = const Value.absent(),
                 Value<int> answerIndex = const Value.absent(),
                 Value<String> explanation = const Value.absent(),
+                Value<String> source = const Value.absent(),
               }) => QuestionRowsCompanion(
                 id: id,
                 studySetId: studySetId,
@@ -4604,6 +7253,7 @@ class $$QuestionRowsTableTableManager
                 choices: choices,
                 answerIndex: answerIndex,
                 explanation: explanation,
+                source: source,
               ),
           createCompanionCallback:
               ({
@@ -4614,6 +7264,7 @@ class $$QuestionRowsTableTableManager
                 required String choices,
                 required int answerIndex,
                 Value<String> explanation = const Value.absent(),
+                Value<String> source = const Value.absent(),
               }) => QuestionRowsCompanion.insert(
                 id: id,
                 studySetId: studySetId,
@@ -4622,6 +7273,7 @@ class $$QuestionRowsTableTableManager
                 choices: choices,
                 answerIndex: answerIndex,
                 explanation: explanation,
+                source: source,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -4694,6 +7346,7 @@ typedef $$FlashcardRowsTableCreateCompanionBuilder =
       required int studySetId,
       required String front,
       required String back,
+      Value<String> source,
     });
 typedef $$FlashcardRowsTableUpdateCompanionBuilder =
     FlashcardRowsCompanion Function({
@@ -4701,6 +7354,7 @@ typedef $$FlashcardRowsTableUpdateCompanionBuilder =
       Value<int> studySetId,
       Value<String> front,
       Value<String> back,
+      Value<String> source,
     });
 
 final class $$FlashcardRowsTableReferences
@@ -4753,6 +7407,11 @@ class $$FlashcardRowsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$StudySetsTableFilterComposer get studySetId {
     final $$StudySetsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -4801,6 +7460,11 @@ class $$FlashcardRowsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$StudySetsTableOrderingComposer get studySetId {
     final $$StudySetsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4842,6 +7506,9 @@ class $$FlashcardRowsTableAnnotationComposer
 
   GeneratedColumn<String> get back =>
       $composableBuilder(column: $table.back, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
 
   $$StudySetsTableAnnotationComposer get studySetId {
     final $$StudySetsTableAnnotationComposer composer = $composerBuilder(
@@ -4899,11 +7566,13 @@ class $$FlashcardRowsTableTableManager
                 Value<int> studySetId = const Value.absent(),
                 Value<String> front = const Value.absent(),
                 Value<String> back = const Value.absent(),
+                Value<String> source = const Value.absent(),
               }) => FlashcardRowsCompanion(
                 id: id,
                 studySetId: studySetId,
                 front: front,
                 back: back,
+                source: source,
               ),
           createCompanionCallback:
               ({
@@ -4911,11 +7580,13 @@ class $$FlashcardRowsTableTableManager
                 required int studySetId,
                 required String front,
                 required String back,
+                Value<String> source = const Value.absent(),
               }) => FlashcardRowsCompanion.insert(
                 id: id,
                 studySetId: studySetId,
                 front: front,
                 back: back,
+                source: source,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -6991,6 +9662,1546 @@ typedef $$SavedWordsTableProcessedTableManager =
       SavedWord,
       PrefetchHooks Function({bool readerId})
     >;
+typedef $$ReviewStatesTableCreateCompanionBuilder =
+    ReviewStatesCompanion Function({
+      Value<int> id,
+      required String kind,
+      required int itemId,
+      required int studySetId,
+      Value<int> box,
+      Value<DateTime?> dueDay,
+      Value<DateTime?> lastAt,
+      Value<int> streak,
+      Value<int> lapses,
+    });
+typedef $$ReviewStatesTableUpdateCompanionBuilder =
+    ReviewStatesCompanion Function({
+      Value<int> id,
+      Value<String> kind,
+      Value<int> itemId,
+      Value<int> studySetId,
+      Value<int> box,
+      Value<DateTime?> dueDay,
+      Value<DateTime?> lastAt,
+      Value<int> streak,
+      Value<int> lapses,
+    });
+
+final class $$ReviewStatesTableReferences
+    extends BaseReferences<_$AppDatabase, $ReviewStatesTable, ReviewState> {
+  $$ReviewStatesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $StudySetsTable _studySetIdTable(_$AppDatabase db) =>
+      db.studySets.createAlias('review_states__study_set_id__study_sets__id');
+
+  $$StudySetsTableProcessedTableManager get studySetId {
+    final $_column = $_itemColumn<int>('study_set_id')!;
+
+    final manager = $$StudySetsTableTableManager(
+      $_db,
+      $_db.studySets,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_studySetIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ReviewStatesTableFilterComposer
+    extends Composer<_$AppDatabase, $ReviewStatesTable> {
+  $$ReviewStatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get box => $composableBuilder(
+    column: $table.box,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get dueDay => $composableBuilder(
+    column: $table.dueDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAt => $composableBuilder(
+    column: $table.lastAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get streak => $composableBuilder(
+    column: $table.streak,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lapses => $composableBuilder(
+    column: $table.lapses,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StudySetsTableFilterComposer get studySetId {
+    final $$StudySetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableFilterComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReviewStatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReviewStatesTable> {
+  $$ReviewStatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get box => $composableBuilder(
+    column: $table.box,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get dueDay => $composableBuilder(
+    column: $table.dueDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAt => $composableBuilder(
+    column: $table.lastAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get streak => $composableBuilder(
+    column: $table.streak,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lapses => $composableBuilder(
+    column: $table.lapses,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StudySetsTableOrderingComposer get studySetId {
+    final $$StudySetsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableOrderingComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReviewStatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReviewStatesTable> {
+  $$ReviewStatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<int> get box =>
+      $composableBuilder(column: $table.box, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get dueDay =>
+      $composableBuilder(column: $table.dueDay, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastAt =>
+      $composableBuilder(column: $table.lastAt, builder: (column) => column);
+
+  GeneratedColumn<int> get streak =>
+      $composableBuilder(column: $table.streak, builder: (column) => column);
+
+  GeneratedColumn<int> get lapses =>
+      $composableBuilder(column: $table.lapses, builder: (column) => column);
+
+  $$StudySetsTableAnnotationComposer get studySetId {
+    final $$StudySetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReviewStatesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReviewStatesTable,
+          ReviewState,
+          $$ReviewStatesTableFilterComposer,
+          $$ReviewStatesTableOrderingComposer,
+          $$ReviewStatesTableAnnotationComposer,
+          $$ReviewStatesTableCreateCompanionBuilder,
+          $$ReviewStatesTableUpdateCompanionBuilder,
+          (ReviewState, $$ReviewStatesTableReferences),
+          ReviewState,
+          PrefetchHooks Function({bool studySetId})
+        > {
+  $$ReviewStatesTableTableManager(_$AppDatabase db, $ReviewStatesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReviewStatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReviewStatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReviewStatesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> itemId = const Value.absent(),
+                Value<int> studySetId = const Value.absent(),
+                Value<int> box = const Value.absent(),
+                Value<DateTime?> dueDay = const Value.absent(),
+                Value<DateTime?> lastAt = const Value.absent(),
+                Value<int> streak = const Value.absent(),
+                Value<int> lapses = const Value.absent(),
+              }) => ReviewStatesCompanion(
+                id: id,
+                kind: kind,
+                itemId: itemId,
+                studySetId: studySetId,
+                box: box,
+                dueDay: dueDay,
+                lastAt: lastAt,
+                streak: streak,
+                lapses: lapses,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String kind,
+                required int itemId,
+                required int studySetId,
+                Value<int> box = const Value.absent(),
+                Value<DateTime?> dueDay = const Value.absent(),
+                Value<DateTime?> lastAt = const Value.absent(),
+                Value<int> streak = const Value.absent(),
+                Value<int> lapses = const Value.absent(),
+              }) => ReviewStatesCompanion.insert(
+                id: id,
+                kind: kind,
+                itemId: itemId,
+                studySetId: studySetId,
+                box: box,
+                dueDay: dueDay,
+                lastAt: lastAt,
+                streak: streak,
+                lapses: lapses,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReviewStatesTable, ReviewState>(table),
+                  $$ReviewStatesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({studySetId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (studySetId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.studySetId,
+                        referencedTable: $$ReviewStatesTableReferences
+                            ._studySetIdTable(db),
+                        referencedColumn: $$ReviewStatesTableReferences
+                            ._studySetIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ReviewStatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReviewStatesTable,
+      ReviewState,
+      $$ReviewStatesTableFilterComposer,
+      $$ReviewStatesTableOrderingComposer,
+      $$ReviewStatesTableAnnotationComposer,
+      $$ReviewStatesTableCreateCompanionBuilder,
+      $$ReviewStatesTableUpdateCompanionBuilder,
+      (ReviewState, $$ReviewStatesTableReferences),
+      ReviewState,
+      PrefetchHooks Function({bool studySetId})
+    >;
+typedef $$ReviewLogTableCreateCompanionBuilder = ReviewLogCompanion Function({
+  Value<int> id,
+  required String kind,
+  required int itemId,
+  required int studySetId,
+  required bool correct,
+  Value<int?> chosen,
+  required String mode,
+  Value<DateTime> at,
+});
+typedef $$ReviewLogTableUpdateCompanionBuilder = ReviewLogCompanion Function({
+  Value<int> id,
+  Value<String> kind,
+  Value<int> itemId,
+  Value<int> studySetId,
+  Value<bool> correct,
+  Value<int?> chosen,
+  Value<String> mode,
+  Value<DateTime> at,
+});
+
+final class $$ReviewLogTableReferences
+    extends BaseReferences<_$AppDatabase, $ReviewLogTable, ReviewEntry> {
+  $$ReviewLogTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $StudySetsTable _studySetIdTable(_$AppDatabase db) =>
+      db.studySets.createAlias('review_log__study_set_id__study_sets__id');
+
+  $$StudySetsTableProcessedTableManager get studySetId {
+    final $_column = $_itemColumn<int>('study_set_id')!;
+
+    final manager = $$StudySetsTableTableManager(
+      $_db,
+      $_db.studySets,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_studySetIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ReviewLogTableFilterComposer
+    extends Composer<_$AppDatabase, $ReviewLogTable> {
+  $$ReviewLogTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get correct => $composableBuilder(
+    column: $table.correct,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get chosen => $composableBuilder(
+    column: $table.chosen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StudySetsTableFilterComposer get studySetId {
+    final $$StudySetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableFilterComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReviewLogTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReviewLogTable> {
+  $$ReviewLogTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get correct => $composableBuilder(
+    column: $table.correct,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get chosen => $composableBuilder(
+    column: $table.chosen,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mode => $composableBuilder(
+    column: $table.mode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StudySetsTableOrderingComposer get studySetId {
+    final $$StudySetsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableOrderingComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReviewLogTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReviewLogTable> {
+  $$ReviewLogTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<bool> get correct =>
+      $composableBuilder(column: $table.correct, builder: (column) => column);
+
+  GeneratedColumn<int> get chosen =>
+      $composableBuilder(column: $table.chosen, builder: (column) => column);
+
+  GeneratedColumn<String> get mode =>
+      $composableBuilder(column: $table.mode, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get at =>
+      $composableBuilder(column: $table.at, builder: (column) => column);
+
+  $$StudySetsTableAnnotationComposer get studySetId {
+    final $$StudySetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReviewLogTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReviewLogTable,
+          ReviewEntry,
+          $$ReviewLogTableFilterComposer,
+          $$ReviewLogTableOrderingComposer,
+          $$ReviewLogTableAnnotationComposer,
+          $$ReviewLogTableCreateCompanionBuilder,
+          $$ReviewLogTableUpdateCompanionBuilder,
+          (ReviewEntry, $$ReviewLogTableReferences),
+          ReviewEntry,
+          PrefetchHooks Function({bool studySetId})
+        > {
+  $$ReviewLogTableTableManager(_$AppDatabase db, $ReviewLogTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReviewLogTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReviewLogTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReviewLogTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> itemId = const Value.absent(),
+                Value<int> studySetId = const Value.absent(),
+                Value<bool> correct = const Value.absent(),
+                Value<int?> chosen = const Value.absent(),
+                Value<String> mode = const Value.absent(),
+                Value<DateTime> at = const Value.absent(),
+              }) => ReviewLogCompanion(
+                id: id,
+                kind: kind,
+                itemId: itemId,
+                studySetId: studySetId,
+                correct: correct,
+                chosen: chosen,
+                mode: mode,
+                at: at,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String kind,
+                required int itemId,
+                required int studySetId,
+                required bool correct,
+                Value<int?> chosen = const Value.absent(),
+                required String mode,
+                Value<DateTime> at = const Value.absent(),
+              }) => ReviewLogCompanion.insert(
+                id: id,
+                kind: kind,
+                itemId: itemId,
+                studySetId: studySetId,
+                correct: correct,
+                chosen: chosen,
+                mode: mode,
+                at: at,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReviewLogTable, ReviewEntry>(table),
+                  $$ReviewLogTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({studySetId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (studySetId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.studySetId,
+                        referencedTable: $$ReviewLogTableReferences
+                            ._studySetIdTable(db),
+                        referencedColumn: $$ReviewLogTableReferences
+                            ._studySetIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ReviewLogTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReviewLogTable,
+      ReviewEntry,
+      $$ReviewLogTableFilterComposer,
+      $$ReviewLogTableOrderingComposer,
+      $$ReviewLogTableAnnotationComposer,
+      $$ReviewLogTableCreateCompanionBuilder,
+      $$ReviewLogTableUpdateCompanionBuilder,
+      (ReviewEntry, $$ReviewLogTableReferences),
+      ReviewEntry,
+      PrefetchHooks Function({bool studySetId})
+    >;
+typedef $$TeachBackAttemptsTableCreateCompanionBuilder =
+    TeachBackAttemptsCompanion Function({
+      Value<int> id,
+      required int studySetId,
+      required String section,
+      Value<int> sectionIndex,
+      required String answer,
+      Value<int> covered,
+      Value<int> partly,
+      Value<int> total,
+      Value<bool> copied,
+      Value<int> flagCount,
+      Value<String> checkedBy,
+      Value<String> overruled,
+      Value<DateTime> takenAt,
+    });
+typedef $$TeachBackAttemptsTableUpdateCompanionBuilder =
+    TeachBackAttemptsCompanion Function({
+      Value<int> id,
+      Value<int> studySetId,
+      Value<String> section,
+      Value<int> sectionIndex,
+      Value<String> answer,
+      Value<int> covered,
+      Value<int> partly,
+      Value<int> total,
+      Value<bool> copied,
+      Value<int> flagCount,
+      Value<String> checkedBy,
+      Value<String> overruled,
+      Value<DateTime> takenAt,
+    });
+
+final class $$TeachBackAttemptsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $TeachBackAttemptsTable,
+          TeachBackAttempt
+        > {
+  $$TeachBackAttemptsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StudySetsTable _studySetIdTable(_$AppDatabase db) => db.studySets
+      .createAlias('teach_back_attempts__study_set_id__study_sets__id');
+
+  $$StudySetsTableProcessedTableManager get studySetId {
+    final $_column = $_itemColumn<int>('study_set_id')!;
+
+    final manager = $$StudySetsTableTableManager(
+      $_db,
+      $_db.studySets,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_studySetIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TeachBackAttemptsTableFilterComposer
+    extends Composer<_$AppDatabase, $TeachBackAttemptsTable> {
+  $$TeachBackAttemptsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get section => $composableBuilder(
+    column: $table.section,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sectionIndex => $composableBuilder(
+    column: $table.sectionIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get answer => $composableBuilder(
+    column: $table.answer,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get covered => $composableBuilder(
+    column: $table.covered,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get partly => $composableBuilder(
+    column: $table.partly,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get total => $composableBuilder(
+    column: $table.total,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get copied => $composableBuilder(
+    column: $table.copied,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get flagCount => $composableBuilder(
+    column: $table.flagCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get checkedBy => $composableBuilder(
+    column: $table.checkedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get overruled => $composableBuilder(
+    column: $table.overruled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get takenAt => $composableBuilder(
+    column: $table.takenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StudySetsTableFilterComposer get studySetId {
+    final $$StudySetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableFilterComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TeachBackAttemptsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TeachBackAttemptsTable> {
+  $$TeachBackAttemptsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get section => $composableBuilder(
+    column: $table.section,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sectionIndex => $composableBuilder(
+    column: $table.sectionIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get answer => $composableBuilder(
+    column: $table.answer,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get covered => $composableBuilder(
+    column: $table.covered,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get partly => $composableBuilder(
+    column: $table.partly,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get total => $composableBuilder(
+    column: $table.total,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get copied => $composableBuilder(
+    column: $table.copied,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get flagCount => $composableBuilder(
+    column: $table.flagCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get checkedBy => $composableBuilder(
+    column: $table.checkedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get overruled => $composableBuilder(
+    column: $table.overruled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get takenAt => $composableBuilder(
+    column: $table.takenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StudySetsTableOrderingComposer get studySetId {
+    final $$StudySetsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableOrderingComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TeachBackAttemptsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TeachBackAttemptsTable> {
+  $$TeachBackAttemptsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get section =>
+      $composableBuilder(column: $table.section, builder: (column) => column);
+
+  GeneratedColumn<int> get sectionIndex => $composableBuilder(
+    column: $table.sectionIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get answer =>
+      $composableBuilder(column: $table.answer, builder: (column) => column);
+
+  GeneratedColumn<int> get covered =>
+      $composableBuilder(column: $table.covered, builder: (column) => column);
+
+  GeneratedColumn<int> get partly =>
+      $composableBuilder(column: $table.partly, builder: (column) => column);
+
+  GeneratedColumn<int> get total =>
+      $composableBuilder(column: $table.total, builder: (column) => column);
+
+  GeneratedColumn<bool> get copied =>
+      $composableBuilder(column: $table.copied, builder: (column) => column);
+
+  GeneratedColumn<int> get flagCount =>
+      $composableBuilder(column: $table.flagCount, builder: (column) => column);
+
+  GeneratedColumn<String> get checkedBy =>
+      $composableBuilder(column: $table.checkedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get overruled =>
+      $composableBuilder(column: $table.overruled, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get takenAt =>
+      $composableBuilder(column: $table.takenAt, builder: (column) => column);
+
+  $$StudySetsTableAnnotationComposer get studySetId {
+    final $$StudySetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TeachBackAttemptsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TeachBackAttemptsTable,
+          TeachBackAttempt,
+          $$TeachBackAttemptsTableFilterComposer,
+          $$TeachBackAttemptsTableOrderingComposer,
+          $$TeachBackAttemptsTableAnnotationComposer,
+          $$TeachBackAttemptsTableCreateCompanionBuilder,
+          $$TeachBackAttemptsTableUpdateCompanionBuilder,
+          (TeachBackAttempt, $$TeachBackAttemptsTableReferences),
+          TeachBackAttempt,
+          PrefetchHooks Function({bool studySetId})
+        > {
+  $$TeachBackAttemptsTableTableManager(
+    _$AppDatabase db,
+    $TeachBackAttemptsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TeachBackAttemptsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TeachBackAttemptsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TeachBackAttemptsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> studySetId = const Value.absent(),
+                Value<String> section = const Value.absent(),
+                Value<int> sectionIndex = const Value.absent(),
+                Value<String> answer = const Value.absent(),
+                Value<int> covered = const Value.absent(),
+                Value<int> partly = const Value.absent(),
+                Value<int> total = const Value.absent(),
+                Value<bool> copied = const Value.absent(),
+                Value<int> flagCount = const Value.absent(),
+                Value<String> checkedBy = const Value.absent(),
+                Value<String> overruled = const Value.absent(),
+                Value<DateTime> takenAt = const Value.absent(),
+              }) => TeachBackAttemptsCompanion(
+                id: id,
+                studySetId: studySetId,
+                section: section,
+                sectionIndex: sectionIndex,
+                answer: answer,
+                covered: covered,
+                partly: partly,
+                total: total,
+                copied: copied,
+                flagCount: flagCount,
+                checkedBy: checkedBy,
+                overruled: overruled,
+                takenAt: takenAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int studySetId,
+                required String section,
+                Value<int> sectionIndex = const Value.absent(),
+                required String answer,
+                Value<int> covered = const Value.absent(),
+                Value<int> partly = const Value.absent(),
+                Value<int> total = const Value.absent(),
+                Value<bool> copied = const Value.absent(),
+                Value<int> flagCount = const Value.absent(),
+                Value<String> checkedBy = const Value.absent(),
+                Value<String> overruled = const Value.absent(),
+                Value<DateTime> takenAt = const Value.absent(),
+              }) => TeachBackAttemptsCompanion.insert(
+                id: id,
+                studySetId: studySetId,
+                section: section,
+                sectionIndex: sectionIndex,
+                answer: answer,
+                covered: covered,
+                partly: partly,
+                total: total,
+                copied: copied,
+                flagCount: flagCount,
+                checkedBy: checkedBy,
+                overruled: overruled,
+                takenAt: takenAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TeachBackAttemptsTable, TeachBackAttempt>(table),
+                  $$TeachBackAttemptsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({studySetId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (studySetId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.studySetId,
+                        referencedTable: $$TeachBackAttemptsTableReferences
+                            ._studySetIdTable(db),
+                        referencedColumn: $$TeachBackAttemptsTableReferences
+                            ._studySetIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TeachBackAttemptsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TeachBackAttemptsTable,
+      TeachBackAttempt,
+      $$TeachBackAttemptsTableFilterComposer,
+      $$TeachBackAttemptsTableOrderingComposer,
+      $$TeachBackAttemptsTableAnnotationComposer,
+      $$TeachBackAttemptsTableCreateCompanionBuilder,
+      $$TeachBackAttemptsTableUpdateCompanionBuilder,
+      (TeachBackAttempt, $$TeachBackAttemptsTableReferences),
+      TeachBackAttempt,
+      PrefetchHooks Function({bool studySetId})
+    >;
+typedef $$TopicConceptsTableCreateCompanionBuilder =
+    TopicConceptsCompanion Function({
+      Value<int> id,
+      required int studySetId,
+      required String section,
+      required String concepts,
+      Value<DateTime> createdAt,
+    });
+typedef $$TopicConceptsTableUpdateCompanionBuilder =
+    TopicConceptsCompanion Function({
+      Value<int> id,
+      Value<int> studySetId,
+      Value<String> section,
+      Value<String> concepts,
+      Value<DateTime> createdAt,
+    });
+
+final class $$TopicConceptsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $TopicConceptsTable, TopicConceptRow> {
+  $$TopicConceptsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StudySetsTable _studySetIdTable(_$AppDatabase db) =>
+      db.studySets.createAlias('topic_concepts__study_set_id__study_sets__id');
+
+  $$StudySetsTableProcessedTableManager get studySetId {
+    final $_column = $_itemColumn<int>('study_set_id')!;
+
+    final manager = $$StudySetsTableTableManager(
+      $_db,
+      $_db.studySets,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_studySetIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TopicConceptsTableFilterComposer
+    extends Composer<_$AppDatabase, $TopicConceptsTable> {
+  $$TopicConceptsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get section => $composableBuilder(
+    column: $table.section,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get concepts => $composableBuilder(
+    column: $table.concepts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StudySetsTableFilterComposer get studySetId {
+    final $$StudySetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableFilterComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TopicConceptsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TopicConceptsTable> {
+  $$TopicConceptsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get section => $composableBuilder(
+    column: $table.section,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get concepts => $composableBuilder(
+    column: $table.concepts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StudySetsTableOrderingComposer get studySetId {
+    final $$StudySetsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableOrderingComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TopicConceptsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TopicConceptsTable> {
+  $$TopicConceptsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get section =>
+      $composableBuilder(column: $table.section, builder: (column) => column);
+
+  GeneratedColumn<String> get concepts =>
+      $composableBuilder(column: $table.concepts, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$StudySetsTableAnnotationComposer get studySetId {
+    final $$StudySetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.studySetId,
+      referencedTable: $db.studySets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StudySetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.studySets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TopicConceptsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TopicConceptsTable,
+          TopicConceptRow,
+          $$TopicConceptsTableFilterComposer,
+          $$TopicConceptsTableOrderingComposer,
+          $$TopicConceptsTableAnnotationComposer,
+          $$TopicConceptsTableCreateCompanionBuilder,
+          $$TopicConceptsTableUpdateCompanionBuilder,
+          (TopicConceptRow, $$TopicConceptsTableReferences),
+          TopicConceptRow,
+          PrefetchHooks Function({bool studySetId})
+        > {
+  $$TopicConceptsTableTableManager(_$AppDatabase db, $TopicConceptsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TopicConceptsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TopicConceptsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TopicConceptsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> studySetId = const Value.absent(),
+                Value<String> section = const Value.absent(),
+                Value<String> concepts = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => TopicConceptsCompanion(
+                id: id,
+                studySetId: studySetId,
+                section: section,
+                concepts: concepts,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int studySetId,
+                required String section,
+                required String concepts,
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => TopicConceptsCompanion.insert(
+                id: id,
+                studySetId: studySetId,
+                section: section,
+                concepts: concepts,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TopicConceptsTable, TopicConceptRow>(table),
+                  $$TopicConceptsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({studySetId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (studySetId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.studySetId,
+                        referencedTable: $$TopicConceptsTableReferences
+                            ._studySetIdTable(db),
+                        referencedColumn: $$TopicConceptsTableReferences
+                            ._studySetIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TopicConceptsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TopicConceptsTable,
+      TopicConceptRow,
+      $$TopicConceptsTableFilterComposer,
+      $$TopicConceptsTableOrderingComposer,
+      $$TopicConceptsTableAnnotationComposer,
+      $$TopicConceptsTableCreateCompanionBuilder,
+      $$TopicConceptsTableUpdateCompanionBuilder,
+      (TopicConceptRow, $$TopicConceptsTableReferences),
+      TopicConceptRow,
+      PrefetchHooks Function({bool studySetId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7011,4 +11222,12 @@ class $AppDatabaseManager {
       $$ReadingAttemptsTableTableManager(_db, _db.readingAttempts);
   $$SavedWordsTableTableManager get savedWords =>
       $$SavedWordsTableTableManager(_db, _db.savedWords);
+  $$ReviewStatesTableTableManager get reviewStates =>
+      $$ReviewStatesTableTableManager(_db, _db.reviewStates);
+  $$ReviewLogTableTableManager get reviewLog =>
+      $$ReviewLogTableTableManager(_db, _db.reviewLog);
+  $$TeachBackAttemptsTableTableManager get teachBackAttempts =>
+      $$TeachBackAttemptsTableTableManager(_db, _db.teachBackAttempts);
+  $$TopicConceptsTableTableManager get topicConcepts =>
+      $$TopicConceptsTableTableManager(_db, _db.topicConcepts);
 }

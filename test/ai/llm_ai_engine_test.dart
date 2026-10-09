@@ -20,19 +20,17 @@ const _tier = Tier(
   cardsPerChunk: 3,
 );
 
-const _notes = 'Rizal was born in Calamba in 1861. '
-    'He wrote the novel Noli Me Tangere in Berlin in 1887. '
-    'He was executed at Bagumbayan in 1896.';
+const _notes = 'Rizal was born in Calamba in 1861.\n'
+    'Rizal wrote the novel Noli Me Tangere in Berlin in 1887.\n'
+    'Rizal was executed at Bagumbayan in 1896.';
 
-String _facts(List<String> f) => '{"facts":[${f.map((x) => '"$x"').join(',')}]}';
+/// A sentence long enough to be a section of its own at chunkChars 200.
+const _mito = 'Most of the chemical energy that powers the biochemical reactions of a living cell comes from '
+    'its mitochondria, which also keep their own small circle of DNA and divide on their own.';
+
 String _qa(List<List<String>> p) =>
     '{"items":[${p.map((x) => '{"question":"${x[0]}","answer":"${x[1]}"}').join(',')}]}';
 
-final _goodFacts = _facts([
-  'Rizal was born in Calamba in 1861.',
-  'Rizal wrote Noli Me Tangere in Berlin in 1887.',
-  'Rizal was executed at Bagumbayan in 1896.',
-]);
 final _goodQa = _qa([
   ['In which town was Rizal born?', 'Calamba'],
   ['In which city did Rizal write Noli Me Tangere?', 'Berlin'],
@@ -48,49 +46,132 @@ final _goodWrong = _wrong([
   ['Fort Santiago', 'Intramuros', 'Cavite'],
 ]);
 
-/// One section that works first time: facts, questions, wrong answers.
-final _ok = [_goodFacts, _goodQa, _goodWrong];
+/// One section that works first time: questions, then wrong answers.
+final _ok = [_goodQa, _goodWrong];
 
 LlmAiEngine _engine(FakeLlmRuntime rt, {int maxChunks = 12, int seed = 1}) =>
     LlmAiEngine(rt, _tier, maxChunks: maxChunks, random: Random(seed));
 
+bool _isCheck(String prompt) => prompt.startsWith('Answer the question using only the notes');
+
+/// Scripted like [FakeLlmRuntime], but answers fact checks itself with what it
+/// [believes] the answer to the question is, or "none".
+class _CheckingRuntime extends FakeLlmRuntime {
+  _CheckingRuntime(super.script, this.believes);
+  final Map<String, String> believes;
+
+  @override
+  Future<String> complete(String prompt, {int maxTokens = 1024, Map<String, Object?>? schema}) async {
+    if (!_isCheck(prompt)) return super.complete(prompt, maxTokens: maxTokens, schema: schema);
+    prompts.add(prompt);
+    final q = RegExp(r'QUESTION: (.*)').firstMatch(prompt)![1]!;
+    return '{"answer":"${believes[q] ?? 'none'}"}';
+  }
+}
+
 void main() {
-  test('facts, then questions, then wrong answers of the same kind for the quiz', () async {
+  test('questions from the notes\' own lines, then wrong answers of the same kind, then a fact check each', () async {
     final rt = FakeLlmRuntime([..._ok]);
     final set = await _engine(rt).generate(_notes);
-    expect(set.flashcards.map((c) => c.back), ['Calamba', 'Berlin', 'Bagumbayan']);
-    expect(set.flashcards.first.front, 'In which town was Rizal born?');
+    expect(set.flashcards.map((c) => c.front), ['Calamba', 'Berlin', 'Bagumbayan']);
+    expect(set.flashcards.first.back, 'In which town was Rizal born?');
     final q = set.questions.first;
     expect(q.choices.toSet(), {'Calamba', 'Manila', 'Cebu', 'Davao'});
     expect(q.choices[q.answerIndex], 'Calamba');
-    expect(q.explanation, contains('Calamba'));
-    expect(rt.prompts, hasLength(3));
-    expect(rt.prompts.last, contains('Correct answer: Calamba'));
+    expect(q.explanation, 'Rizal was born in Calamba in 1861.'); // the notes' own words
+    expect(rt.prompts.first, contains('. Rizal was born in Calamba in 1861.'));
+    expect(rt.prompts[1], contains('Correct answer: Calamba'));
+    expect(rt.prompts.skip(2).every(_isCheck), isTrue);
+    expect(rt.prompts, hasLength(5));
+  });
+
+  test('the fact check drops a question the model answers otherwise, and its card', () async {
+    final rt = _CheckingRuntime([..._ok], {
+      'In which town was Rizal born?': 'Manila',
+      'In which city did Rizal write Noli Me Tangere?': 'in Berlin',
+      'Where was Rizal executed?': 'Bagumbayan, in 1896',
+    });
+    final set = await _engine(rt).generate(_notes);
+    expect(set.questions.map((q) => q.prompt),
+        ['In which city did Rizal write Noli Me Tangere?', 'Where was Rizal executed?']);
+    expect(set.flashcards.map((c) => c.front), isNot(contains('In which town was Rizal born?')));
+  });
+
+  test('when the fact check fails every answer and the notes have nothing else, generation fails', () async {
+    final rt = _CheckingRuntime([..._ok], {});
+    await expectLater(_engine(rt).generate(_notes), throwsA(isA<GenerationFailed>()));
+  });
+
+  test('the fact check reads the question\'s own line and the lines of the notes most like it', () async {
+    const far = 'The town where Rizal was born lies in the province of Laguna, about fifty kilometres south of Manila.';
+    final rt = _CheckingRuntime([..._ok], {'In which town was Rizal born?': 'Calamba'});
+    await _engine(rt).generate('$_notes\n$far');
+    final check = rt.prompts.firstWhere((p) => _isCheck(p) && p.contains('QUESTION: In which town was Rizal born?'));
+    expect(check, contains('Rizal was born in Calamba in 1861.'));
+    expect(check, contains(far)); // another section, found by its words
+  });
+
+  test('questions are only written from statements: no titles, tasks, forms, tables, citations or false lines', () {
+    const notes = 'CHARACTERISTICS OF YOUNG JOSE RIZAL\n'
+        'Discuss the early education of Rizal in the Philippines.\n'
+        'Name: TUCSON MARIA GRAGEDA Age: 20 Sex: Female Address: PUROK 2\n'
+        '= 1.00 Excellent = 1.50 Very Good = 2.00 Good\n'
+        'Guerrero, L. (1963). The first Filipino. Journal of History, 4(2), 10-20.\n'
+        'When he was young, Jose Rizal was called Pepe by his family.\n'
+        'BLUFF\n'
+        'Barely three years old, Rizal learned the alphabet from his mother.\n';
+    expect(LlmAiEngine.studyLines(notes, const {}, 10),
+        ['Barely three years old, Rizal learned the alphabet from his mother.']);
+  });
+
+  test('a point under a slide heading is asked about with its heading', () async {
+    const slides = 'Characteristics of Young Jose Rizal\n'
+        'Has a frail body and was not physically fit, but he always liked to speculate about the world.\n\n'
+        'Early Childhood in Calamba\n'
+        'Barely three years old, Rizal learned the alphabet from his mother Teodora at their home.\n\n'
+        'Education in Binan\n'
+        'In Binan he learned the art of painting under an old painter by the name of Juancho Carrera.\n';
+    final rt = FakeLlmRuntime([]);
+    try {
+      await _engine(rt).generate(slides);
+    } on GenerationFailed {
+      // the fake gives no usable output; only the prompts matter here
+    }
+    expect(rt.prompts.first, contains('Characteristics of Young Jose Rizal: Has a frail body'));
   });
 
   test('term - definition lines become cards and quiz questions, even if the model fails', () async {
     const notes = '▪ Hacktivists - Grey hat hackers who rally and protest against political ideas.\n'
         '▪ Script Kiddies - Teenagers or hobbyists mostly limited to pranks and vandalism.\n'
         '▪ Vulnerability Brokers - Grey hat hackers who report exploits to vendors for prizes.\n'
-        '▪ Cyber Criminals - Black hat hackers working for large cybercrime organizations.';
-    final rt = FakeLlmRuntime(['x', 'x', 'x']); // facts fail 3 times
+        '▪ Cyber Criminals - Black hat hackers working for large cybercrime organizations.\n'
+        '▪ State Hackers - Employees of governments who attack other countries for political aims.';
+    final rt = FakeLlmRuntime(['x', 'x', 'x']); // questions fail 3 times
     final set = await _engine(rt, maxChunks: 1).generate(notes);
-    expect(set.flashcards.map((c) => c.front),
-        ['Hacktivists', 'Script Kiddies', 'Vulnerability Brokers', 'Cyber Criminals']);
-    expect(set.flashcards.first.back, 'Grey hat hackers who rally and protest against political ideas.');
+    expect(set.flashcards.map((c) => c.back),
+        ['Hacktivists', 'Script Kiddies', 'Vulnerability Brokers', 'Cyber Criminals', 'State Hackers']);
+    expect(set.flashcards.first.front, 'Grey hat hackers who rally and protest against political ideas.');
     final q = set.questions.first;
     expect(q.prompt, contains('Grey hat hackers who rally'));
     expect(q.choices[q.answerIndex], 'Hacktivists');
-    expect(q.choices.toSet(),
-        {'Hacktivists', 'Script Kiddies', 'Vulnerability Brokers', 'Cyber Criminals'});
+    expect(q.choices.toSet().difference({'Hacktivists', 'Script Kiddies', 'Vulnerability Brokers', 'Cyber Criminals', 'State Hackers'}), isEmpty);
+    expect(q.choices.length, greaterThanOrEqualTo(3));
+  });
+
+  test('with fewer than five real definitions there is no "which term" question (too little to choose from)', () async {
+    const notes = '▪ Hacktivists - Grey hat hackers who rally and protest against political ideas.\n'
+        '▪ Script Kiddies - Teenagers or hobbyists mostly limited to pranks and vandalism.';
+    final set = await _engine(FakeLlmRuntime(['x', 'x', 'x']), maxChunks: 1).generate(notes);
+    expect(set.flashcards, hasLength(2));
+    expect(set.questions, isEmpty);
   });
 
   test('without usable wrong answers the quiz falls back to other answers', () async {
-    final rt = FakeLlmRuntime([_goodFacts, _goodQa, 'garbage']);
+    final rt = FakeLlmRuntime([_goodQa, 'garbage']);
     final q = (await _engine(rt).generate(_notes)).questions.first;
     expect(q.choices, hasLength(3)); // only 3 distinct answers in the whole set
     expect(q.choices[q.answerIndex], 'Calamba');
-    expect(rt.prompts, hasLength(3)); // wrong answers are asked for once only
+    expect(rt.prompts.where((p) => !_isCheck(p)), hasLength(2)); // wrong answers are asked for once only
   });
 
   test('fallback choices: people only for "who" questions, never for the rest', () async {
@@ -99,7 +180,7 @@ void main() {
       ['Who wrote Noli Me Tangere in Berlin?', 'Rizal'],
       ['Where was Rizal executed?', 'Bagumbayan'],
     ]);
-    final rt = FakeLlmRuntime([_goodFacts, qa, 'garbage']);
+    final rt = FakeLlmRuntime([qa, 'garbage']);
     final set = await _engine(rt).generate(_notes);
     expect(set.flashcards, hasLength(3));
     for (final q in set.questions) {
@@ -113,9 +194,9 @@ void main() {
       ['Where was Rizal executed at Bagumbayan?', 'Bagumbayan'],
       ['In which city did Rizal write Noli Me Tangere?', 'Berlin'],
     ]);
-    final rt = FakeLlmRuntime([_goodFacts, qa, 'x', 'x', 'x']);
+    final rt = FakeLlmRuntime([qa, 'x', 'x', 'x']);
     final set = await _engine(rt).generate(_notes);
-    expect(set.flashcards.map((c) => c.front), [
+    expect(set.flashcards.map((c) => c.back), [
       'In what year was Rizal born in Calamba?',
       'In which city did Rizal write Noli Me Tangere?',
     ]);
@@ -129,11 +210,11 @@ void main() {
     final again = _qa([
       ['Where was Rizal executed?', 'Bagumbayan'],
     ]);
-    final rt = FakeLlmRuntime([_goodFacts, first, again, _goodWrong]);
+    final rt = FakeLlmRuntime([first, again, _goodWrong]);
     final set = await _engine(rt).generate(_notes);
-    expect(set.flashcards.map((c) => c.back), ['Calamba', 'Berlin', 'Bagumbayan']);
-    expect(rt.prompts[2], contains('1. Rizal was executed at Bagumbayan in 1896.'));
-    expect(rt.prompts[2], isNot(contains('Calamba')));
+    expect(set.flashcards.map((c) => c.front), ['Calamba', 'Berlin', 'Bagumbayan']);
+    expect(rt.prompts[1], contains('1. Rizal was executed at Bagumbayan in 1896.'));
+    expect(rt.prompts[1], isNot(contains('Calamba')));
   });
 
   test('answers not stated in the notes are dropped', () async {
@@ -141,8 +222,8 @@ void main() {
       ['In which town was Rizal born?', 'Calamba'],
       ['Where was Rizal executed?', 'Paris'], // made up
     ]);
-    final set = await _engine(FakeLlmRuntime([_goodFacts, qa, 'x', 'x', 'x'])).generate(_notes);
-    expect(set.flashcards.map((c) => c.back), ['Calamba']);
+    final set = await _engine(FakeLlmRuntime([qa, 'x', 'x', 'x'])).generate(_notes);
+    expect(set.flashcards.map((c) => c.front), ['Calamba']);
   });
 
   test('vague topic labels and placeholders are dropped', () async {
@@ -151,20 +232,12 @@ void main() {
       ['<question>', '<answer>'],
       ['In which town was Rizal born?', 'Calamba'],
     ]);
-    final set = await _engine(FakeLlmRuntime([_goodFacts, qa, 'x', 'x', 'x'])).generate(_notes);
-    expect(set.flashcards.map((c) => c.front), ['In which town was Rizal born?']);
-  });
-
-  test('facts that are not in the notes are dropped; none left means retry', () async {
-    final madeUp = _facts(['Quibs graze on moss on the planet Zorblax.']);
-    final rt = FakeLlmRuntime([madeUp, ..._ok]);
-    final set = await _engine(rt).generate(_notes);
-    expect(set.flashcards, hasLength(3));
-    expect(rt.prompts, hasLength(4));
+    final set = await _engine(FakeLlmRuntime([qa, 'x', 'x', 'x'])).generate(_notes);
+    expect(set.flashcards.map((c) => c.back), ['In which town was Rizal born?']);
   });
 
   test('retries malformed output, then fails after 3 bad attempts', () async {
-    final ok = await _engine(FakeLlmRuntime(['garbage', _goodFacts, 'x', _goodQa, _goodWrong]))
+    final ok = await _engine(FakeLlmRuntime(['garbage', _goodQa, _goodWrong]))
         .generate(_notes);
     expect(ok.flashcards, hasLength(3));
     await expectLater(
@@ -180,22 +253,26 @@ void main() {
   });
 
   test('a failed section is skipped if another succeeds', () async {
-    final notes = '${'a' * 150}\n$_notes'; // 2 sections at chunkChars 200
+    const notes = '$_mito\n$_notes'; // 2 sections at chunkChars 200
     final rt = FakeLlmRuntime(['x', 'y', 'z', ..._ok]);
     final set = await _engine(rt).generate(notes);
     expect(set.flashcards, hasLength(3));
   });
 
   test('duplicate questions across sections are removed', () async {
-    final notes = '$_notes\n${'b' * 150}\n$_notes';
+    const notes = '$_notes\n$_mito\n$_notes';
     final rt = FakeLlmRuntime([..._ok, 'x', 'x', 'x', ..._ok]);
     final set = await _engine(rt).generate(notes);
     expect(set.flashcards, hasLength(3));
   });
 
   test('section count is capped and spread over the whole document', () async {
-    // each section's text differs (lines differing only by a number are footers)
-    final notes = List.generate(10, (i) => '${String.fromCharCode(65 + i) * 150}$i').join('\n');
+    const planets = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+    final notes = [
+      for (final p in planets)
+        'Planet $p has a thin ring of dust and ice that circles it once every few days, '
+            'and its $p moons keep the ring narrow and bright.',
+    ].join('\n');
     final rt = FakeLlmRuntime(List.generate(12, (_) => 'x'));
     try {
       await _engine(rt, maxChunks: 2).generate(notes);
@@ -203,20 +280,20 @@ void main() {
       // the fake only returns junk; only the prompts matter here
     }
     expect(rt.prompts, hasLength(6)); // 2 sections x 3 attempts
-    expect(rt.prompts.first, contains('0'));
-    expect(rt.prompts.last, contains('5'));
+    expect(rt.prompts.first, contains('Planet Zero'));
+    expect(rt.prompts.last, contains('Planet Five'));
   });
 
-  test('reports progress after each section, ending at 1.0', () async {
-    final notes = '$_notes\n${'b' * 150}';
+  test('reports progress after each section, ending at 1.0 after the fact check', () async {
+    const notes = '$_notes\n$_mito';
     final rt = FakeLlmRuntime([..._ok, 'x', 'x', 'x']);
     final seen = <double>[];
     await _engine(rt).generate(notes, onProgress: seen.add);
-    expect(seen, [0.5, 1.0]);
+    expect(seen, [closeTo(1 / 3, 1e-9), closeTo(2 / 3, 1e-9), 1.0]);
   });
 
   test('ModelUnavailableException propagates without retry', () async {
-    final rt = FakeLlmRuntime([ModelUnavailableException('oom'), _goodFacts]);
+    final rt = FakeLlmRuntime([ModelUnavailableException('oom'), _goodQa]);
     await expectLater(
       _engine(rt).generate(_notes),
       throwsA(isA<ModelUnavailableException>()),
@@ -259,20 +336,6 @@ void main() {
     expect(rt.prompts.first, isNot(contains('example.com')));
   });
 
-  test('citation-like facts and answers from the model are dropped', () async {
-    final facts = _facts([
-      'Rizal was born in Calamba in 1861.',
-      'Guerrero, L. (1963). The first Filipino. Journal of History, 4(2), 10-20.',
-    ]);
-    final qa = _qa([
-      ['In which town was Rizal born?', 'Calamba'],
-      ['Which journal published Guerrero in 1963?', 'Journal of History'],
-    ]);
-    const notes = 'Rizal was born in Calamba in 1861. Guerrero wrote about Rizal in 1963 in Journal of History.';
-    final set = await _engine(FakeLlmRuntime([facts, qa, _goodWrong])).generate(notes);
-    expect(set.flashcards.map((c) => c.front), ['In which town was Rizal born?']);
-  });
-
   test('quiz choices share one style, so the right one does not stand out', () async {
     final qa = _qa([
       ['In which town was Rizal born?', 'calamba.'],
@@ -284,7 +347,7 @@ void main() {
       ['Madrid', 'Paris', 'London'],
       ['Fort Santiago', 'Intramuros', 'Cavite'],
     ]);
-    final set = await _engine(FakeLlmRuntime([_goodFacts, qa, wrong])).generate(_notes);
+    final set = await _engine(FakeLlmRuntime([qa, wrong])).generate(_notes);
     final q = set.questions.first;
     expect(q.choices.toSet(), {'Calamba', 'Manila', 'Cebu', 'Davao'});
     expect(q.choices[q.answerIndex], 'Calamba');
@@ -292,14 +355,13 @@ void main() {
 
   test('a long correct answer is not paired with one-word choices', () async {
     const notes = 'Photosynthesis lets plants turn sunlight, water and carbon dioxide into sugar and oxygen.';
-    final facts = _facts(['Photosynthesis lets plants turn sunlight, water and carbon dioxide into sugar and oxygen.']);
     final qa = _qa([
       ['What does photosynthesis let plants do?', 'Turn sunlight water and carbon dioxide into sugar']
     ]);
     final wrong = _wrong([
       ['Rain', 'Wind', 'Soil']
     ]);
-    final set = await _engine(FakeLlmRuntime([facts, qa, wrong])).generate(notes);
+    final set = await _engine(FakeLlmRuntime([qa, wrong])).generate(notes);
     expect(set.flashcards, hasLength(1));
     expect(set.questions, isEmpty); // no believable choices: better no question than a giveaway
   });
@@ -307,70 +369,61 @@ void main() {
   test('a question asking for three things gets all three, numbered, one per line', () async {
     const notes = 'The ACM code has three principles:\n1. Contribute to society and to human well-being\n'
         '2. Avoid harm\n3. Be honest and trustworthy';
-    final facts = _facts(['The ACM code has three principles: contribute to society, avoid harm, be honest.']);
     // the model gives only two, run together on one line
     final qa = _qa([
       ['What are the three key principles that contribute to society?', '1. Contribute to society and to human well-being 2. Avoid harm']
     ]);
-    final set = await _engine(FakeLlmRuntime([facts, qa]), maxChunks: 1).generate(notes);
-    expect(set.flashcards.single.back,
+    final set = await _engine(FakeLlmRuntime([qa]), maxChunks: 1).generate(notes);
+    expect(set.flashcards.single.front,
         '1. Contribute to society and to human well-being\n2. Avoid harm\n3. Be honest and trustworthy');
     expect(set.questions, isEmpty); // a list is for the card, not multiple choice
   });
 
   test('a list question whose items cannot be found is dropped, not shown incomplete', () async {
     const notes = 'The ACM code has three principles: contribute to society, avoid harm and be honest and trustworthy.';
-    final facts = _facts(['The ACM code has three principles: contribute to society, avoid harm and be honest and trustworthy.']);
     final qa = _qa([
       ['What are the three key principles of the ACM code?', '1. Contribute to society 2. Avoid harm']
     ]);
-    final rt = FakeLlmRuntime([facts, qa, qa, qa]);
-    final set = await _engine(rt, maxChunks: 1).generate(notes);
-    expect(set.flashcards.where((c) => c.front.contains('three key principles')), isEmpty);
-    expect(set.flashcards.any((c) => c.back.contains('1. Contribute')), isFalse);
+    final rt = FakeLlmRuntime([qa, qa, qa]);
+    // the only card was dropped (no complete list in the notes), so nothing is left to study from
+    await expectLater(_engine(rt, maxChunks: 1).generate(notes), throwsA(isA<GenerationFailed>()));
   });
 
   test('"What are the main principles" with a vague one-sentence answer gets the notes\' full list', () async {
     const notes = 'General Ethical Principles\nA computing professional should...\n'
         '1.1 Contribute to society and to human well-being.\n1.2 Avoid harm.\n1.3 Be honest and trustworthy.\n1.4 Respect privacy.\n';
-    final facts = _facts(['A computing professional should contribute to society, avoid harm, be honest and respect privacy.']);
     final qa = _qa([
       ['What are the main principles of computing professionals?', 'The rules for computing professionals include guidelines.']
     ]);
-    final set = await _engine(FakeLlmRuntime([facts, qa]), maxChunks: 1).generate(notes);
+    final set = await _engine(FakeLlmRuntime([qa]), maxChunks: 1).generate(notes);
     // the list is one card under its own title; the model's vague card is not kept beside it
-    expect(set.flashcards.where((c) => c.front.contains('main principles')), isEmpty);
-    final card = set.flashcards.firstWhere((c) => c.front == 'General Ethical Principles');
-    expect(card.back,
+    expect(set.flashcards.where((c) => c.back.contains('main principles')), isEmpty);
+    final card = set.flashcards.firstWhere((c) => c.back == 'What are the General Ethical Principles?');
+    expect(card.front,
         '1. Contribute to society and to human well-being\n2. Avoid harm\n3. Be honest and trustworthy\n4. Respect privacy');
   });
 
   test('a list question with a vague answer and no list in the notes is dropped', () async {
     const notes = 'Computing professionals follow rules, and the rules include guidelines that explain how to apply them well.';
-    final facts = _facts(['Computing professionals follow rules, and the rules include guidelines that explain them.']);
     final qa = _qa([
       ['What are the main principles of computing professionals?', 'The rules for computing professionals include guidelines.']
     ]);
     // the vague card is dropped, and with nothing else to study from, generation says so
-    expect(_engine(FakeLlmRuntime([facts, qa, qa, qa]), maxChunks: 1).generate(notes),
+    expect(_engine(FakeLlmRuntime([qa, qa, qa]), maxChunks: 1).generate(notes),
         throwsA(isA<GenerationFailed>()));
   });
 
   test('a question that mixes a date from one fact with a rule from another is dropped', () async {
     const notes = '1974 - Revised after IEEE added Professional Activities to its Constitution. '
         'The IEEE Code of Ethics comprises 10 principles, adopted in 1990.';
-    final facts = _facts([
-      'The IEEE revised its Code after adding Professional Activities to its Constitution in 1974.',
-      'The IEEE Code of Ethics comprises 10 principles, adopted in 1990.',
-    ]);
     final qa = _qa([
       ['What is the first principle of the revised IEEE Constitution?', 'The first principle states that all members of the IEEE are professional.'],
       ['How many principles does the IEEE Code of Ethics comprise?', '10 principles'],
     ]);
-    final set = await _engine(FakeLlmRuntime([facts, qa, qa, qa, 'x']), maxChunks: 1).generate(notes);
-    final fronts = set.flashcards.map((c) => c.front).toList();
-    expect(fronts.any((f) => f.contains('first principle')), isFalse);
-    expect(fronts, contains('How many principles does the IEEE Code of Ethics comprise?'));
+    final set = await _engine(FakeLlmRuntime([qa, qa, qa, 'x']), maxChunks: 1).generate(notes);
+    final backs = set.flashcards.map((c) => c.back).toList();
+    expect(backs.any((f) => f.contains('first principle')), isFalse);
+    expect(backs, contains('How many principles does the IEEE Code of Ethics comprise?'));
   });
 
   test('titled lists give "which belongs under" questions with points from other lists as wrong choices', () async {
@@ -378,13 +431,57 @@ void main() {
         'Professional Leadership Principles\n- Manage personnel and resources well\n- Support policies that reflect the Code\n- Create opportunities for members to grow\n'
         'Grades of Membership\n- Associate member grade\n- Senior member grade\n- Honorary member grade\n';
     final set = await _engine(FakeLlmRuntime(['x', 'x', 'x']), maxChunks: 1).generate(notes);
-    expect(set.flashcards.map((c) => c.front),
-        containsAll(['General Ethical Principles', 'Professional Leadership Principles', 'Grades of Membership']));
+    expect(set.flashcards.map((c) => c.back),
+        containsAll([
+          'What are the General Ethical Principles?',
+          'What are the Professional Leadership Principles?',
+          'What are the Grades of Membership?',
+        ]));
     final q = set.questions.firstWhere((q) => q.prompt == 'Which of these belongs under "General Ethical Principles"?');
     const own = ['Contribute to society and human well-being', 'Avoid harm to others', 'Be honest and trustworthy'];
     expect(own, contains(q.choices[q.answerIndex]));
     // exactly one choice is from the asked list
     expect(q.choices.where(own.contains), hasLength(1));
     expect(q.choices.length, greaterThanOrEqualTo(3));
+  });
+
+  group('reading the answer back', () {
+    final qa = _qa([
+      ['In which town was Rizal born?', 'Calamba']
+    ]);
+    LlmAiEngine reading(FakeLlmRuntime rt, {Duration budget = const Duration(minutes: 3)}) =>
+        LlmAiEngine(rt, _tier, random: Random(1), readBack: true, readBackBudget: budget);
+
+    test('a card is kept when the model reads the same answer out of the notes', () async {
+      final rt = FakeLlmRuntime([qa, '{"answer":"Calamba"}', 'x']);
+      final set = await reading(rt).generate(_notes);
+      expect(set.flashcards.where((c) => c.front == 'Calamba'), hasLength(1));
+      expect(rt.prompts.where((p) => p.contains('PASSAGE:')), hasLength(1));
+    });
+
+    test('a card is dropped when the model reads something else, nothing, or garbage', () async {
+      for (final reply in ['{"answer":"Berlin"}', '{"answer":""}', 'garbage']) {
+        final rt = FakeLlmRuntime([qa, reply, qa, reply, qa, reply, 'x']);
+        await expectLater(reading(rt).generate(_notes), throwsA(isA<GenerationFailed>()), reason: reply);
+      }
+    });
+
+    test('an answer it invents from nowhere does not count', () async {
+      final rt = FakeLlmRuntime([qa, '{"answer":"Intramuros"}', qa, '{"answer":"Intramuros"}', qa, '{"answer":"Intramuros"}', 'x']);
+      await expectLater(reading(rt).generate(_notes), throwsA(isA<GenerationFailed>()));
+    });
+
+    test('with no time left the cheap checks decide and the model is not asked', () async {
+      final rt = FakeLlmRuntime([qa, 'x']);
+      final set = await reading(rt, budget: Duration.zero).generate(_notes);
+      expect(set.flashcards.where((c) => c.front == 'Calamba'), hasLength(1));
+      expect(rt.prompts.where((p) => p.contains('PASSAGE:')), isEmpty);
+    });
+
+    test('by default nothing is asked', () async {
+      final rt = FakeLlmRuntime([qa, 'x']);
+      await _engine(rt).generate(_notes);
+      expect(rt.prompts.where((p) => p.contains('PASSAGE:')), isEmpty);
+    });
   });
 }

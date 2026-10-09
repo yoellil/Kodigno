@@ -4,7 +4,9 @@ import 'package:path/path.dart' as p;
 
 import '../ocr/ocr_service.dart';
 import 'docx_text.dart';
+import '../domain/source_ref.dart';
 import 'pdf_text.dart';
+import 'well_formed.dart';
 
 class UnsupportedSourceException implements Exception {
   UnsupportedSourceException(this.ext);
@@ -30,10 +32,14 @@ class SourceReader {
     throw UnsupportedSourceException(ext);
   }
 
-  Future<String> read(String path) async {
+  Future<String> read(String path) async => wellFormed(await _read(path));
+
+  Future<String> _read(String path) async {
     switch (typeOf(path)) {
       case 'image':
-        return ocr.recognize(path);
+        final text = await ocr.recognize(path);
+        // The photo is its own page, so material can point back at it.
+        return text.trim().isEmpty ? text : '${pageMarker(1)}\n$text';
       case 'pdf':
         return pdf.extract(path);
       case 'docx':

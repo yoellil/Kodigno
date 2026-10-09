@@ -28,6 +28,17 @@ Cybersecurity - A World of Experts and Criminals Cybersecurity Essentials v1.1
 ''';
 
 void main() {
+  test('a wrapped line is not a slide title, and a title takes only its own page\'s bullets', () {
+    // The PDF reader leaves a space at the end of a line that wraps.
+    const notes = '• Travels in the Philippines by \nDr. Feodor Jagor\n\n'
+        '• June 1874\n• Rizal returned to the Ateneo\n• He won only one gold medal in Latin\n';
+    expect(extractDefinitions(notes).map((d) => d.term), isNot(contains('Dr. Feodor Jagor')));
+    const ownPage = 'Extra-curricular activities in Ateneo\n• President of the Academy of Spanish Literature\n'
+        '• Secretary of the Academy of Natural Sciences\n\n• Secretary of the Marian Congregation\n';
+    expect(extractDefinitions(ownPage).single.definition,
+        '• President of the Academy of Spanish Literature\n• Secretary of the Academy of Natural Sciences');
+  });
+
   final defs = {for (final d in extractDefinitions(_slides)) d.term: d.definition};
 
   test('"Term - definition" bullets, joined across wrapped lines, first sentence only', () {
@@ -181,10 +192,137 @@ Intellectual Property Office of the Philippines (IPOPHL) as the primary agency.
     });
   });
 
-  test('a heading over a few short bullets becomes one numbered list card', () {
+  test('a heading over a few short bullets becomes one bulleted list card', () {
     const text = 'Types of Hackers\n- White hat\n- Black hat hackers\n- Grey hat hackers\n';
     final d = extractDefinitions(text).single;
     expect(d.term, 'Types of Hackers');
-    expect(d.definition, '1. White hat\n2. Black hat hackers\n3. Grey hat hackers');
+    expect(d.definition, '\u2022 White hat\n\u2022 Black hat hackers\n\u2022 Grey hat hackers');
+  });
+
+  group('list cards ask a question', () {
+    test('a title that names a group becomes "What are the ...?"', () {
+      expect(questionForTitle('Extra-curricular activities in Ateneo'), 'What are the extra-curricular activities in Ateneo?');
+      expect(questionForTitle('General Ethical Principles'), 'What are the General Ethical Principles?');
+      expect(questionForTitle('Reasons why Rizal did not perform well in UST'),
+          'What are the reasons why Rizal did not perform well in UST?');
+      expect(questionForTitle('Why did Rizal shift to a medical course?'), 'Why did Rizal shift to a medical course?');
+      expect(questionForTitle('IEEE GRADES OF MEMBERSHIP'), 'What are the "IEEE GRADES OF MEMBERSHIP"?');
+    });
+
+    test('only titles that name a group make list cards', () {
+      for (final t in ['Extra-curricular activities in Ateneo', 'Logical Oppositions', 'Three Processes of Eduction', 'Why Philosophy & Letters?']) {
+        expect(looksLikeCategory(t), isTrue, reason: t);
+      }
+      for (final t in ['Paciano went to Manila', 'June 1876', 'Spanish', 'Dr. Feodor Jagor', 'Sanchez', 'Santa Cruz in order to visit', 'Prayed at the college chapel']) {
+        expect(looksLikeCategory(t), isFalse, reason: t);
+      }
+    });
+
+    test('bullets unless the notes numbered the points', () {
+      expect(formatList(['A one', 'B two'], bullets: true), '• A one\n• B two');
+      expect(formatList(['A one', 'B two']), '1. A one\n2. B two');
+    });
+
+    test('a lone name, language or date with a line below is not a card', () {
+      const t = 'Sanchez\nHe won five medals at the end of the school term and was proud of it.\nJune 1876\nHe obtained the highest grades in all subjects that year at school.\n';
+      expect(extractDefinitions(t), isEmpty);
+    });
+  });
+
+  group('usableTerms', () {
+    Definition d(String term, String definition) => (term: term, definition: definition);
+
+    // Slides as the app reads a PDF: a page is an empty line apart, bullets start with a dash.
+    const slides = 'Intended Learning Outcomes\n- Understand how to protect Intellectual Property;\n- Explain the factors in fair use.\n\n'
+        'Patents\n- A patent permits its owner to exclude the public from making, using, or selling a protected invention.\n\n'
+        'CurrentIntellectualPropertyIssues\n- Plagiarism is the act of stealing someone\u2019s ideas or words and passing them off as one\u2019s own.\n\n'
+        'GeneralAgreementonTariffsandTrade\n- The General Agreement on Tariffs and Trade (GATT) was a multilateral agreement governing international trade.\n\n'
+        'Trade secret\n- Information used in business\n- Generally unknown to the public\n';
+
+    test('keeps real terms', () {
+      final kept = usableTerms([
+        d('Trade secret', 'Information used in business - Generally unknown to the public'),
+        d('Acceptable Use Policy (AUP)', 'A document that stipulates restrictions and practices that a user must agree to.'),
+        d('COPPA', 'Was implemented in 1998 to give parents control over the information collected from children.'),
+        d('Breach of the duty of care', 'The failure to act as a reasonable person would act.'),
+        d('Negligence', 'Has been defined as not doing something that a reasonable person would do.'),
+      ]);
+      expect(kept.map((t) => t.term), ['Trade secret', 'Acceptable Use Policy (AUP)', 'COPPA', 'Breach of the duty of care', 'Negligence']);
+    });
+
+    test('drops course headings, tips and instructions', () {
+      final kept = usableTerms([
+        d('Intended Learning Outcomes', 'Understand how to protect Intellectual Property; explain the factors in fair use.'),
+        d('Module 3', 'Intellectual property and privacy in the digital age for the course.'),
+        d('Ask for feedback', 'If you carry out a presentation, ask yourself how you think it went.'),
+        d('Try active listening', 'A good communicator listens before speaking to the other person.'),
+        d('Enroll in a course', 'To really become a better communicator, you should consider a course.'),
+        d('Learn from others', 'If you look up to someone who has good communication skills, watch them.'),
+        d('Develop good relationships with suppliers', 'Deal fairly with them - do not make unreasonable demands.'),
+        d('Your choices', 'As an individual you decide not to open email with the unpleasant header.'),
+      ]);
+      expect(kept, isEmpty);
+    });
+
+    test('drops websites, fragments, colons, list numbers and a bare year', () {
+      final kept = usableTerms([
+        d('ThomasNet.com', 'An excellent source for identifying suppliers and sources for products.'),
+        d('CORI (http://cori.missouri.edu/pages/ksearch.htm)', 'An online database of more than 690,000 contract documents.'),
+        d('Here', 'The skills that employers mostly seek in new hires, ranked in order.'),
+        d('Law', 'The CAN-SPAM Act - illegal to send commercial email with a false header.'),
+        d('Profession is a calling that requires:', 'Specialized knowledge and long and intensive academic preparation.'),
+        d('PrivacyProtectionandtheLaw(US) 3. Health Information', 'The use of electronic medical records and the subsequent interest.'),
+        d('IEEE Code of Ethics 1912', 'First code adopted by AIEE, after 6 years of effort and review.'),
+      ]);
+      expect(kept, isEmpty);
+    });
+
+    test('a heading the PDF ran together is put right, using the words of the notes', () {
+      final kept = usableTerms([
+        d('GeneralAgreementonTariffsandTrade', 'The General Agreement on Tariffs and Trade (GATT) was a multilateral agreement.'),
+        d('TheDigitalMillenniumCopyrightAct(1998)', 'The DMCA (Public Law 105-304) was signed into law in 1998 and implements two treaties.'),
+      ], text: slides);
+      expect(kept.map((t) => t.term), ['General Agreement on Tariffs and Trade', 'The Digital Millennium Copyright Act (1998)']);
+    });
+
+    test('a slide title is a term only if its own bullet is about it', () {
+      final kept = usableTerms([
+        d('Patents', 'A patent permits its owner to exclude the public from making, using, or selling a protected invention.'),
+        d('CurrentIntellectualPropertyIssues', 'Plagiarism is the act of stealing someone\u2019s ideas or words and passing them off as one\u2019s own.'),
+        d('Intended Learning Outcomes', 'Understand how to protect Intellectual Property; Explain the factors in fair use.'),
+      ], text: slides);
+      expect(kept.map((t) => t.term), ['Patents']);
+    });
+
+    test('the same title is a term when it is not a slide title: a heading in the middle of a slide', () {
+      final kept = usableTerms([
+        d('Trade secret', 'Information used in business - Generally unknown to the public'),
+      ], text: slides);
+      expect(kept.map((t) => t.term), ['Trade secret']); // no bullet words in common, but it is not a page heading
+    });
+
+    test('the end of a slide title that wrapped onto two lines is still a title', () {
+      const wrapped = 'TheWorldIntellectualPropertyOrganization \nCopyrightTreaty(1996)\n- The World Intellectual Property Organization (WIPO), headquartered in Geneva, is an agency of the United Nations.\n\n'
+          'Patents\n- A patent permits its owner to exclude the public from making, using, or selling a protected invention.\n\n'
+          'Trade Secrets\n- Business information that is generally unknown to the public and kept confidential.\n';
+      final kept = usableTerms([
+        d('Copyright Treaty (1996)', 'The World Intellectual Property Organization (WIPO), headquartered in Geneva, is an agency of the United Nations.'),
+      ], text: wrapped);
+      expect(kept, isEmpty);
+    });
+
+    test('the same term twice is kept once, and nothing in is nothing out', () {
+      final kept = usableTerms([
+        d('Bribery', 'Providing money, property, or favors to someone in business to obtain an advantage.'),
+        d('bribery', 'Providing money to someone in business to get an advantage over others.'),
+      ]);
+      expect(kept, hasLength(1));
+      expect(usableTerms(const []), isEmpty);
+    });
+
+    test('an all-capitals short word is an acronym and stays; a short plain word does not', () {
+      expect(usableTerms([d('AUP', 'A document that stipulates restrictions on how users may use resources.')]), hasLength(1));
+      expect(usableTerms([d('Law', 'A document that stipulates restrictions on how users may use resources.')]), isEmpty);
+    });
   });
 }

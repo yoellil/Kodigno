@@ -5,9 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../app_controller.dart';
+import '../data/database.dart' show StudySet;
 import '../data/repository.dart';
+import '../domain/source_ref.dart';
 import '../domain/summary.dart';
 import 'motion.dart';
+import 'slide_tag.dart';
+import 'teach_back_screen.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -32,6 +36,7 @@ class SummaryScreen extends StatefulWidget {
 
 class _SummaryScreenState extends State<SummaryScreen> {
   LessonSummary? _lesson;
+  StudySet? _set; // for the file behind the lesson, so a source tag can open its slide
   bool _loading = true; // reading the saved lesson
   bool _busy = false;
   String? _error;
@@ -43,6 +48,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
       if (mounted) {
         setState(() {
           _lesson = d.summary;
+          _set = d.set;
           _loading = false;
         });
       }
@@ -69,12 +75,20 @@ class _SummaryScreenState extends State<SummaryScreen> {
     }
   }
 
+  /// Opens "explain it back" for topic number [n] of the lesson.
+  void _teach(int n) => Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => TeachBackScreen(
+          repo: widget.repo, setId: widget.setId, sectionIndex: n, model: teachModelOf(context))));
+
   Future<void> _copy() async {
     await Clipboard.setData(ClipboardData(text: _lesson!.toText()));
     if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Lesson copied')));
   }
+
+  Widget _withSources(Widget child) =>
+      _set == null ? child : SourceScope.forSet(_set!, child: child);
 
   @override
   Widget build(BuildContext context) => PanelPage(
@@ -91,15 +105,13 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   const CloseX(),
                 ]),
               ),
-              Expanded(
-                child: _loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _busy
-                    ? const _Writing()
-                    : _lesson != null
-                        ? _Lesson(_lesson!, onCopy: _copy, onRedo: _run)
-                        : _Start(onStart: _run, error: _error),
-              ),
+              Expanded(child: _withSources(_loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _busy
+                      ? const _Writing()
+                      : _lesson != null
+                          ? _Lesson(_lesson!, onCopy: _copy, onRedo: _run, onTeach: _teach)
+                          : _Start(onStart: _run, error: _error))),
             ]),
           ),
         ),
@@ -277,10 +289,13 @@ class _ScribblePainter extends CustomPainter {
 }
 
 class _Lesson extends StatelessWidget {
-  const _Lesson(this.lesson, {required this.onCopy, required this.onRedo});
+  const _Lesson(this.lesson, {required this.onCopy, required this.onRedo, required this.onTeach});
   final LessonSummary lesson;
   final VoidCallback onCopy;
   final VoidCallback onRedo;
+
+  /// Opens the Teach-Back screen for topic number [n] of the lesson.
+  final void Function(int n) onTeach;
 
   @override
   Widget build(BuildContext context) {
@@ -292,9 +307,11 @@ class _Lesson extends StatelessWidget {
             [if (lesson.sections[n].explanation.isNotEmpty) lesson.sections[n].explanation],
             bullets: lesson.sections[n].keyPoints,
             facts: lesson.sections[n].facts,
-            terms: lesson.sections[n].terms),
+            terms: lesson.sections[n].terms,
+            sourceOf: lesson.sourceOf,
+            onTeachBack: () => onTeach(n)),
       if (lesson.takeaways.isNotEmpty)
-        _Card(K.mint, 'Remember', const [], bullets: lesson.takeaways),
+        _Card(K.mint, 'Remember', const [], bullets: lesson.takeaways, sourceOf: lesson.sourceOf),
     ];
     return ListView(
       padding: const EdgeInsets.fromLTRB(28, 16, 28, 28),
@@ -317,13 +334,28 @@ class _Lesson extends StatelessWidget {
 
 class _Card extends StatelessWidget {
   const _Card(this.color, this.heading, this.paragraphs,
-      {this.bullets = const [], this.facts = const [], this.terms = const []});
+      {this.bullets = const [],
+      this.facts = const [],
+      this.terms = const [],
+      this.sourceOf,
+      this.onTeachBack});
+
+  /// Opens "explain it back" for this topic; null for a card that is not a topic.
+  final VoidCallback? onTeachBack;
   final Color color;
   final String heading;
   final List<String> paragraphs;
   final List<String> bullets;
   final List<String> facts; // verbatim dates and figures, shown apart from the points
   final List<String> terms; // the phrases the topic keeps coming back to
+
+  /// The page behind a piece of text, if it was looked up; shown as a tag.
+  final SourceRef? Function(String text)? sourceOf;
+
+  Widget _tag(String text) {
+    final ref = sourceOf?.call(text);
+    return ref == null ? const SizedBox.shrink() : SlideTag(ref);
+  }
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -352,6 +384,7 @@ class _Card extends StatelessWidget {
               for (final p in paragraphs) ...[
                 const SizedBox(height: 10),
                 SelectableText(p, style: body(15)),
+                if (sourceOf?.call(p) != null) Padding(padding: const EdgeInsets.only(top: 6), child: _tag(p)),
               ],
               if (bullets.isNotEmpty) const SizedBox(height: 12),
               for (final b in bullets)
@@ -364,6 +397,7 @@ class _Card extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Expanded(child: SelectableText(b, style: body(14, weight: FontWeight.w600))),
+                    if (sourceOf?.call(b) != null) Padding(padding: const EdgeInsets.only(left: 8), child: _tag(b)),
                   ]),
                 ),
               if (facts.isNotEmpty) ...[
@@ -380,9 +414,19 @@ class _Card extends StatelessWidget {
                         color: K.ink.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: SelectableText(f, style: body(13, weight: FontWeight.w600)),
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Expanded(child: SelectableText(f, style: body(13, weight: FontWeight.w600))),
+                        if (sourceOf?.call(f) != null) Padding(padding: const EdgeInsets.only(left: 8), child: _tag(f)),
+                      ]),
                     ),
                   ),
+              ],
+              if (onTeachBack != null) ...[
+                const SizedBox(height: 14),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: PillButton(label: 'Explain it back', icon: Icons.edit_outlined, dark: true, onPressed: onTeachBack),
+                ),
               ],
             ]),
           ),

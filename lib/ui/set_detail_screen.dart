@@ -1,32 +1,60 @@
 import 'package:flutter/material.dart';
 
 import '../data/repository.dart';
+import '../data/review_repository.dart';
 import 'anim.dart';
 import 'chat_screen.dart';
 import 'flashcards_screen.dart';
 import 'motion.dart';
+import 'practice_screen.dart';
 import 'quiz_screen.dart';
 import 'summary_screen.dart';
+import 'teach_back_screen.dart';
 import 'theme.dart';
 import 'waves.dart';
 import 'widgets.dart';
 
-class SetDetailScreen extends StatelessWidget {
+class SetDetailScreen extends StatefulWidget {
   const SetDetailScreen({super.key, required this.repo, required this.setId});
   final StudyRepository repo;
   final int setId;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        body: Stack(children: [
-          const Positioned.fill(child: WavyBackground()),
-          SafeArea(child: FutureBuilder<StudySetDetail>(
-          future: repo.getSet(setId),
-          builder: (context, snap) {
-            if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-            final d = snap.data!;
-            void push(Widget w) =>
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
+  State<SetDetailScreen> createState() => _SetDetailScreenState();
+}
+
+class _SetDetailScreenState extends State<SetDetailScreen> {
+  /// The set as last loaded, held directly so a reload swaps it in one step.
+  StudySetDetail? _d;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    final d = await widget.repo.getSet(widget.setId);
+    if (mounted) setState(() => _d = d);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = widget.repo;
+    final setId = widget.setId;
+    final loaded = _d;
+    return Scaffold(
+      body: Stack(children: [
+        const Positioned.fill(child: WavyBackground()),
+        SafeArea(child: Builder(
+          builder: (context) {
+            if (loaded == null) return const Center(child: CircularProgressIndicator());
+            final d = loaded;
+            // Back from a screen that may have changed the set (cards added or corrected): reload.
+            Future<void> push(Widget w) async {
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
+              await _reload();
+            }
             final hasQuiz = d.questions.isNotEmpty;
             // Left-aligned, so the waves have the right side to themselves.
             return Align(
@@ -57,10 +85,8 @@ class SetDetailScreen extends StatelessWidget {
                     const SizedBox(width: 14),
                     Expanded(
                       child: _Tile(Icons.style_outlined, K.pink, 'Flashcards',
-                          '${d.flashcards.length} cards',
-                          onTap: d.flashcards.isEmpty
-                              ? null
-                              : () => push(FlashcardsScreen(repo: repo, setId: setId)))
+                          d.flashcards.isEmpty ? 'Add your own' : '${d.flashcards.length} cards',
+                          onTap: () => push(FlashcardsScreen(repo: repo, setId: setId)))
                           .enter(context, index: 3),
                     ),
                   ]),
@@ -81,10 +107,21 @@ class SetDetailScreen extends StatelessWidget {
                           .enter(context, index: 5),
                     ),
                   ]),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Expanded(
+                      child: _Tile(Icons.record_voice_over_outlined, K.pink, 'Teach back', 'Explain a topic',
+                          onTap: d.set.sourceText.trim().isEmpty
+                              ? null
+                              : () => push(TeachBackTopicsScreen(repo: repo, setId: setId, model: teachModelOf(context))))
+                          .enter(context, index: 6),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(child: SizedBox.shrink()),
+                  ]),
                   const SizedBox(height: 26),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: PillButton(
+                  Wrap(spacing: 12, runSpacing: 12, children: [
+                    PillButton(
                       label: 'Start studying',
                       icon: Icons.bolt,
                       onPressed: hasQuiz
@@ -93,7 +130,16 @@ class SetDetailScreen extends StatelessWidget {
                               ? () => push(FlashcardsScreen(repo: repo, setId: setId))
                               : null,
                     ),
-                  ).enter(context, index: 6),
+                    PillButton(
+                      label: 'Practice this set',
+                      icon: Icons.timer_outlined,
+                      dark: true,
+                      onPressed: hasQuiz || d.flashcards.isNotEmpty
+                          ? () => push(PracticeScreen(
+                              repo: repo, reviews: ReviewRepository(repo.db), minutes: 5, setId: setId))
+                          : null,
+                    ),
+                  ]).enter(context, index: 7),
                 ]),
               ),
             );
@@ -101,6 +147,7 @@ class SetDetailScreen extends StatelessWidget {
         )),
         ]),
       );
+  }
 }
 
 class _Tile extends StatelessWidget {

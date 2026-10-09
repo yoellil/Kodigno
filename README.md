@@ -2,7 +2,7 @@
 
 An offline study app. Add a photo, PDF, Word document or text file; Kodigno reads the text and uses an AI model running on your own computer to make a quiz and flashcards. No account, and your notes never leave your machine.
 
-Status: Windows desktop first. Android, iOS, audio and YouTube sources are planned (see `docs/superpowers/specs/2026-10-09-kodigno-design.md`).
+Status: Windows desktop first. Android and iOS are planned (see `docs/superpowers/specs/2026-10-09-kodigno-design.md`).
 
 ## How it works
 - Text comes from the file: OCR for images (bundled Tesseract), text layer for PDFs, XML for DOCX.
