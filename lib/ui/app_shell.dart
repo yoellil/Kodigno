@@ -6,6 +6,7 @@ import 'kulay.dart';
 import 'loaders.dart';
 import 'motion.dart';
 import 'theme.dart';
+import 'waves.dart';
 import 'widgets.dart';
 
 const _items = [
@@ -96,7 +97,12 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                         alignment: Alignment.centerLeft,
                         child: BackHomeButton(onPressed: widget.onHome!)),
                   ),
-                Expanded(child: _content(index)),
+                Expanded(
+                  child: Stack(children: [
+                    const Positioned.fill(child: WavyBackground(fadeLeft: false, strength: 0.6)),
+                    _content(index),
+                  ]),
+                ),
               ]),
             ),
             bottomNavigationBar: NavigationBar(
@@ -194,13 +200,16 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                 clipBehavior: Clip.antiAlias,
                 decoration:
                     BoxDecoration(color: K.bg, borderRadius: BorderRadius.circular(28)),
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1180),
-                    child: _content(index),
+                child: Stack(children: [
+                  const Positioned.fill(child: WavyBackground(fadeLeft: false, strength: 0.6)),
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1180),
+                      child: _content(index),
+                    ),
                   ),
-                ),
+                ]),
               ),
             ),
           ]),

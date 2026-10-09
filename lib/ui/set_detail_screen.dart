@@ -8,6 +8,7 @@ import 'motion.dart';
 import 'quiz_screen.dart';
 import 'summary_screen.dart';
 import 'theme.dart';
+import 'waves.dart';
 import 'widgets.dart';
 
 class SetDetailScreen extends StatelessWidget {
@@ -16,8 +17,10 @@ class SetDetailScreen extends StatelessWidget {
   final int setId;
 
   @override
-  Widget build(BuildContext context) => PanelPage(
-        child: FutureBuilder<StudySetDetail>(
+  Widget build(BuildContext context) => Scaffold(
+        body: Stack(children: [
+          const Positioned.fill(child: WavyBackground()),
+          SafeArea(child: FutureBuilder<StudySetDetail>(
           future: repo.getSet(setId),
           builder: (context, snap) {
             if (!snap.hasData) return const Center(child: CircularProgressIndicator());
@@ -25,13 +28,17 @@ class SetDetailScreen extends StatelessWidget {
             void push(Widget w) =>
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
             final hasQuiz = d.questions.isNotEmpty;
-            return Center(
+            // Left-aligned, so the waves have the right side to themselves.
+            return Align(
+              alignment: Alignment.centerLeft,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: ListView(padding: const EdgeInsets.all(28), shrinkWrap: true, children: [
-                  const Align(alignment: Alignment.centerRight, child: CloseX()),
-                  Align(alignment: Alignment.centerLeft, child: SourceTag(d.set.sourceType))
-                      .enter(context),
+                constraints: const BoxConstraints(maxWidth: 700),
+                child: ListView(padding: const EdgeInsets.fromLTRB(56, 28, 28, 28), shrinkWrap: true, children: [
+                  Row(children: [
+                    SourceTag(d.set.sourceType).enter(context),
+                    const Spacer(),
+                    const CloseX(),
+                  ]),
                   const SizedBox(height: 12),
                   Text(d.set.title, style: display(42)).enter(context, index: 1),
                   const SizedBox(height: 26),
@@ -91,7 +98,8 @@ class SetDetailScreen extends StatelessWidget {
               ),
             );
           },
-        ),
+        )),
+        ]),
       );
 }
 
