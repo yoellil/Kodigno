@@ -74,7 +74,8 @@ void main() {
         term: 'Mitochondria',
         notes: 'Mitochondria make ATP for the cell.',
         setTitle: 'Biology');
-    expect(s, "The cell's power plant that makes ATP.");
+    expect(s.text, "The cell's power plant that makes ATP.");
+    expect(s.fromNotes, isTrue); // "Mitochondria" is in the notes it was shown
     expect(rt.sent.single.first, {'role': 'system', 'content': cardAssistSystemPrompt});
     expect(rt.sent.single.last['content'], allOf(contains('TERM: Mitochondria'), contains('Mitochondria make ATP')));
     expect(rt.schema, cardAssistSchema(AssistField.definition));
@@ -84,7 +85,9 @@ void main() {
   test('works the other way round: the term for a definition', () async {
     final rt = _Chat(['{"term":"Mitochondria"}']);
     final c = await _make(rt);
-    expect(await c.suggestCard(want: AssistField.term, definition: 'Makes ATP for the cell.'), 'Mitochondria');
+    final s = await c.suggestCard(want: AssistField.term, definition: 'Makes ATP for the cell.');
+    expect(s.text, 'Mitochondria');
+    expect(s.fromNotes, isFalse); // no notes: this came from the model's own knowledge
   });
 
   test('nothing typed yet: no model call, a message that says what to do', () async {
@@ -116,5 +119,13 @@ void main() {
     final c = await _make(_Chat([ModelUnavailableException('out of memory')]));
     await expectLater(c.suggestCard(want: AssistField.definition, term: 'x'),
         throwsA(isA<CardAssistFailed>().having((e) => e.message, 'message', contains('could not run'))));
+  });
+
+  test('a term that is not in the notes is marked as general knowledge, and an echoed term is dropped', () async {
+    final rt = _Chat(["{\"definition\":\"Photosynthesis is the process plants use to make sugar from light.\"}"]);
+    final c = await _make(rt);
+    final s = await c.suggestCard(want: AssistField.definition, term: 'Photosynthesis', notes: 'Mercado means market.');
+    expect(s.fromNotes, isFalse);
+    expect(s.text, 'The process plants use to make sugar from light.');
   });
 }

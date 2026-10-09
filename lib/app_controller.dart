@@ -188,10 +188,10 @@ class AppController extends ChangeNotifier {
     }
   }
 
-  /// A suggestion for the empty side of a flashcard: the definition for [term], or the
+  /// A suggestion for the missing side of a flashcard (marked with where it came from): the definition for [term], or the
   /// term for [definition], with the set's [notes] for context. Throws
   /// [CardAssistFailed] with a message fit to show the user.
-  Future<String> suggestCard({
+  Future<CardSuggestion> suggestCard({
     required AssistField want,
     String term = '',
     String definition = '',
@@ -213,11 +213,13 @@ class AppController extends ChangeNotifier {
         temperature: 0.2,
         schema: cardAssistSchema(want),
       );
-      final s = parseCardAssist(reply, want);
+      var s = parseCardAssist(reply, want);
       if (s.isEmpty) {
         throw CardAssistFailed("The AI wasn't sure about that one. Try adding a little more detail, or write it yourself.");
       }
-      return s;
+      if (want == AssistField.definition) s = withoutEchoedTerm(s, term);
+      // The subject is the typed term, or for a suggested term the term itself.
+      return CardSuggestion(s, fromNotes: mentionedIn(want == AssistField.definition ? term : s, notes));
     } on CardAssistFailed {
       rethrow;
     } on ModelUnavailableException {
@@ -288,12 +290,4 @@ class AppController extends ChangeNotifier {
     _engine = null;
     _engineTier = null;
   }
-}
-
-/// Why a card suggestion could not be made, in words for the student.
-class CardAssistFailed implements Exception {
-  CardAssistFailed(this.message);
-  final String message;
-  @override
-  String toString() => message;
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../domain/models.dart';
+import 'card_editor.dart';
 import 'motion.dart';
 import 'theme.dart';
 import 'widgets.dart';
@@ -75,9 +76,25 @@ class FlipCard extends StatelessWidget {
 
 /// Swipeable, flippable stack of flashcards.
 /// Tap or Space flips; swipe or arrow keys move; the next card rises from the stack.
+///
+/// With [onSave] a card that has an id gets an Edit button: the card turns into a
+/// form (term and definition, with Ask AI beside each when [suggest] is given) and
+/// Save hands the corrected text to [onSave], whoever wrote the card.
 class FlashDeck extends StatefulWidget {
-  const FlashDeck({super.key, required this.cards});
+  const FlashDeck({
+    super.key,
+    required this.cards,
+    this.onSave,
+    this.suggest,
+    this.startAt = 0,
+  });
   final List<Flashcard> cards;
+  final Future<void> Function(Flashcard card, String front, String back)?
+  onSave;
+  final CardSuggester? suggest;
+
+  /// The card to start on.
+  final int startAt;
 
   @override
   State<FlashDeck> createState() => _FlashDeckState();
@@ -86,8 +103,9 @@ class FlashDeck extends StatefulWidget {
 class _FlashDeckState extends State<FlashDeck>
     with SingleTickerProviderStateMixin {
   late final AnimationController _slide = AnimationController(vsync: this);
-  int _i = 0;
+  late int _i = widget.startAt.clamp(0, widget.cards.length - 1);
   bool _back = false;
+  bool _editing = false;
   double _dx = 0;
   double _width = 600;
   bool _busy = false;
@@ -195,7 +213,9 @@ class _FlashDeckState extends State<FlashDeck>
     return Focus(
       autofocus: true,
       onKeyEvent: (_, e) {
-        if (e is! KeyDownEvent) return KeyEventResult.ignored;
+        if (_editing || e is! KeyDownEvent) {
+          return KeyEventResult.ignored; // typing is not a shortcut
+        }
         if (e.logicalKey == LogicalKeyboardKey.space ||
             e.logicalKey == LogicalKeyboardKey.enter) {
           _flip();
@@ -218,84 +238,124 @@ class _FlashDeckState extends State<FlashDeck>
             ],
           ),
           const SizedBox(height: 18),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(
-                bottom: 36,
-              ), // room for the stack peeking out
-              child: LayoutBuilder(
-                builder: (context, c) {
-                  _width = c.maxWidth;
-                  return Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Cards waiting underneath; they rise a slot as the top card leaves.
-                      for (var k = under; k >= 1; k--) _underCard(k, rise),
-                      Positioned.fill(
-                        key: const ValueKey(
-                          'top',
-                        ), // stack size changes mid-drag
-                        child: GestureDetector(
-                          onTap: _flip,
-                          onHorizontalDragUpdate: (d) {
-                            if (_busy) return;
-                            setState(() => _dx += d.delta.dx);
-                          },
-                          onHorizontalDragEnd: (d) =>
-                              _release(d.velocity.pixelsPerSecond.dx),
-                          child: Transform.translate(
-                            offset: Offset(_dx, 0),
-                            child: Transform.rotate(
-                              angle: _dx / 1100,
-                              child: FlipCard(
-                                key: ValueKey('flip$_i'),
-                                showBack: _back,
-                                front: _Face(
-                                  text: card.front,
-                                  label: 'question',
-                                  color: K.lavender,
-                                ),
-                                back: _Face(
-                                  text: card.back,
-                                  label: 'answer',
-                                  color: K.yellow,
+          if (_editing)
+            Expanded(
+              child: SingleChildScrollView(
+                child: Panel(
+                  color: K.card,
+                  padding: const EdgeInsets.all(24),
+                  child: CardEditorForm(
+                    key: ValueKey('edit-${card.id}'),
+                    initialTerm: card.front,
+                    initialDefinition: card.back,
+                    termLabel: 'Term or question',
+                    definitionLabel: 'Definition or answer',
+                    saveLabel: 'Save changes',
+                    suggest: widget.suggest,
+                    onSave: (t, d) async {
+                      await widget.onSave!(card, t, d);
+                      if (mounted) {
+                        setState(() {
+                          _editing = false;
+                          _back = false;
+                        });
+                      }
+                    },
+                    onCancel: () => setState(() => _editing = false),
+                  ),
+                ),
+              ),
+            )
+          else ...[
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  bottom: 36,
+                ), // room for the stack peeking out
+                child: LayoutBuilder(
+                  builder: (context, c) {
+                    _width = c.maxWidth;
+                    return Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        // Cards waiting underneath; they rise a slot as the top card leaves.
+                        for (var k = under; k >= 1; k--) _underCard(k, rise),
+                        Positioned.fill(
+                          key: const ValueKey(
+                            'top',
+                          ), // stack size changes mid-drag
+                          child: GestureDetector(
+                            onTap: _flip,
+                            onHorizontalDragUpdate: (d) {
+                              if (_busy) return;
+                              setState(() => _dx += d.delta.dx);
+                            },
+                            onHorizontalDragEnd: (d) =>
+                                _release(d.velocity.pixelsPerSecond.dx),
+                            child: Transform.translate(
+                              offset: Offset(_dx, 0),
+                              child: Transform.rotate(
+                                angle: _dx / 1100,
+                                child: FlipCard(
+                                  key: ValueKey('flip$_i'),
+                                  showBack: _back,
+                                  front: _Face(
+                                    text: card.front,
+                                    label: 'question',
+                                    color: K.lavender,
+                                  ),
+                                  back: _Face(
+                                    text: card.back,
+                                    label: 'answer',
+                                    color: K.yellow,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton.filledTonal(
-                tooltip: 'Previous (left arrow)',
-                onPressed: _i > 0 ? () => _go(-1) : null,
-                icon: const Icon(Icons.arrow_back),
-              ),
-              const SizedBox(width: 14),
-              PillButton(label: 'Flip', icon: Icons.flip, onPressed: _flip),
-              const SizedBox(width: 14),
-              IconButton.filledTonal(
-                tooltip: 'Next (right arrow)',
-                onPressed: _i < _n - 1 ? () => _go(1) : null,
-                icon: const Icon(Icons.arrow_forward),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Space flips · ← → or swipe to move',
-            style: body(12, color: K.muted),
-          ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton.filledTonal(
+                  tooltip: 'Previous (left arrow)',
+                  onPressed: _i > 0 ? () => _go(-1) : null,
+                  icon: const Icon(Icons.arrow_back),
+                ),
+                const SizedBox(width: 14),
+                PillButton(label: 'Flip', icon: Icons.flip, onPressed: _flip),
+                const SizedBox(width: 14),
+                IconButton.filledTonal(
+                  tooltip: 'Next (right arrow)',
+                  onPressed: _i < _n - 1 ? () => _go(1) : null,
+                  icon: const Icon(Icons.arrow_forward),
+                ),
+                if (widget.onSave != null && card.id != null) ...[
+                  const SizedBox(width: 14),
+                  IconButton.filledTonal(
+                    tooltip: 'Edit card',
+                    onPressed: _busy
+                        ? null
+                        : () => setState(() => _editing = true),
+                    icon: const Icon(Icons.edit_outlined),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Space flips · ← → or swipe to move',
+              style: body(12, color: K.muted),
+            ),
+          ],
         ],
       ),
     );
@@ -304,7 +364,9 @@ class _FlashDeckState extends State<FlashDeck>
 
 /// Big for a word or two, smaller as the card text gets longer.
 double faceFontSize(String text) {
-  final n = text.length + 20 * '\n'.allMatches(text).length; // lists need room per line
+  final n =
+      text.length +
+      20 * '\n'.allMatches(text).length; // lists need room per line
   if (n <= 40) return 34;
   if (n <= 80) return 28;
   if (n <= 140) return 23;
@@ -333,8 +395,11 @@ class _Face extends StatelessWidget {
               child: Text(
                 text,
                 // A numbered list reads best left-aligned, with air between lines.
-                textAlign: text.contains('\n') ? TextAlign.left : TextAlign.center,
-                style: display(faceFontSize(text)).copyWith(height: text.contains('\n') ? 1.4 : null),
+                textAlign: text.contains('\n')
+                    ? TextAlign.left
+                    : TextAlign.center,
+                style: display(faceFontSize(text))
+                    .copyWith(height: text.contains('\n') ? 1.4 : null),
               ),
             ),
           ),

@@ -61,4 +61,29 @@ void main() {
       expect(() => parseCardAssist('{"term":3}', AssistField.term), throwsFormatException);
     });
   });
+
+  group('where a suggestion came from', () {
+    test('mentionedIn finds a subject in the notes, ignoring case and punctuation', () {
+      expect(mentionedIn('Mercado', 'Mercado: adopted in 1731.'), isTrue);
+      expect(mentionedIn('domingo lam-co', 'It was adopted by Domingo Lam-co.'), isTrue);
+      expect(mentionedIn('Photosynthesis', 'Mercado: adopted in 1731.'), isFalse);
+      expect(mentionedIn('ab', 'ab cd'), isFalse); // too short to mean anything
+      expect(mentionedIn('x term', ''), isFalse);
+    });
+  });
+
+  group('withoutEchoedTerm', () {
+    test('drops a lead-in that repeats the term', () {
+      expect(withoutEchoedTerm("Mercado means 'market'.", 'Mercado'), 'Market.');
+      expect(withoutEchoedTerm('Photosynthesis is the process plants use.', 'Photosynthesis'), 'The process plants use.');
+      expect(withoutEchoedTerm('Paciano: the elder brother of Rizal.', 'Paciano'), 'The elder brother of Rizal.');
+    });
+
+    test('leaves a definition that does not start with the term', () {
+      const d = 'The cell\'s power plant.';
+      expect(withoutEchoedTerm(d, 'Mitochondria'), d);
+      expect(withoutEchoedTerm('Mitochondria-rich tissue burns more fuel.', 'Mitochondria'), 'Mitochondria-rich tissue burns more fuel.');
+      expect(withoutEchoedTerm(d, ''), d);
+    });
+  });
 }

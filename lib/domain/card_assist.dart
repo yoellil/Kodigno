@@ -57,6 +57,37 @@ Map<String, Object?> cardAssistSchema(AssistField want) => {
       'required': [want.name],
     };
 
+/// A suggestion and where it came from, so the student knows how far to trust it.
+class CardSuggestion {
+  const CardSuggestion(this.text, {this.fromNotes = false});
+  final String text;
+
+  /// The subject appears in the set's own notes (so the AI was shown them).
+  /// False means the model answered from what it learned in training, and may be wrong.
+  final bool fromNotes;
+}
+
+/// True if [subject] (a term, or the term the AI came up with) is in [notes].
+bool mentionedIn(String subject, String notes) {
+  String flat(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9\u00C0-\u024F ]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+  final s = flat(subject);
+  return s.length >= 3 && flat(notes).contains(s);
+}
+
+/// [definition] without a lead-in that repeats [term] ("Mercado means 'market'" becomes
+/// "Market."): the card already shows the term.
+String withoutEchoedTerm(String definition, String term) {
+  final t = RegExp.escape(term.trim());
+  if (t.isEmpty) return definition;
+  final m = RegExp("^[\"'\u201C\u2018]?$t[\"'\u201D\u2019]?\\s*(?:means|is|are|refers to|is defined as|stands for|:|-|\u2013)\\s+(.{3,})\$",
+          caseSensitive: false)
+      .firstMatch(definition.trim());
+  if (m == null) return definition;
+  var rest = m[1]!.trim().replaceFirst(RegExp("^[\"'\u201C\u2018]+"), '').replaceFirst(RegExp("[\"'\u201D\u2019]+(?=[.!]?\$)"), '');
+  if (rest.isEmpty) return definition;
+  return rest[0].toUpperCase() + rest.substring(1);
+}
+
 /// The suggestion in [raw], tidied: no quotes, no "Definition:" label, one line for a
 /// term and at most about 240 characters for a definition. '' means the model
 /// was not sure. Throws [FormatException] if [raw] is not the JSON asked for.
@@ -74,4 +105,12 @@ String parseCardAssist(String raw, AssistField want) {
   if (s.isEmpty) return '';
   if (want == AssistField.term) return s.replaceFirst(RegExp(r'[.!?]+$'), '');
   return shortenDefinition(s, max: 240);
+}
+
+/// Why a card suggestion could not be made, in words for the student.
+class CardAssistFailed implements Exception {
+  CardAssistFailed(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }

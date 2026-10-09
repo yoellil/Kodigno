@@ -10,20 +10,45 @@ import 'summary_screen.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
-class SetDetailScreen extends StatelessWidget {
+class SetDetailScreen extends StatefulWidget {
   const SetDetailScreen({super.key, required this.repo, required this.setId});
   final StudyRepository repo;
   final int setId;
 
   @override
-  Widget build(BuildContext context) => PanelPage(
-        child: FutureBuilder<StudySetDetail>(
-          future: repo.getSet(setId),
-          builder: (context, snap) {
-            if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-            final d = snap.data!;
-            void push(Widget w) =>
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
+  State<SetDetailScreen> createState() => _SetDetailScreenState();
+}
+
+class _SetDetailScreenState extends State<SetDetailScreen> {
+  /// The set as last loaded, held directly so a reload swaps it in one step.
+  StudySetDetail? _d;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    final d = await widget.repo.getSet(widget.setId);
+    if (mounted) setState(() => _d = d);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = widget.repo;
+    final setId = widget.setId;
+    final loaded = _d;
+    return PanelPage(
+        child: Builder(
+          builder: (context) {
+            if (loaded == null) return const Center(child: CircularProgressIndicator());
+            final d = loaded;
+            // Back from a screen that may have changed the set (cards added or corrected): reload.
+            Future<void> push(Widget w) async {
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
+              await _reload();
+            }
             final hasQuiz = d.questions.isNotEmpty;
             return Center(
               child: ConstrainedBox(
@@ -50,10 +75,8 @@ class SetDetailScreen extends StatelessWidget {
                     const SizedBox(width: 14),
                     Expanded(
                       child: _Tile(Icons.style_outlined, K.pink, 'Flashcards',
-                          '${d.flashcards.length} cards',
-                          onTap: d.flashcards.isEmpty
-                              ? null
-                              : () => push(FlashcardsScreen(repo: repo, setId: setId)))
+                          d.flashcards.isEmpty ? 'Add your own' : '${d.flashcards.length} cards',
+                          onTap: () => push(FlashcardsScreen(repo: repo, setId: setId)))
                           .enter(context, index: 3),
                     ),
                   ]),
@@ -93,6 +116,7 @@ class SetDetailScreen extends StatelessWidget {
           },
         ),
       );
+  }
 }
 
 class _Tile extends StatelessWidget {
