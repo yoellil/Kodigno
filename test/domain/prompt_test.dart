@@ -180,4 +180,72 @@ void _vague() {
     expect(isVague('The reasons behind freedom'), isTrue);
     expect(isVague('Why was Rizal executed?'), isFalse);
   });
+
+  group('answerInFact', () {
+    const fact = 'The American Institute of Electrical Engineers (AIEE) adopted the first code in 1912.';
+    test('accepts an answer found in the fact', () {
+      expect(answerInFact('AIEE', fact, 'Which body adopted the first code?'), isTrue);
+      expect(answerInFact('1912', fact, 'When was the first code adopted?'), isTrue);
+    });
+    test('rejects an answer that only repeats the question or adds what the fact lacks', () {
+      expect(answerInFact('the first code', fact, 'What did the AIEE adopt, the first code?'), isFalse);
+      expect(
+          answerInFact('The first principle states that all members are professional.',
+              'The IEEE revised its Code after adding Professional Activities in 1974.',
+              'What is the first principle of the IEEE Constitution?'),
+          isFalse);
+    });
+  });
+
+  test('isVague catches questions that point at a text the student cannot see', () {
+    expect(isVague('What does the text say about privacy?'), isTrue);
+    expect(isVague('Which of the following is a principle?'), isTrue);
+    expect(isVague('What is the first principle of the IEEE Code of Ethics?'), isFalse);
+  });
+
+  group('pickDistractors on phrase answers', () {
+    const correct = 'The conscience of the profession';
+    const fact = 'The ACM Code of Ethics and Professional Conduct expresses the conscience of the profession.';
+
+    test('choices that all say one thing are cut down to those that differ', () {
+      final d = pickDistractors(correct, [], Random(1), fact: fact, preferred: [
+        'A set of rules that guides professionals in their actions',
+        'A code of conduct for professionals',
+        'Rules that guide the actions of professionals',
+        'The legal duties of the profession',
+      ]);
+      expect(d, contains('The legal duties of the profession'));
+      expect(d.where((x) => x.toLowerCase().contains('rules')).length, 1);
+    });
+
+    test('a rewording of the answer or a statement the fact makes is not a wrong choice', () {
+      final d = pickDistractors(correct, [], Random(1), fact: fact, preferred: [
+        'The profession and its conscience',
+        'The professional conduct of ethics',
+        'The business goals of the profession',
+      ]);
+      expect(d, ['The business goals of the profession']);
+    });
+
+    test('short names are untouched by the meaning checks', () {
+      expect(pickDistractors('Calamba', [], Random(1), fact: 'Rizal was born in Calamba.', preferred: ['Cebu', 'Manila', 'Davao']).toSet(),
+          {'Cebu', 'Manila', 'Davao'});
+    });
+  });
+
+  test('for a phrase answer, other statements from the notes come before the model\'s rewordings', () {
+    final d = pickDistractors('The conscience of the profession', [
+      'The exclusive right to reproduce a work',
+      'The primary agency for IP laws',
+      'A violation of the rights of an owner',
+      'AIEE',
+    ], Random(1), preferred: [
+      'It is a set of rules for professionals',
+      'It is a code of conduct for professionals',
+      'It sets professional behavior guidelines',
+    ]);
+    expect(d, hasLength(3));
+    expect(d, isNot(contains('AIEE')));
+    expect(d.where((x) => x.startsWith('It ')), isEmpty);
+  });
 }
