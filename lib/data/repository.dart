@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../domain/models.dart';
+import '../domain/summary.dart';
 import 'database.dart';
 import 'stats.dart';
 
@@ -24,6 +25,9 @@ class StudySetDetail {
   final StudySet set;
   final List<QuestionRow> questions;
   final List<FlashcardRow> flashcards;
+
+  /// The lesson saved with this set, or null if it has none yet.
+  LessonSummary? get summary => LessonSummary.decode(set.summary);
 }
 
 class StudyRepository {
@@ -36,6 +40,7 @@ class StudyRepository {
     String sourceType = 'text',
     String sourceText = '',
     List<String> sourcePaths = const [],
+    LessonSummary? summary,
   }) {
     return db.transaction(() async {
       final id = await db.into(db.studySets).insert(StudySetsCompanion.insert(
@@ -43,6 +48,7 @@ class StudyRepository {
             sourceType: Value(sourceType),
             sourceText: Value(sourceText),
             sourcePaths: Value(jsonEncode(sourcePaths)),
+            summary: Value(summary?.encode() ?? ''),
           ));
       for (final q in set.questions) {
         await db.into(db.questionRows).insert(QuestionRowsCompanion.insert(
@@ -101,6 +107,11 @@ class StudyRepository {
     final cs = await (db.select(db.flashcardRows)..where((t) => t.studySetId.equals(id))).get();
     return StudySetDetail(set, qs, cs);
   }
+
+  /// Saves [summary] as the set's lesson, replacing any earlier one.
+  Future<void> saveSummary(int id, LessonSummary summary) =>
+      (db.update(db.studySets)..where((t) => t.id.equals(id)))
+          .write(StudySetsCompanion(summary: Value(summary.encode())));
 
   Future<void> deleteSet(int id) =>
       (db.delete(db.studySets)..where((t) => t.id.equals(id))).go();

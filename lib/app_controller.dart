@@ -7,12 +7,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'ai/ai_engine.dart';
 import 'ai/llm_ai_engine.dart';
 import 'data/repository.dart';
+import 'domain/models.dart';
+import 'domain/summary.dart';
 import 'models/device_profiler.dart';
 import 'models/model_manager.dart';
 import 'models/tier.dart';
 
 class ChatFailed implements Exception {
   ChatFailed(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
+class SummaryFailed implements Exception {
+  SummaryFailed(this.message);
   final String message;
   @override
   String toString() => message;
@@ -40,6 +49,8 @@ class AppController extends ChangeNotifier {
   double? downloadFraction;
   bool generating = false;
   double generationFraction = 0;
+  bool summarizing = false;
+  double summaryFraction = 0;
   String? error;
   Tier? fallbackOffer;
   bool storageTooLow = false;
@@ -117,12 +128,36 @@ class AppController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final set = await (await _engineForTier()).generate(notes, onProgress: (f) {
-        generationFraction = f;
+      final engine = await _engineForTier();
+      void progress(double from, double span, double f) {
+        generationFraction = from + span * f;
         notifyListeners();
-      });
+      }
+
+      // The lesson comes first and is saved with the set; the flashcards and
+      // quiz are made from it. If no lesson can be made, they come from the notes.
+      LessonSummary? lesson;
+      try {
+        lesson = await engine.summarize(notes, onProgress: (f) => progress(0, 0.6, f));
+      } on GenerationFailed {
+        lesson = null;
+      }
+      GeneratedSet set;
+      if (lesson == null) {
+        set = await engine.generate(notes, onProgress: (f) => progress(0, 1, f));
+      } else {
+        try {
+          set = await engine.generate(lesson.toStudyText(),
+              verifyIn: notes, onProgress: (f) => progress(0.6, 0.4, f));
+        } on GenerationFailed {
+          set = await engine.generate(notes, onProgress: (f) => progress(0.6, 0.4, f));
+        }
+      }
       return await repo.saveSet(title, set,
-          sourceType: sourceType, sourceText: notes, sourcePaths: sourcePaths);
+          sourceType: sourceType,
+          sourceText: notes,
+          sourcePaths: sourcePaths,
+          summary: lesson);
     } on ModelUnavailableException {
       await _dropEngine();
       fallbackOffer = tiers.lower(tier!);
@@ -157,6 +192,31 @@ class AppController extends ChangeNotifier {
     final e = await _engineForTier();
     if (e is LlmAiEngine) return e.runtime;
     throw ModelUnavailableException('no model server for this engine');
+  }
+
+  /// Turns [notes] into a study lesson. [summarizing] and [summaryFraction]
+  /// report progress. Throws [SummaryFailed] with a message fit to show the user.
+  Future<LessonSummary> summarize(String notes) async {
+    if (notes.trim().isEmpty) {
+      throw SummaryFailed('No text to summarize. Add or edit the notes first.');
+    }
+    summarizing = true;
+    summaryFraction = 0;
+    notifyListeners();
+    try {
+      return await (await _engineForTier()).summarize(notes, onProgress: (f) {
+        summaryFraction = f;
+        notifyListeners();
+      });
+    } on ModelUnavailableException {
+      await _dropEngine();
+      throw SummaryFailed('The AI model could not run. Close other apps and try again.');
+    } on GenerationFailed {
+      throw SummaryFailed("Couldn't summarize this, try again.");
+    } finally {
+      summarizing = false;
+      notifyListeners();
+    }
   }
 
   Future<AiEngine> _engineForTier() async {
