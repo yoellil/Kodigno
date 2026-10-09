@@ -34,6 +34,7 @@ import 'ui/library_screen.dart';
 import 'ui/loaders.dart';
 import 'ui/model_setup.dart';
 import 'ui/theme.dart';
+import 'ui/window_frame.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -124,6 +125,7 @@ class _KodignoAppState extends State<KodignoApp> with WidgetsBindingObserver {
       title: 'Kodigno',
       debugShowCheckedModeBanner: false,
       theme: kTheme(),
+      builder: (context, child) => WindowFrame(child: child!),
       home: AnimatedSwitcher(
         duration: const Duration(milliseconds: 550),
         switchInCurve: Curves.easeOutCubic,

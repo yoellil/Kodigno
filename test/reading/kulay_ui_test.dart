@@ -134,4 +134,25 @@ void main() {
     expect(find.text('Reading skills'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
+
+  testWidgets('a big class fits: the reader list scrolls and search narrows it', (t) async {
+    final (c, _) = await pumpKulay(t);
+    await c.setMode(KulayMode.classroom);
+    await t.runAsync(() async {
+      for (var i = 1; i <= 30; i++) {
+        await c.repo.addReader('Reader ${i.toString().padLeft(2, '0')}');
+      }
+      c.readers = await c.repo.readers();
+    });
+    c.switchReader();
+    await t.pump(const Duration(seconds: 2));
+    expect(find.text('30 readers'), findsOneWidget);
+    expect(find.text('Find your name'), findsOneWidget);
+    expect(t.takeException(), isNull); // no overflow
+
+    await t.enterText(find.widgetWithText(TextField, 'Find your name'), '27');
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.text('Reader 27'), findsOneWidget);
+    expect(find.text('Reader 01'), findsNothing);
+  });
 }

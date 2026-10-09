@@ -1,5 +1,7 @@
 #include "flutter_window.h"
 
+#include <flutter/standard_method_codec.h>
+
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -27,6 +29,40 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
+  window_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "kodigno/window",
+      &flutter::StandardMethodCodec::GetInstance());
+  window_channel_->SetMethodCallHandler([this](const auto& call, auto result) {
+    HWND hwnd = GetHandle();
+    const std::string& method = call.method_name();
+    if (method == "minimize") {
+      result->Success();
+      ShowWindow(hwnd, SW_MINIMIZE);
+    } else if (method == "close") {
+      result->Success();
+      // The normal close path, so the app can stop its model server first.
+      PostMessage(hwnd, WM_CLOSE, 0, 0);
+    } else if (method == "startDrag") {
+      // Hand the press to Windows as if it were on the caption; Windows then
+      // runs its own move loop.
+      result->Success();
+      ReleaseCapture();
+      SendMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+    } else {
+      result->NotImplemented();
+    }
+  });
+
+  // Fixed size: no resizable frame and no maximize (so no Snap or
+  // double-click maximize either). Minimize stays.
+  LONG_PTR style = GetWindowLongPtr(GetHandle(), GWL_STYLE);
+  style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+  SetWindowLongPtr(GetHandle(), GWL_STYLE, style);
+
+  // Recompute the frame now that the non-client area is gone (see below).
+  SetWindowPos(GetHandle(), nullptr, 0, 0, 0, 0,
+               SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
   });
@@ -40,6 +76,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  window_channel_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -51,6 +88,25 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  // Borderless: the client area takes the whole window, so there is no title
+  // bar or border. Maximized windows hang past the screen by the frame size,
+  // so pull them back in.
+  if (message == WM_NCCALCSIZE && wparam == TRUE) {
+    if (IsZoomed(hwnd)) {
+      auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lparam);
+      const UINT dpi = GetDpiForWindow(hwnd);
+      const int frame_x = GetSystemMetricsForDpi(SM_CXFRAME, dpi) +
+                          GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+      const int frame_y = GetSystemMetricsForDpi(SM_CYFRAME, dpi) +
+                          GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+      params->rgrc[0].left += frame_x;
+      params->rgrc[0].right -= frame_x;
+      params->rgrc[0].top += frame_y;
+      params->rgrc[0].bottom -= frame_y;
+    }
+    return 0;
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =

@@ -401,7 +401,13 @@ class _StatsCard extends StatelessWidget {
         color: K.dark ? const Color(0xFF26262E) : K.ink,
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // spaceBetween keeps the button at the bottom when the card is stretched
+      // (wide layout) and just stacks when its height is open (narrow).
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Answered this week', style: body(14, color: muted)),
         const SizedBox(height: 6),
         CountUp(value: stats.answeredThisWeek, style: display(64, color: fg)),
@@ -416,12 +422,13 @@ class _StatsCard extends StatelessWidget {
               value: '${stats.sets}'),
         ]),
         const SizedBox(height: 22),
-        const Spacer(),
-        SizedBox(
-          width: double.infinity,
-          child: PillButton(label: 'Make a new set', icon: Icons.add, onPressed: onCreate),
-        ),
-      ]),
+          ]),
+          SizedBox(
+            width: double.infinity,
+            child: PillButton(label: 'Make a new set', icon: Icons.add, onPressed: onCreate),
+          ),
+        ],
+      ),
     );
   }
 }

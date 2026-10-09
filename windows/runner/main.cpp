@@ -1,6 +1,9 @@
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
+#include <flutter_windows.h>
 #include <windows.h>
+
+#include <algorithm>
 
 #include "flutter_window.h"
 #include "utils.h"
@@ -25,8 +28,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
+  // Open centered on the primary monitor's work area (the screen minus the
+  // taskbar). Origin and size are logical pixels; Create scales them by the
+  // monitor's DPI, so the work area is converted to logical pixels first.
+  unsigned int width = 1280, height = 720;
   Win32Window::Point origin(10, 10);
-  Win32Window::Size size(1280, 720);
+  RECT work;
+  if (::SystemParametersInfo(SPI_GETWORKAREA, 0, &work, 0)) {
+    const POINT corner = {work.left, work.top};
+    const HMONITOR monitor = ::MonitorFromPoint(corner, MONITOR_DEFAULTTOPRIMARY);
+    const double scale = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
+    const double work_w = (work.right - work.left) / scale;
+    const double work_h = (work.bottom - work.top) / scale;
+    // Smaller screens: shrink to fit with a margin.
+    width = static_cast<unsigned int>(std::min<double>(width, work_w * 0.95));
+    height = static_cast<unsigned int>(std::min<double>(height, work_h * 0.95));
+    origin = Win32Window::Point(
+        static_cast<unsigned int>(work.left / scale + (work_w - width) / 2),
+        static_cast<unsigned int>(work.top / scale + (work_h - height) / 2));
+  }
+  Win32Window::Size size(width, height);
   if (!window.Create(L"kodigno", origin, size)) {
     return EXIT_FAILURE;
   }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'kulay.dart';
@@ -187,7 +189,8 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
             ),
             Expanded(
               child: Container(
-                margin: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                // Below the window buttons' band when there is one.
+                margin: EdgeInsets.fromLTRB(0, math.max(12, MediaQuery.paddingOf(context).top), 12, 12),
                 clipBehavior: Clip.antiAlias,
                 decoration:
                     BoxDecoration(color: K.bg, borderRadius: BorderRadius.circular(28)),

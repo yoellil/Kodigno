@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../reading/reading_controller.dart';
 import '../reading/ui/kulay_pages.dart';
-import '../reading/ui/story_view.dart' show LevelChip;
+import '../reading/ui/story_view.dart' show KButton, LevelChip;
 import 'motion.dart';
 import 'theme.dart';
 
@@ -277,21 +277,35 @@ class KulayScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.watch<ReadingController>();
     final landing = c.screen == KulayScreenId.welcome || c.screen == KulayScreenId.readers;
+    // The band above the card (kept clear for the window buttons, see
+    // WindowFrame) carries the brand and the reader once inside.
+    final band = MediaQuery.paddingOf(context).top;
+    final brandInBand = !landing && band >= 40;
+    final card = Container(
+      margin: EdgeInsets.fromLTRB(14, brandInBand ? 0 : 14, 14, 14),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28)),
+      child: landing
+          ? _Landing(
+              onBack: onBack,
+              panel: c.screen == KulayScreenId.welcome ? const WelcomePanel() : const ReadersPanel(),
+            )
+          : _Inside(onBack: onBack, showBrand: !brandInBand),
+    );
     return Scaffold(
       backgroundColor: _indigo,
-      body: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(14),
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28)),
-          child: landing
-              ? _Landing(
-                  onBack: onBack,
-                  panel: c.screen == KulayScreenId.welcome ? const WelcomePanel() : const ReadersPanel(),
-                )
-              : _Inside(onBack: onBack),
-        ),
-      ),
+      body: brandInBand
+          ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              SizedBox(
+                height: band + 14,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(30, 6, 120, 8),
+                  child: const Align(alignment: Alignment.centerLeft, child: _Brand(onIndigo: true)),
+                ),
+              ),
+              Expanded(child: MediaQuery.removePadding(context: context, removeTop: true, child: card)),
+            ])
+          : SafeArea(child: card),
     );
   }
 }
@@ -323,26 +337,28 @@ class _Landing extends StatelessWidget {
             const SizedBox(width: 10),
             Text('Kodigno', style: body(14, weight: FontWeight.w700, color: _indigoText)),
           ]), 0),
-          const SizedBox(height: 22),
-          enter(Text('Kulay', style: display(narrow ? 52 : 72, color: _indigoText)), 1),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
+          enter(Text('Kulay', style: display(narrow ? 52 : 64, color: _indigoText)), 1),
+          const SizedBox(height: 10),
           enter(
               SizedBox(
                 width: 380,
                 child: Text(
                   'Stories at your reading color, written by the AI on this computer. No internet needed.',
-                  style: body(17, color: const Color(0xFF55507A)),
+                  style: body(16, color: const Color(0xFF55507A)),
                 ),
               ),
               2),
-          const SizedBox(height: 26),
+          const SizedBox(height: 20),
           enter(SizedBox(width: 440, child: panel), 3),
-          const SizedBox(height: 26),
+          const SizedBox(height: 20),
           enter(
-              Wrap(spacing: 12, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center, children: [
+              Row(mainAxisSize: MainAxisSize.min, children: [
                 _BackPill(onTap: onBack),
-                if (c.mode == KulayMode.classroom)
-                  TextButton(onPressed: () => openTeacher(context), child: const Text('Teacher view')),
+                if (c.mode == KulayMode.classroom) ...[
+                  const SizedBox(width: 12),
+                  KButton('Teacher view', ghost: true, onTap: () => openTeacher(context)),
+                ],
               ]),
               4),
         ],
@@ -355,7 +371,7 @@ class _Landing extends StatelessWidget {
           top: 0,
           bottom: 0,
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(vertical: narrow ? 20 : 40),
+            padding: EdgeInsets.symmetric(vertical: narrow ? 20 : 24),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: box.maxHeight - (narrow ? 40 : 80)),
               child: Align(
@@ -391,9 +407,45 @@ Future<void> openTeacher(BuildContext context) async {
 }
 
 /// The reading app: a top bar, then the current page.
+/// The Kulay logo and name, and the reader's name and color once picked.
+class _Brand extends StatelessWidget {
+  const _Brand({this.onIndigo = false});
+  final bool onIndigo; // white on the indigo band, indigo on the white card
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.watch<ReadingController>();
+    final r = c.reader;
+    final fg = onIndigo ? Colors.white : _indigoText;
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      const KulayIcon(size: 28),
+      const SizedBox(width: 10),
+      Text('Kulay', style: display(24, color: fg)),
+      if (r != null && c.screen != KulayScreenId.teacher) ...[
+        const SizedBox(width: 14),
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 5, 6, 5),
+          decoration: BoxDecoration(
+            color: onIndigo ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFF6F4FB),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Flexible(
+              child: Text(r.name,
+                  maxLines: 1, overflow: TextOverflow.ellipsis, style: body(14, weight: FontWeight.w700, color: fg)),
+            ),
+            if (r.placed) ...[const SizedBox(width: 8), LevelChip(r.level)],
+          ]),
+        ),
+      ],
+    ]);
+  }
+}
+
 class _Inside extends StatelessWidget {
-  const _Inside({required this.onBack});
+  const _Inside({required this.onBack, this.showBrand = true});
   final VoidCallback onBack;
+  final bool showBrand; // false when the brand sits in the band above
 
   @override
   Widget build(BuildContext context) {
@@ -412,20 +464,7 @@ class _Inside extends StatelessWidget {
       Padding(
         padding: const EdgeInsets.fromLTRB(24, 14, 14, 8),
         child: Row(children: [
-          const KulayIcon(size: 28),
-          const SizedBox(width: 10),
-          Text('Kulay', style: display(24, color: _indigoText)),
-          if (r != null && c.screen != KulayScreenId.teacher) ...[
-            const SizedBox(width: 14),
-            Container(
-              padding: const EdgeInsets.fromLTRB(12, 5, 6, 5),
-              decoration: BoxDecoration(color: const Color(0xFFF6F4FB), borderRadius: BorderRadius.circular(999)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(r.name, style: body(14, weight: FontWeight.w700, color: _indigoText)),
-                if (r.placed) ...[const SizedBox(width: 8), LevelChip(r.level)],
-              ]),
-            ),
-          ],
+          if (showBrand) const Flexible(child: _Brand()),
           const Spacer(),
           if (r != null && (reading || c.screen == KulayScreenId.teacher) && c.screen != KulayScreenId.placement)
             IconButton(
@@ -547,8 +586,8 @@ class _ShelfPainter extends CustomPainter {
     final left = narrow ? 0.0 : 0.42;
     final area = Path()
       ..moveTo(w * (left + 0.16), 0)
-      ..cubicTo(w * (left + 0.02), h * 0.2, w * (left + 0.1), h * 0.42, w * (left - 0.04), h * 0.62)
-      ..cubicTo(w * (left - 0.14), h * 0.78, w * (left - 0.24), h * 0.86, w * (left - 0.3), h)
+      ..cubicTo(w * (left + 0.05), h * 0.22, w * (left + 0.11), h * 0.45, w * (left + 0.04), h * 0.64)
+      ..cubicTo(w * (left - 0.01), h * 0.8, w * (left - 0.04), h * 0.9, w * (left - 0.07), h)
       ..lineTo(w, h)
       ..lineTo(w, 0)
       ..close();

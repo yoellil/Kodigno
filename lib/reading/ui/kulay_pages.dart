@@ -11,6 +11,7 @@ import '../nlp.dart' show skills;
 import '../reading_controller.dart';
 import '../reading_repository.dart';
 import 'book3d.dart';
+import 'book_carousel.dart';
 import 'story_view.dart';
 
 TextStyle _h(double size) => display(size, color: kIndigoText);
@@ -62,30 +63,41 @@ class _WelcomePanelState extends State<WelcomePanel> {
 }
 
 class _NameField extends StatelessWidget {
-  const _NameField({required this.controller, required this.onSubmit, required this.error, required this.button});
+  const _NameField(
+      {required this.controller, required this.onSubmit, required this.error, required this.button, this.inline = false});
   final TextEditingController controller;
   final VoidCallback onSubmit;
   final String? error;
   final String button;
+  final bool inline; // the button beside the field, to save height
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-        SizedBox(
-          width: 340,
-          child: TextField(
-            controller: controller,
-            maxLength: 40,
-            onSubmitted: (_) => onSubmit(),
-            style: _p(16, color: kIndigoText),
-            decoration: InputDecoration(hintText: 'First name and last initial', counterText: '', fillColor: kPaper, errorText: error),
-          ),
-        ),
-        const SizedBox(height: 10),
-        KButton(button, onTap: onSubmit),
+  Widget build(BuildContext context) {
+    final field = TextField(
+      controller: controller,
+      maxLength: 40,
+      onSubmitted: (_) => onSubmit(),
+      style: _p(16, color: kIndigoText),
+      decoration: InputDecoration(hintText: 'First name and last initial', counterText: '', fillColor: kPaper, errorText: error),
+    );
+    if (inline) {
+      return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: field),
+        const SizedBox(width: 10),
+        Padding(padding: const EdgeInsets.only(top: 2), child: KButton(button, onTap: onSubmit)),
       ]);
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      SizedBox(width: 340, child: field),
+      const SizedBox(height: 10),
+      KButton(button, onTap: onSubmit),
+    ]);
+  }
 }
 
-/// Classroom: pick your name, or add a new reader.
+/// Classroom: pick your name, or add a new reader. The list keeps a fixed
+/// height and scrolls, so any number of readers fits; past a handful a search
+/// box helps find a name.
 class ReadersPanel extends StatefulWidget {
   const ReadersPanel({super.key});
   @override
@@ -94,55 +106,139 @@ class ReadersPanel extends StatefulWidget {
 
 class _ReadersPanelState extends State<ReadersPanel> {
   final _name = TextEditingController();
+  final _scroll = ScrollController();
   String? _error;
+  String _query = '';
+
+  static const _searchFrom = 7; // readers before the search box shows
+  static const _tileHeight = 52.0, _gap = 8.0;
 
   @override
   void dispose() {
     _name.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final c = context.watch<ReadingController>();
+    final all = [...c.readers]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final q = _query.trim().toLowerCase();
+    final shown = q.isEmpty ? all : all.where((r) => r.name.toLowerCase().contains(q)).toList();
+    final rows = (shown.length / 2).ceil();
+    // Two and a half rows show at most, so it is clear the list scrolls.
+    final listHeight = math.min(rows * (_tileHeight + _gap) - _gap, 2.5 * (_tileHeight + _gap));
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      Text('Who is reading today?', style: _p(18, color: kIndigoText, weight: FontWeight.w800)),
-      const SizedBox(height: 12),
-      if (c.readers.isEmpty) Text('No readers yet. Add the first one below.', style: _p(14)),
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        for (final r in c.readers)
-          Material(
-            color: kPaper,
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => c.pickReader(r),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 14, height: 14, decoration: BoxDecoration(color: levels[r.level].bg, shape: BoxShape.circle)),
-                  const SizedBox(width: 8),
-                  Text(r.name, style: _p(15, color: kIndigoText, weight: FontWeight.w700)),
-                  const SizedBox(width: 6),
-                  Text(r.placed ? levels[r.level].name : 'Needs reading check', style: _p(12)),
-                ]),
-              ),
+      Row(children: [
+        Expanded(
+          child: Text('Who is reading today?',
+              maxLines: 1, overflow: TextOverflow.ellipsis, style: _p(18, color: kIndigoText, weight: FontWeight.w800)),
+        ),
+        if (all.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Text('${all.length} ${all.length == 1 ? 'reader' : 'readers'}', style: _p(13)),
+        ],
+      ]),
+      const SizedBox(height: 10),
+      if (all.length >= _searchFrom) ...[
+        SizedBox(
+          height: 40,
+          child: TextField(
+            onChanged: (v) => setState(() => _query = v),
+            style: _p(14, color: kIndigoText),
+            decoration: InputDecoration(
+              hintText: 'Find your name',
+              prefixIcon: const Icon(Icons.search_rounded, size: 18, color: kSoft),
+              isDense: true,
+              filled: true,
+              fillColor: kPaper,
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             ),
           ),
-      ]),
-      const SizedBox(height: 18),
+        ),
+        const SizedBox(height: 8),
+      ],
+      if (all.isEmpty)
+        Text('No readers yet. Add the first one below.', style: _p(14))
+      else if (shown.isEmpty)
+        Text('No reader named "$_query". Add yourself below.', style: _p(14))
+      else
+        SizedBox(
+          height: listHeight,
+          child: Scrollbar(
+            controller: _scroll,
+            thumbVisibility: rows > 2,
+            child: GridView.builder(
+              controller: _scroll,
+              padding: EdgeInsets.only(right: rows > 2 ? 12 : 0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisExtent: _tileHeight,
+                crossAxisSpacing: _gap,
+                mainAxisSpacing: _gap,
+              ),
+              itemCount: shown.length,
+              itemBuilder: (_, i) => _ReaderTile(shown[i], onTap: () => c.pickReader(shown[i])),
+            ),
+          ),
+        ),
+      const SizedBox(height: 16),
       Text('New reader? Type your name.', style: _p(14, color: kIndigoText, weight: FontWeight.w700)),
       const SizedBox(height: 8),
       _NameField(
         controller: _name,
         error: _error,
         button: 'Start reading check',
+        inline: true,
         onSubmit: () async {
           final e = await c.addReader(_name.text);
           if (mounted) setState(() => _error = e);
         },
       ),
     ]);
+  }
+}
+
+/// One reader: their color, their name, and where they are.
+class _ReaderTile extends StatelessWidget {
+  const _ReaderTile(this.reader, {required this.onTap});
+  final Reader reader;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = levels[reader.level];
+    return Material(
+      color: kPaper,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(color: reader.placed ? l.bg : kLine, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(reader.name,
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: _p(14, color: kIndigoText, weight: FontWeight.w700)),
+                Text(reader.placed ? l.name : 'Needs reading check',
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: _p(12)),
+              ]),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 18, color: kSoft),
+          ]),
+        ),
+      ),
+    );
   }
 }
 
@@ -168,9 +264,9 @@ class _HomePageState extends State<HomePage> {
     final at = box.localToGlobal(box.size.center(Offset.zero));
     flyOpenBook(
       context,
-      from: Rect.fromCenter(center: at, width: 44, height: math.max(150, BookSpine.minHeight(t))),
+      from: Rect.fromCenter(center: at, width: 26, height: 150),
       title: t,
-      spec: (width: 44, height: math.max(150, BookSpine.minHeight(t)), color: bookColors[t.toLowerCase().hashCode % bookColors.length], style: t.length),
+      spec: (width: 26, height: 150, color: bookColors[t.toLowerCase().hashCode % bookColors.length], style: t.length),
       fadeIn: true,
       onOpened: () => c.readTopic(t),
     );
@@ -198,7 +294,7 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 32),
           Text('What do you want to read about?', style: _h(24)).enter(context, index: 2),
           const SizedBox(height: 14),
-          BookShelf(topics: topics, onOpen: c.readTopic).enter(context, index: 3, dy: 0.1),
+          BookCarousel(topics: topics, onOpen: c.readTopic).enter(context, index: 3, dy: 0.1),
           const SizedBox(height: 24),
           Row(children: [
             Expanded(

@@ -11,33 +11,36 @@ import 'story_view.dart' show kIndigoText;
 
 const _cream = Color(0xFFFFF7E6);
 
-/// Flat, muted book colors, after the bookshelf reference.
+/// Book cover colors, after the reference: deep, printed-cloth tones.
 const bookColors = [
-  Color(0xFFD98C8C), // dusty pink
-  Color(0xFF7B5EA7), // purple
-  Color(0xFF3E8A86), // teal
-  Color(0xFF4A2235), // plum
-  Color(0xFFF5C6A5), // peach
-  Color(0xFF34495E), // navy
-  Color(0xFF8E2C48), // maroon
-  Color(0xFFF1EBD3), // cream
-  Color(0xFFE0457B), // raspberry
-  Color(0xFF5E6B2F), // olive
-  Color(0xFFF08A4B), // orange
-  Color(0xFF8E9B4C), // sage
+  Color(0xFF1F3B2D), // deep green
+  Color(0xFFEDEAE4), // off-white
+  Color(0xFF6E1A2B), // maroon
+  Color(0xFFC9A43A), // mustard
+  Color(0xFFB4532A), // rust
+  Color(0xFF151515), // black
+  Color(0xFF1B2440), // navy
+  Color(0xFFE4DED1), // cream
+  Color(0xFF2E3238), // charcoal
+  Color(0xFF3E5C76), // slate blue
+  Color(0xFF7A3E2E), // brown
+  Color(0xFF5B6B3A), // olive
 ];
 
-Color _inkOn(Color c) => c.computeLuminance() > 0.45 ? const Color(0xFF3B2A2A) : Colors.white;
+Color _inkOn(Color c) => c.computeLuminance() > 0.45 ? const Color(0xFF1C1A22) : Colors.white;
 Color _shade(Color c, double t) => Color.lerp(c, Colors.black, t)!;
 Color _tint(Color c, double t) => Color.lerp(c, Colors.white, t)!;
 
 /// The color of the book that was opened last, so the writing page can keep it.
 Color? lastOpenedBookColor;
 
-/// A 3D book: a spine facing you, the cover and pages behind it.
-/// [turn] swings the book on its spine's right edge (0 = spine on, pi/2 =
-/// cover on), [open] swings the cover open (0 to about 2.8), and [flip]
-/// (0 to 1) turns one page from right to left.
+/// Size and look of one book.
+typedef BookSpec = ({double width, double height, Color color, int style});
+
+/// A 3D book for the opening flight and the writing button: a spine facing
+/// you, the cover and pages behind it. [turn] swings the book on its spine's
+/// right edge (0 = spine on, pi/2 = cover on), [open] swings the cover open
+/// (0 to about 2.8), and [flip] (0 to 1) turns one page from right to left.
 class Book3D extends StatelessWidget {
   const Book3D({
     super.key,
@@ -56,7 +59,7 @@ class Book3D extends StatelessWidget {
   final Color color;
   final double width, height, turn, open, scale;
   final double? flip;
-  final int style; // spine decoration, see [BookSpine]
+  final int style;
 
   double get coverWidth => height * 0.68;
 
@@ -78,8 +81,11 @@ class Book3D extends StatelessWidget {
         ? null
         : _at(_hinge()..translateByDouble(0, 4, 0, 1)..rotateY(flip! * math.pi), _Pages(cw - 6, height - 8));
     final opened = open > math.pi / 2;
-    final cover = _at(_hinge()..rotateY(open),
-        opened ? _CoverInside(cw, height, color) : _Cover(cw, height, color, title));
+    final cover = _at(
+        _hinge()..rotateY(open),
+        opened
+            ? _CoverInside(cw, height, color)
+            : BookCoverFace(title: title, color: color, width: cw, height: height));
     return SizedBox(
       width: width,
       height: height,
@@ -89,131 +95,150 @@ class Book3D extends StatelessWidget {
           ..setEntry(3, 2, 0.0014)
           ..scaleByDouble(scale, scale, scale, 1),
         child: Stack(clipBehavior: Clip.none, children: [
-          // Edge-on at rest, so the shelf look stays flat until the book turns.
+          // Edge-on at rest, so only the spine shows until the book turns.
           if (turn > 0.02) ...[
             pages,
             if (opened) ...[cover, ?sheet] else ...[?sheet, cover],
           ],
-          _at(spine, BookSpine(title: title, color: color, width: width, height: height, style: style)),
+          if (turn < math.pi / 2 - 0.02)
+            _at(spine, BookSpineFace(title: title, color: color, width: width, height: height)),
         ]),
       ),
     );
   }
 }
 
-/// A flat spine: one color, a label block with the title, a stripe or two.
-/// [style] (any int) picks where the label and stripes go.
-class BookSpine extends StatelessWidget {
-  const BookSpine({
-    super.key,
-    required this.title,
-    required this.color,
-    required this.width,
-    required this.height,
-    this.style = 0,
-  });
+/// A printed cover: a small series line, the title large, a short byline.
+class BookCoverFace extends StatelessWidget {
+  const BookCoverFace({super.key, required this.title, required this.color, required this.width, required this.height});
   final String title;
   final Color color;
   final double width, height;
-  final int style;
 
-  /// Title type on every spine: one size, so no title is shrunk to fit.
-  static final titleStyle = body(14, weight: FontWeight.w800).copyWith(letterSpacing: 0.2);
-
-  /// Length of [title] along the spine, in pixels.
-  static double titleLength(String title) {
-    final tp = TextPainter(
-      text: TextSpan(text: title, style: titleStyle),
-      textDirection: TextDirection.ltr,
-      maxLines: 1,
-    )..layout();
-    final w = tp.width;
-    tp.dispose();
-    return w;
+  /// Title size: as large as fits, but never so large a word breaks.
+  double _titleSize() {
+    // Room inside the padding and hinge, with a little to spare.
+    final base = height * 0.13, room = width * 0.68;
+    var longest = 0.0;
+    for (final word in title.split(RegExp(r'\s+'))) {
+      final tp = TextPainter(
+        text: TextSpan(text: word, style: display(base)),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      longest = math.max(longest, tp.width);
+      tp.dispose();
+    }
+    return longest <= room ? base : base * room / longest;
   }
-
-  /// The shortest spine that fits [title] with its stripes.
-  static double minHeight(String title) => titleLength(title) + 22 + 66;
 
   @override
   Widget build(BuildContext context) {
-    final dark = color.computeLuminance() < 0.45;
-    // Cream label with dark ink on dark books, the reverse on light ones.
-    final label = dark ? const Color(0xFFFFF8EC) : const Color(0xFF3B2A35);
-    final ink = dark ? const Color(0xFF2B2230) : Colors.white;
-    final stripe = dark ? _tint(color, 0.35) : _shade(color, 0.14);
-    Widget band(double h) => Container(height: h, color: stripe);
-    final s = style % 3;
-    return SizedBox(
+    final ink = _inkOn(color);
+    return Container(
       width: width,
       height: height,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(2),
-          // A darker right edge reads as the book's side.
-          border: Border(right: BorderSide(color: _shade(color, 0.18), width: 3)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 2, 0),
-          child: Column(children: [
-            const SizedBox(height: 10),
-            if (s != 2) ...[band(3), const SizedBox(height: 3), band(1.5)],
-            Spacer(flex: s == 0 ? 1 : 2),
-            Container(
-              height: math.min(titleLength(title) + 22, math.max(0.0, height - 52)),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: label, borderRadius: BorderRadius.circular(3)),
-              child: RotatedBox(
-                quarterTurns: 3,
-                child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: titleStyle.copyWith(color: ink)),
-              ),
-            ),
-            Spacer(flex: s == 0 ? 3 : 2),
-            if (s != 0) ...[band(1.5), const SizedBox(height: 3), band(3)],
-            const SizedBox(height: 10),
-          ]),
-        ),
+      padding: EdgeInsets.fromLTRB(width * 0.1, height * 0.08, width * 0.1, height * 0.07),
+      decoration: BoxDecoration(
+        color: color,
+        // The hinge, where the cover bends at the spine.
+        border: Border(left: BorderSide(color: _shade(color, 0.18), width: width * 0.05)),
+        borderRadius: const BorderRadius.horizontal(right: Radius.circular(2)),
       ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text('KULAY · STORIES',
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: body(height * 0.042, weight: FontWeight.w700, color: ink.withValues(alpha: 0.7))
+                .copyWith(letterSpacing: 0.8)),
+        const Spacer(),
+        Text(title,
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: display(_titleSize(), color: ink).copyWith(height: 1.05)),
+        const Spacer(flex: 2),
+        Container(height: 1, margin: EdgeInsets.symmetric(horizontal: width * 0.2), color: ink.withValues(alpha: 0.35)),
+        SizedBox(height: height * 0.03),
+        Text('A Kulay story',
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            style: body(height * 0.045, weight: FontWeight.w600, color: ink.withValues(alpha: 0.75))),
+      ]),
     );
   }
 }
 
-class _Cover extends StatelessWidget {
-  const _Cover(this.w, this.h, this.color, this.title);
-  final double w, h;
-  final Color color;
+/// The spine: the title running down it, as on a printed book.
+class BookSpineFace extends StatelessWidget {
+  const BookSpineFace({super.key, required this.title, required this.color, required this.width, required this.height});
   final String title;
+  final Color color;
+  final double width, height;
 
   @override
   Widget build(BuildContext context) {
-    final dark = color.computeLuminance() < 0.45;
-    final label = dark ? _tint(color, 0.6) : _shade(color, 0.15);
+    final ink = _inkOn(color);
+    final base = _shade(color, 0.08);
     return Container(
-      width: w,
-      height: h,
-      padding: EdgeInsets.fromLTRB(10, h * 0.16, 10, h * 0.16),
+      width: width,
+      height: height,
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: const BorderRadius.horizontal(right: Radius.circular(4), left: Radius.circular(2)),
-        border: Border(left: BorderSide(color: _shade(color, 0.2), width: 5)),
+        gradient: LinearGradient(colors: [_shade(base, 0.12), base, _shade(base, 0.12)]),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: label, borderRadius: BorderRadius.circular(3)),
-          child: Text(title,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: display(13, color: _inkOn(label)).copyWith(height: 1.15)),
+      child: Column(children: [
+        SizedBox(height: height * 0.06),
+        Container(height: 1.2, margin: EdgeInsets.symmetric(horizontal: width * 0.2), color: ink.withValues(alpha: 0.4)),
+        Expanded(
+          child: RotatedBox(
+            quarterTurns: 1,
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: height * 0.05),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(title.toUpperCase(),
+                      maxLines: 1,
+                      style: display(math.min(width * 0.5, 13), color: ink).copyWith(letterSpacing: 0.6)),
+                ),
+              ),
+            ),
+          ),
         ),
-        const Spacer(),
-        Container(height: 3, color: label),
-        const SizedBox(height: 4),
-        Container(height: 1.5, color: label),
+        Container(height: 1.2, margin: EdgeInsets.symmetric(horizontal: width * 0.2), color: ink.withValues(alpha: 0.4)),
+        SizedBox(height: height * 0.06),
       ]),
     );
   }
+}
+
+/// The block of pages seen from the side: fine lines along the height.
+class BookPagesFace extends StatelessWidget {
+  const BookPagesFace({super.key, required this.width, required this.height});
+  final double width, height;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: width,
+        height: height,
+        child: CustomPaint(painter: _PageEdgePainter()),
+      );
+}
+
+class _PageEdgePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFFF3EBDA));
+    final line = Paint()
+      ..color = const Color(0xFFD9CDB4)
+      ..strokeWidth = 0.6;
+    for (var x = 1.5; x < size.width - 1; x += 2.2) {
+      canvas.drawLine(Offset(x, 1), Offset(x, size.height - 1), line);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PageEdgePainter old) => false;
 }
 
 class _CoverInside extends StatelessWidget {
@@ -258,248 +283,6 @@ class _Pages extends StatelessWidget {
             ),
         ]),
       );
-}
-
-// ---------------------------------------------------------------------------
-// The shelf of topics.
-
-typedef BookSpec = ({double width, double height, Color color, int style});
-
-BookSpec _specFor(int i, String title) => (
-      width: 40.0 + (i * 7) % 12,
-      height: math.max(128.0 + (i * 23) % 40, BookSpine.minHeight(title)),
-      color: bookColors[(i * 5) % bookColors.length],
-      style: i,
-    );
-
-/// How far the first books of a row lean on their neighbour (radians).
-const _leans = [0.18];
-
-/// Topics as books on wooden shelves. A book lifts when hovered; a click flies
-/// it open (see [flyOpenBook]) and then calls [onOpen].
-class BookShelf extends StatefulWidget {
-  const BookShelf({super.key, required this.topics, required this.onOpen});
-  final List<String> topics;
-  final void Function(String topic) onOpen;
-
-  @override
-  State<BookShelf> createState() => _BookShelfState();
-}
-
-class _BookShelfState extends State<BookShelf> {
-  int? _hover;
-  int? _opening;
-
-  static const _gap = 3.0, _plank = 14.0, _lift = 16.0, _side = 28.0;
-
-  /// Horizontal room a book takes, leaning ones need more.
-  double _room(int i, int pos, {bool alone = false}) {
-    final s = _specFor(i, widget.topics[i]);
-    final lean = pos < _leans.length && !alone ? _leans[pos] : 0.0;
-    return s.width + s.height * math.sin(lean) + 2 + _gap;
-  }
-
-  void _setHover(int? i) {
-    if (_opening != null || i == _hover) return;
-    setState(() => _hover = i);
-  }
-
-  void _open(BuildContext slot, int i) {
-    if (_opening != null) return;
-    final box = slot.findRenderObject() as RenderBox?;
-    final t = widget.topics[i];
-    if (box == null || !box.hasSize) return widget.onOpen(t);
-    final spec = _specFor(i, widget.topics[i]);
-    // The book's own rect, at the bottom of its slot, lifted if hovered.
-    final at = box.localToGlobal(Offset(0, box.size.height - spec.height - (_hover == i ? _lift : 0)));
-    setState(() {
-      _opening = i;
-      _hover = null;
-    });
-    flyOpenBook(
-      context,
-      from: at & Size(spec.width, spec.height),
-      title: t,
-      spec: spec,
-      onOpened: () => widget.onOpen(t),
-      onDone: () {
-        if (mounted) setState(() => _opening = null);
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
-        // How many rows the books need, then the same number on each row,
-        // so no row is left with a lone book.
-        List<List<int>> fill(int perRow) {
-          final rows = <List<int>>[];
-          var row = <int>[];
-          var used = _side * 2;
-          for (var i = 0; i < widget.topics.length; i++) {
-            final w = _room(i, row.length);
-            if (row.isNotEmpty && (used + w > box.maxWidth || row.length == perRow)) {
-              rows.add(row);
-              row = [];
-              used = _side * 2;
-            }
-            used += _room(i, row.length);
-            row.add(i);
-          }
-          if (row.isNotEmpty) rows.add(row);
-          return rows;
-        }
-
-        final count = fill(widget.topics.length).length;
-        final rows = fill((widget.topics.length / count).ceil());
-        return MouseRegion(
-          onExit: (_) => _setHover(null),
-          child: Column(children: [
-            for (final (r, ids) in rows.indexed) ...[
-              if (r > 0) const SizedBox(height: 26),
-              _row(ids, box.maxWidth),
-            ],
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 30,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                transitionBuilder: (child, a) => FadeTransition(
-                  opacity: a,
-                  child: SlideTransition(
-                      position: Tween(begin: const Offset(0, 0.25), end: Offset.zero).animate(a), child: child),
-                ),
-                child: _hover == null
-                    ? Text('Point at a book to read its title. Click it to start.',
-                        key: const ValueKey(-1), style: body(14, color: const Color(0xFF6B6680)))
-                    : Text.rich(
-                        key: ValueKey(_hover),
-                        TextSpan(children: [
-                          TextSpan(text: widget.topics[_hover!], style: display(22, color: kIndigoText)),
-                          TextSpan(
-                              text: '   Click to read',
-                              style: body(14, weight: FontWeight.w600, color: const Color(0xFF6B6680))),
-                        ]),
-                      ),
-              ),
-            ),
-          ]),
-        );
-      });
-
-  Widget _row(List<int> ids, double maxWidth) {
-    final tallest = ids.map((i) => _specFor(i, widget.topics[i]).height).reduce(math.max);
-    final alone = ids.length == 1;
-    final width = [for (final (p, i) in ids.indexed) _room(i, p, alone: alone)].fold(0.0, (a, b) => a + b) - _gap;
-    var x = (maxWidth - width) / 2;
-    final slots = <Widget>[];
-    for (final (p, i) in ids.indexed) {
-      final lean = p < _leans.length && ids.length > 1 ? _leans[p] : 0.0;
-      final room = _room(i, p, alone: alone);
-      // A leaning book stands at the right of its room, top resting on the next.
-      slots.add(Positioned(
-        key: ValueKey(i),
-        left: x + room - _gap - _specFor(i, widget.topics[i]).width,
-        bottom: _plank,
-        child: _book(i, lean),
-      ));
-      x += room;
-    }
-    return SizedBox(
-      height: tallest + _lift + _plank + 12,
-      child: Stack(clipBehavior: Clip.none, children: [
-        // Soft shadow on the wall under the plank.
-        Positioned(
-          left: 40,
-          right: 40,
-          bottom: -2,
-          height: 4,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(40),
-              boxShadow: [BoxShadow(color: const Color(0xFF6B4A2A).withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 8))],
-            ),
-          ),
-        ),
-        ...slots,
-        // The wooden plank: a lit top face over the front.
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: _plank,
-          child: Column(children: [
-            Container(height: 4, decoration: const BoxDecoration(color: Color(0xFFF6C35B), borderRadius: BorderRadius.vertical(top: Radius.circular(3)))),
-            Expanded(
-              child: Container(decoration: const BoxDecoration(color: Color(0xFFE9A23B), borderRadius: BorderRadius.vertical(bottom: Radius.circular(3)))),
-            ),
-          ]),
-        ),
-      ]),
-    );
-  }
-
-  Widget _book(int i, double lean) {
-    final spec = _specFor(i, widget.topics[i]);
-    final still = reduceMotion(context);
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => _setHover(i),
-      onExit: (_) {
-        if (_hover == i) _setHover(null);
-      },
-      child: Semantics(
-        button: true,
-        label: 'Read about ${widget.topics[i]}',
-        child: Builder(
-          builder: (slot) => GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => _open(slot, i),
-            // A fixed slot: the hit area does not move while the book lifts.
-            child: SizedBox(
-              width: spec.width,
-              height: spec.height + _lift,
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Opacity(
-                  opacity: _opening == i ? 0 : 1,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(end: _hover == i && !still ? 1 : 0),
-                    duration: const Duration(milliseconds: 240),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, v, child) => Transform.translate(
-                      offset: Offset(0, -_lift * v),
-                      child: Transform.rotate(
-                        angle: lean * (1 - 0.6 * v),
-                        alignment: Alignment.bottomRight,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06 + 0.08 * v),
-                              blurRadius: 3 + 9 * v,
-                              offset: Offset(1, 1 + 3 * v),
-                            ),
-                          ]),
-                          child: child,
-                        ),
-                      ),
-                    ),
-                    child: BookSpine(
-                      title: widget.topics[i],
-                      color: spec.color,
-                      width: spec.width,
-                      height: spec.height,
-                      style: spec.style,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // ---------------------------------------------------------------------------
