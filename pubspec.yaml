@@ -46,6 +46,7 @@ dependencies:
   archive: ^4.3.0
   pdfrx: ^2.6.5
   path: ^1.9.1
+  ffi: ^2.2.0
   flutter_animate: ^4.5.2
   pdf: ^3.13.1
 
