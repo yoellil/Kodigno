@@ -1,0 +1,11 @@
+.superpowers/
+.dart_tool/
+.idea/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+/third_party/tesseract/
+/third_party/llama/
+/models-dev/
+/tool/goldens/
