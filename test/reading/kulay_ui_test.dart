@@ -36,6 +36,13 @@ Future<(ReadingController, AppDatabase)> pumpKulay(WidgetTester t, {VoidCallback
   return (c, db);
 }
 
+/// Frame by frame, so switch and slide animations actually run.
+Future<void> frames(WidgetTester t, [int ms = 700]) async {
+  for (var i = 0; i < ms ~/ 50; i++) {
+    await t.pump(const Duration(milliseconds: 50));
+  }
+}
+
 void main() {
   testWidgets('Kulay screen goes back to Kodigno', (t) async {
     var back = 0;
@@ -53,24 +60,61 @@ void main() {
     await t.enterText(find.byType(TextField), 'Ana');
     await t.tap(find.text('Start reading check'));
     await t.pump(const Duration(milliseconds: 500));
-    expect(find.text('Reading check'), findsOneWidget);
+    expect(find.textContaining('Step 1 of 2'), findsOneWidget);
     expect(find.text('The Red Kite'), findsOneWidget);
-
-    // Answer every question with a wrong choice.
     final p = placement[0];
-    for (final q in p.questions) {
-      final choice = find.text(q.choices[(q.answer + 1) % 4]);
-      await t.ensureVisible(choice);
-      await t.tap(choice);
-      await t.pump();
+    expect(find.text(p.questions[0].question), findsNothing); // questions wait until the story is read
+
+    // Done reading: confirm, and the story is gone while answering.
+    await t.ensureVisible(find.text("I'm done reading"));
+    await t.tap(find.text("I'm done reading"));
+    await t.pump(const Duration(milliseconds: 300));
+    await t.tap(find.text('Go to questions'));
+    await frames(t);
+    expect(find.textContaining('Step 2 of 2'), findsOneWidget);
+    expect(find.text('The Red Kite'), findsNothing);
+
+    // Answer every question with a wrong choice, one at a time.
+    for (final (i, q) in p.questions.indexed) {
+      expect(find.text(q.question), findsOneWidget);
+      await t.tap(find.text(q.choices[(q.answer + 1) % 4]));
+      await frames(t);
+      if (i < p.questions.length - 1) expect(find.text(q.question), findsNothing); // moved on by itself
     }
     await t.ensureVisible(find.text('Check my answers'));
     await t.tap(find.text('Check my answers'));
     await t.pump(const Duration(milliseconds: 500));
+    await frames(t);
     expect(find.textContaining('Not quite. The answer is "Red"'), findsOneWidget);
+    expect(find.text('The Red Kite'), findsOneWidget); // the story is back for review
     expect(find.text(p.sentences[p.questions[0].evidence]), findsOneWidget); // the proof, quoted
     expect(find.text('Your starting color is'), findsOneWidget);
     expect(find.text('Aqua'), findsWidgets);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('leaving and coming back while answering does not show the story again', (t) async {
+    final (c, _) = await pumpKulay(t);
+    await t.tap(find.text('Just me'));
+    await t.pump(const Duration(seconds: 2));
+    await t.enterText(find.byType(TextField), 'Bea');
+    await t.tap(find.text('Start reading check'));
+    await t.pump(const Duration(milliseconds: 500));
+    await t.ensureVisible(find.text("I'm done reading"));
+    await t.tap(find.text("I'm done reading"));
+    await t.pump(const Duration(milliseconds: 300));
+    await t.tap(find.text('Go to questions'));
+    await frames(t);
+
+    // Leave Kulay entirely, then come back.
+    await t.pumpWidget(const SizedBox());
+    await t.pumpWidget(ChangeNotifierProvider.value(
+      value: c,
+      child: MaterialApp(theme: kTheme(), home: KulayScreen(onBack: () {})),
+    ));
+    await t.pump(const Duration(seconds: 1));
+    expect(find.textContaining('Step 2 of 2'), findsOneWidget);
+    expect(find.text('The Red Kite'), findsNothing);
     expect(t.takeException(), isNull);
   });
 
