@@ -29,6 +29,11 @@ void main() {
       expect(answerWithin('Rizal', 'Rizal visited Oakland and ate supper in Sacramento.'), isTrue);
     });
 
+    test('a title or one more word on top of what was read is fine; a long addition is not', () {
+      expect(answerWithin('Dr. Miguel Morayta', 'Miguel Morayta'), isTrue);
+      expect(answerWithin('Berlin, as announced in 1999 by the Ministry of Finance', 'Berlin'), isFalse);
+    });
+
     test('a longer answer that rewords the notes counts when most of its words were read', () {
       expect(
           answerWithin('Inspire and guide the ethical conduct of computing professionals.',

@@ -10,7 +10,7 @@ import 'dart:convert';
 String buildReaderPrompt({required String passage, required String question}) => '''
 PASSAGE: $passage
 QUESTION: $question
-Using only the passage, give the exact words from the passage that answer the question. If the passage does not answer it, leave the answer empty.
+Using only the passage, give the exact words from the passage that answer the question. Name people and things in full (the name, not "he", "she" or "it"). If the passage does not answer it, leave the answer empty.
 Reply with JSON only: {"answer": "..."}
 ''';
 
@@ -59,6 +59,11 @@ bool answerWithin(String answer, String read) {
   final r = _norm(read);
   if (a.isEmpty || r.isEmpty) return false;
   if (RegExp('(^| )${RegExp.escape(a)}( |\$)').hasMatch(r)) return true;
+  // "Dr. Miguel Morayta" for "Miguel Morayta": the notes' words plus one or two of
+  // the card's own. (A year, figure or name added to it was already refused.)
+  if (RegExp('(^| )${RegExp.escape(r)}( |\$)').hasMatch(a) && a.split(' ').length - r.split(' ').length <= 2) {
+    return true;
+  }
   if (a.split(' ').length < 5) return false;
   final mine = _content(answer);
   final theirs = _content(read).toSet();
