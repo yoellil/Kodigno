@@ -1,4 +1,5 @@
 import '../domain/models.dart';
+import '../domain/summary.dart';
 
 /// One message in a tutor chat. [role] is 'user' or 'assistant'.
 class ChatTurn {
@@ -21,7 +22,18 @@ abstract class LlmRuntime {
 
 abstract class AiEngine {
   /// [onProgress] gets chunksDone / totalChunks (0..1) after each chunk.
+  /// With [verifyIn], [notes] is a condensed version (such as a lesson summary)
+  /// of the original text: every answer must also be found in [verifyIn], and
+  /// its "Term - definition" lines become term cards.
   Future<GeneratedSet> generate(
+    String notes, {
+    String? verifyIn,
+    void Function(double fraction)? onProgress,
+  });
+
+  /// Turns [notes] into a study lesson: the big idea, an explained section per
+  /// topic and what to remember. Throws [GenerationFailed] if nothing usable.
+  Future<LessonSummary> summarize(
     String notes, {
     void Function(double fraction)? onProgress,
   });

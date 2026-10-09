@@ -6,6 +6,7 @@ import 'chat_screen.dart';
 import 'flashcards_screen.dart';
 import 'motion.dart';
 import 'quiz_screen.dart';
+import 'summary_screen.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -36,9 +37,14 @@ class SetDetailScreen extends StatelessWidget {
                   const SizedBox(height: 26),
                   Row(children: [
                     Expanded(
-                      child: _Tile(Icons.sticky_note_2_outlined, K.yellow, 'Notes',
-                          '${_sections(d.set.sourceText)} sections',
-                          onTap: () => push(NotesScreen(title: d.set.title, text: d.set.sourceText)))
+                      child: _Tile(Icons.auto_stories_outlined, K.yellow, 'Summary', 'Key lesson',
+                          onTap: d.set.sourceText.trim().isEmpty
+                              ? null
+                              : () => push(SummaryScreen(
+                                  repo: repo,
+                                  setId: setId,
+                                  title: d.set.title,
+                                  notes: d.set.sourceText)))
                           .enter(context, index: 2),
                     ),
                     const SizedBox(width: 14),
@@ -89,8 +95,6 @@ class SetDetailScreen extends StatelessWidget {
       );
 }
 
-int _sections(String text) => text.split('\n').where((l) => l.trim().isNotEmpty).length;
-
 class _Tile extends StatelessWidget {
   const _Tile(this.icon, this.color, this.title, this.subtitle, {this.onTap});
   final IconData icon;
@@ -113,31 +117,5 @@ class _Tile extends StatelessWidget {
             Text(subtitle, style: body(13, color: K.muted)),
           ]),
         ),
-      );
-}
-
-class NotesScreen extends StatelessWidget {
-  const NotesScreen({super.key, required this.title, required this.text});
-  final String title;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => PanelPage(
-        child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(28, 12, 12, 0),
-            child: Row(children: [
-              Expanded(child: Text(title, style: display(28))),
-              const CloseX(),
-            ]),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(28),
-              child: SelectableText(text.isEmpty ? 'No notes saved for this set.' : text,
-                  style: body(16)),
-            ).enter(context),
-          ),
-        ]),
       );
 }

@@ -67,6 +67,18 @@ class $StudySetsTable extends StudySets
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
+  static const VerificationMeta _summaryMeta = const VerificationMeta(
+    'summary',
+  );
+  @override
+  late final GeneratedColumn<String> summary = GeneratedColumn<String>(
+    'summary',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -86,6 +98,7 @@ class $StudySetsTable extends StudySets
     sourceType,
     sourceText,
     sourcePaths,
+    summary,
     createdAt,
   ];
   @override
@@ -132,6 +145,12 @@ class $StudySetsTable extends StudySets
         ),
       );
     }
+    if (data.containsKey('summary')) {
+      context.handle(
+        _summaryMeta,
+        summary.isAcceptableOrUnknown(data['summary']!, _summaryMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -167,6 +186,10 @@ class $StudySetsTable extends StudySets
         DriftSqlType.string,
         data['${effectivePrefix}source_paths'],
       )!,
+      summary: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}summary'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -186,6 +209,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
   final String sourceType;
   final String sourceText;
   final String sourcePaths;
+  final String summary;
   final DateTime createdAt;
   const StudySet({
     required this.id,
@@ -193,6 +217,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
     required this.sourceType,
     required this.sourceText,
     required this.sourcePaths,
+    required this.summary,
     required this.createdAt,
   });
   @override
@@ -203,6 +228,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
     map['source_type'] = Variable<String>(sourceType);
     map['source_text'] = Variable<String>(sourceText);
     map['source_paths'] = Variable<String>(sourcePaths);
+    map['summary'] = Variable<String>(summary);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -214,6 +240,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
       sourceType: Value(sourceType),
       sourceText: Value(sourceText),
       sourcePaths: Value(sourcePaths),
+      summary: Value(summary),
       createdAt: Value(createdAt),
     );
   }
@@ -229,6 +256,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
       sourceType: serializer.fromJson<String>(json['sourceType']),
       sourceText: serializer.fromJson<String>(json['sourceText']),
       sourcePaths: serializer.fromJson<String>(json['sourcePaths']),
+      summary: serializer.fromJson<String>(json['summary']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -241,6 +269,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
       'sourceType': serializer.toJson<String>(sourceType),
       'sourceText': serializer.toJson<String>(sourceText),
       'sourcePaths': serializer.toJson<String>(sourcePaths),
+      'summary': serializer.toJson<String>(summary),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -251,6 +280,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
     String? sourceType,
     String? sourceText,
     String? sourcePaths,
+    String? summary,
     DateTime? createdAt,
   }) => StudySet(
     id: id ?? this.id,
@@ -258,6 +288,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
     sourceType: sourceType ?? this.sourceType,
     sourceText: sourceText ?? this.sourceText,
     sourcePaths: sourcePaths ?? this.sourcePaths,
+    summary: summary ?? this.summary,
     createdAt: createdAt ?? this.createdAt,
   );
   StudySet copyWithCompanion(StudySetsCompanion data) {
@@ -273,6 +304,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
       sourcePaths: data.sourcePaths.present
           ? data.sourcePaths.value
           : this.sourcePaths,
+      summary: data.summary.present ? data.summary.value : this.summary,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -285,14 +317,22 @@ class StudySet extends DataClass implements Insertable<StudySet> {
           ..write('sourceType: $sourceType, ')
           ..write('sourceText: $sourceText, ')
           ..write('sourcePaths: $sourcePaths, ')
+          ..write('summary: $summary, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, title, sourceType, sourceText, sourcePaths, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    sourceType,
+    sourceText,
+    sourcePaths,
+    summary,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -302,6 +342,7 @@ class StudySet extends DataClass implements Insertable<StudySet> {
           other.sourceType == this.sourceType &&
           other.sourceText == this.sourceText &&
           other.sourcePaths == this.sourcePaths &&
+          other.summary == this.summary &&
           other.createdAt == this.createdAt);
 }
 
@@ -311,6 +352,7 @@ class StudySetsCompanion extends UpdateCompanion<StudySet> {
   final Value<String> sourceType;
   final Value<String> sourceText;
   final Value<String> sourcePaths;
+  final Value<String> summary;
   final Value<DateTime> createdAt;
   const StudySetsCompanion({
     this.id = const Value.absent(),
@@ -318,6 +360,7 @@ class StudySetsCompanion extends UpdateCompanion<StudySet> {
     this.sourceType = const Value.absent(),
     this.sourceText = const Value.absent(),
     this.sourcePaths = const Value.absent(),
+    this.summary = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   StudySetsCompanion.insert({
@@ -326,6 +369,7 @@ class StudySetsCompanion extends UpdateCompanion<StudySet> {
     this.sourceType = const Value.absent(),
     this.sourceText = const Value.absent(),
     this.sourcePaths = const Value.absent(),
+    this.summary = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : title = Value(title);
   static Insertable<StudySet> custom({
@@ -334,6 +378,7 @@ class StudySetsCompanion extends UpdateCompanion<StudySet> {
     Expression<String>? sourceType,
     Expression<String>? sourceText,
     Expression<String>? sourcePaths,
+    Expression<String>? summary,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -342,6 +387,7 @@ class StudySetsCompanion extends UpdateCompanion<StudySet> {
       if (sourceType != null) 'source_type': sourceType,
       if (sourceText != null) 'source_text': sourceText,
       if (sourcePaths != null) 'source_paths': sourcePaths,
+      if (summary != null) 'summary': summary,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -352,6 +398,7 @@ class StudySetsCompanion extends UpdateCompanion<StudySet> {
     Value<String>? sourceType,
     Value<String>? sourceText,
     Value<String>? sourcePaths,
+    Value<String>? summary,
     Value<DateTime>? createdAt,
   }) {
     return StudySetsCompanion(
@@ -360,6 +407,7 @@ class StudySetsCompanion extends UpdateCompanion<StudySet> {
       sourceType: sourceType ?? this.sourceType,
       sourceText: sourceText ?? this.sourceText,
       sourcePaths: sourcePaths ?? this.sourcePaths,
+      summary: summary ?? this.summary,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -382,6 +430,9 @@ class StudySetsCompanion extends UpdateCompanion<StudySet> {
     if (sourcePaths.present) {
       map['source_paths'] = Variable<String>(sourcePaths.value);
     }
+    if (summary.present) {
+      map['summary'] = Variable<String>(summary.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -396,6 +447,7 @@ class StudySetsCompanion extends UpdateCompanion<StudySet> {
           ..write('sourceType: $sourceType, ')
           ..write('sourceText: $sourceText, ')
           ..write('sourcePaths: $sourcePaths, ')
+          ..write('summary: $summary, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -3756,6 +3808,7 @@ typedef $$StudySetsTableCreateCompanionBuilder = StudySetsCompanion Function({
   Value<String> sourceType,
   Value<String> sourceText,
   Value<String> sourcePaths,
+  Value<String> summary,
   Value<DateTime> createdAt,
 });
 typedef $$StudySetsTableUpdateCompanionBuilder = StudySetsCompanion Function({
@@ -3764,6 +3817,7 @@ typedef $$StudySetsTableUpdateCompanionBuilder = StudySetsCompanion Function({
   Value<String> sourceType,
   Value<String> sourceText,
   Value<String> sourcePaths,
+  Value<String> summary,
   Value<DateTime> createdAt,
 });
 
@@ -3858,6 +3912,11 @@ class $$StudySetsTableFilterComposer
 
   ColumnFilters<String> get sourcePaths => $composableBuilder(
     column: $table.sourcePaths,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get summary => $composableBuilder(
+    column: $table.summary,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3976,6 +4035,11 @@ class $$StudySetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get summary => $composableBuilder(
+    column: $table.summary,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -4011,6 +4075,9 @@ class $$StudySetsTableAnnotationComposer
     column: $table.sourcePaths,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get summary =>
+      $composableBuilder(column: $table.summary, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -4128,6 +4195,7 @@ class $$StudySetsTableTableManager
                 Value<String> sourceType = const Value.absent(),
                 Value<String> sourceText = const Value.absent(),
                 Value<String> sourcePaths = const Value.absent(),
+                Value<String> summary = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => StudySetsCompanion(
                 id: id,
@@ -4135,6 +4203,7 @@ class $$StudySetsTableTableManager
                 sourceType: sourceType,
                 sourceText: sourceText,
                 sourcePaths: sourcePaths,
+                summary: summary,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -4144,6 +4213,7 @@ class $$StudySetsTableTableManager
                 Value<String> sourceType = const Value.absent(),
                 Value<String> sourceText = const Value.absent(),
                 Value<String> sourcePaths = const Value.absent(),
+                Value<String> summary = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => StudySetsCompanion.insert(
                 id: id,
@@ -4151,6 +4221,7 @@ class $$StudySetsTableTableManager
                 sourceType: sourceType,
                 sourceText: sourceText,
                 sourcePaths: sourcePaths,
+                summary: summary,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0

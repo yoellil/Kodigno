@@ -18,7 +18,9 @@ class PdfrxTextExtractor implements PdfTextExtractor {
       final buf = StringBuffer();
       for (final page in doc.pages) {
         final text = await page.loadText();
-        if (text != null) buf.writeln(text.fullText);
+        // An empty line marks the end of a page (slide), so topics can be told apart.
+        final pageText = text?.fullText.trim() ?? '';
+        if (pageText.isNotEmpty) buf.write('$pageText\n\n');
       }
       return cleanPdfText(buf.toString()).trim();
     } finally {
