@@ -1,12 +1,13 @@
-import 'package:flutter/material.dart';
+import 'dart:async';import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/database.dart';
 import '../../ui/theme.dart';
 import '../levels.dart';
-import '../nlp.dart' show skills;
+import '../nlp.dart' show skillOf, skills;
 import '../reading_controller.dart';
 import '../reading_repository.dart';
+import 'kulay_extras.dart';
 import 'story_view.dart';
 
 TextStyle _h(double size) => display(size, color: kIndigoText);
@@ -152,6 +153,22 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _topic = TextEditingController();
+  late final Future<List<({int id, String title})>> _fromTeacher;
+  late final Future<List<SavedWord>> _words;
+  late final Future<int> _best;
+  late final Future<({int days, bool today})> _streak;
+  late final Future<List<int>> _speeds;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = context.read<ReadingController>();
+    _best = c.repo.bestLevel(c.reader!);
+    _streak = c.repo.dayStreak(c.reader!.id);
+    _speeds = c.repo.speeds(c.reader!.id);
+    _fromTeacher = c.repo.teacherStories(c.reader!.id, c.reader!.level);
+    _words = c.myWords();
+  }
 
   @override
   void dispose() {
@@ -170,7 +187,10 @@ class _HomePageState extends State<HomePage> {
         LevelChip(r.level, big: true),
       ]),
       const SizedBox(height: 20),
-      _Ladder(level: r.level),
+        FutureBuilder<int>(
+          future: _best,
+          builder: (context, snap) =>
+      _Ladder(level: r.level, best: snap.data ?? r.level)),
       const SizedBox(height: 12),
       Text(
           top
@@ -178,8 +198,64 @@ class _HomePageState extends State<HomePage> {
               : '${c.progress.up} of 3 stories at 80% or more to move up to ${levels[r.level + 1].name}.',
           style: _p(15, color: kIndigoText)),
       if (c.progress.down > 0 && r.level > 0)
-        Text('One more score under 60% moves you to ${levels[r.level - 1].name} for extra practice.', style: _p(14)),
-      const SizedBox(height: 28),
+        Text('One more score under 60% moves you to ${levels[r.level - 1].name} for extra practice.', style: _p(14),
+          ),
+        FutureBuilder<({int days, bool today})>(
+          future: _streak,
+          builder: (context, snap) => snap.data == null || snap.data!.days == 0
+              ? const SizedBox.shrink()
+              : StreakNote(snap.data!),
+        ),
+        FutureBuilder<List<int>>(
+          future: _speeds,
+          builder: (context, snap) => (snap.data?.length ?? 0) < 2
+              ? const SizedBox.shrink()
+              : SpeedChart(snap.data!),
+        ),
+        FutureBuilder<List<SavedWord>>(
+          future: _words,
+          builder: (context, snap) => (snap.data ?? const []).isEmpty
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.only(top: 14),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: KButton(
+                      'My words (${snap.data!.length})',
+                      ghost: true,
+                      small: true,
+                      onTap: c.openWords,
+                    ),
+                  ),
+                ),
+        ),
+        FutureBuilder<List<({int id, String title})>>(
+          future: _fromTeacher,
+          builder: (context, snap) => (snap.data ?? const []).isEmpty
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.only(top: 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('From your teacher', style: _h(24)),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          for (final t in snap.data!)
+                            KButton(
+                              t.title,
+                              onTap: () => c.readStoryById(t.id),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ))),
+      const SizedBox(height: 20),
+      const WaitingStory(),
+      const SizedBox(height: 8),
       Text('What do you want to read about?', style: _h(24)),
       const SizedBox(height: 12),
       Wrap(spacing: 8, runSpacing: 8, children: [
@@ -210,15 +286,17 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+/// The 8 colors. A color the reader has reached keeps its badge (a check) even after a move down.
+
 class _Ladder extends StatelessWidget {
-  const _Ladder({required this.level});
-  final int level;
+  const _Ladder({required this.level, required this.best});
+  final int level, best;
 
   @override
   Widget build(BuildContext context) => Wrap(spacing: 6, runSpacing: 6, children: [
         for (final (i, l) in levels.indexed)
           Opacity(
-            opacity: i > level ? 0.45 : 1,
+            opacity: i > best ? 0.45 : 1,
             child: Container(
               width: 92,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -228,7 +306,18 @@ class _Ladder extends StatelessWidget {
                 border: i == level ? Border.all(color: kIndigoText, width: 3) : null,
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(l.name, style: body(14, weight: FontWeight.w800, color: l.fg)),
+                Row(
+                  children: [
+                    Expanded(
+                      child:
+                Text(l.name, style: body(14, weight: FontWeight.w800, color: l.fg),
+                      ),
+                    ),
+                    if (i <= best)
+                      Icon(Icons.verified_rounded, size: 16, color: l.fg)
+                    else
+                      Icon(Icons.lock_outline_rounded, size: 14, color: l.fg),
+                  ]),
                 Text('Gr ${l.grades}', style: body(11, weight: FontWeight.w600, color: l.fg)),
               ]),
             ),
@@ -277,11 +366,14 @@ class WritingPage extends StatelessWidget {
             ),
           ]),
         ),
+      const SizedBox(height: 8),
+      Wrap(spacing: 10, runSpacing: 10, crossAxisAlignment: WrapCrossAlignment.center, children: [
+        KButton('Read a saved story while I wait', ghost: true, small: true, onTap: c.readSavedInstead),
+        KButton('Pick another topic', ghost: true, small: true, onTap: c.goHome),
+      ]),
       if (c.error != null) ...[
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(c.error!, style: _p(15, color: kBad, weight: FontWeight.w700)),
-        const SizedBox(height: 10),
-        Align(alignment: Alignment.centerLeft, child: KButton('Pick another topic', ghost: true, onTap: c.goHome)),
       ],
     ]);
   }
@@ -297,8 +389,14 @@ class ReadPage extends StatelessWidget {
     final c = context.watch<ReadingController>();
     final p = c.passage!;
     final isStory = p is Story;
+    final retrying = c.retryOf != null;
+    // Retrying: the highlights are hidden until the second try is checked.
     final proof = <int>{
-      if (c.checked)
+      if (retrying && c.retryChecked)
+        for (final (k, i) in c.retryOf!.indexed)
+          if (c.retryAnswers[k] != p.questions[i].answer)
+            p.questions[i].evidence
+          else if (!retrying &&c.checked)
         for (final (i, q) in p.questions.indexed)
           if (c.answers[i] != q.answer) q.evidence,
     };
@@ -308,6 +406,7 @@ class ReadPage extends StatelessWidget {
       label: isStory ? p.topic : 'Reading check ${c.placementIndex + 1}',
       proof: proof,
       onWord: c.explainWord,
+      easy: c.easyFont,
     );
     final side = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (!isStory && !c.checked) ...[
@@ -317,21 +416,61 @@ class ReadPage extends StatelessWidget {
             style: _p(14)),
         const SizedBox(height: 14),
       ],
+      if (isStory) const WaitingStory(),
       if (isStory && c.result != null) _ResultBanner(story: p),
       if (!isStory && c.checked) _PlacementNext(),
       if (c.notice != null && isStory && c.result == null)
         Padding(padding: const EdgeInsets.only(bottom: 10), child: Text(c.notice!, style: _p(14, color: kIndigoText))),
+        if (retrying) ...[
+          Text('Try the missed ones again', style: _h(22)),
+          const SizedBox(height: 4),
+          Text(
+            'Look back at the story. This does not change your score.',
+            style: _p(14),
+          ),
+          const SizedBox(height: 10),
+          QuizPanel(
+            passage: c.retryPassage,
+            answers: c.retryAnswers,
+            checked: c.retryChecked,
+            onChoose: c.chooseRetry,
+            easy: c.easyFont,
+          ),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              if (!c.retryChecked)
+                KButton(
+                  c.retryAnswers.every((a) => a != null)
+                      ? 'Check my answers'
+                      : 'Answer every question',
+                  onTap: c.retryAnswers.every((a) => a != null)
+                      ? c.checkRetry
+                      : null,
+                ),
+              KButton('Back to my answers', ghost: true, onTap: c.endRetry),
+            ],
+          ),
+        ] else ...[
+          if (isStory && !c.checked)
+            _ReadTimer(
+              key: ValueKey(p.id),
+              words: p.sentences.join(' ').split(RegExp(r'\s+')).length,
+            ),
       Text('Questions', style: _h(22)),
       const SizedBox(height: 10),
-      QuizPanel(passage: p, answers: c.answers, checked: c.checked, onChoose: c.choose),
+      QuizPanel(passage: p, answers: c.answers, checked: c.checked, onChoose: c.choose,
+            easy: c.easyFont),
       if (!c.checked)
         Align(
           alignment: Alignment.centerLeft,
           child: KButton(c.allAnswered ? 'Check my answers' : 'Answer every question',
               onTap: c.allAnswered ? (isStory ? c.submitStory : c.checkPlacement) : null),
         ),
-    ]);
-    return LayoutBuilder(builder: (context, box) {
+    ],
+      ]);
+    final page = LayoutBuilder(builder: (context, box) {
       if (box.maxWidth < 900) {
         return ListView(padding: const EdgeInsets.fromLTRB(20, 8, 20, 28), children: [
           story,
@@ -347,7 +486,116 @@ class ReadPage extends StatelessWidget {
         ),
         Expanded(flex: 5, child: ListView(padding: const EdgeInsets.fromLTRB(12, 8, 28, 28), children: [side])),
       ]);
-    });
+    },
+    );
+    return MediaQuery(
+      data: MediaQuery.of(context)
+          .copyWith(textScaler: TextScaler.linear(c.textScale)),
+      child: page,
+    );
+  }
+}
+
+/// Times the reader's reading and shows words a minute. Optional: the questions can be answered without it.
+class _ReadTimer extends StatefulWidget {
+  const _ReadTimer({super.key, required this.words});
+  final int words;
+  @override
+  State<_ReadTimer> createState() => _ReadTimerState();
+}
+
+class _ReadTimerState extends State<_ReadTimer> {
+  final _watch = Stopwatch();
+  Timer? _tick;
+  var _tooOdd = false;
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  void _start(ReadingController c) {
+    _tooOdd = false;
+    c.setWpm(null);
+    _watch
+      ..reset()
+      ..start();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
+    setState(() {});
+  }
+
+  void _stop(ReadingController c) {
+    _watch.stop();
+    _tick?.cancel();
+    c.setWpm(
+      (widget.words *
+              60 /
+              (_watch.elapsedMilliseconds / 1000).clamp(0.5, double.infinity))
+          .round(),
+    );
+    _tooOdd =
+        c.wpm ==
+        null; // under 5 or over 400 words a minute is not a real reading
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.watch<ReadingController>();
+    final secs = _watch.elapsed.inSeconds;
+    final Widget row;
+    if (_watch.isRunning) {
+      row = Row(
+        children: [
+          Text(
+            '${secs ~/ 60}:${(secs % 60).toString().padLeft(2, '0')}',
+            style: _h(26),
+          ),
+          const SizedBox(width: 14),
+          KButton('I finished reading', small: true, onTap: () => _stop(c)),
+        ],
+      );
+    } else if (c.wpm != null) {
+      row = Row(
+        children: [
+          Flexible(
+            child: Text(
+              'You read ${c.wpm} words a minute.',
+              style: _p(16, color: kIndigoText, weight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(width: 12),
+          KButton(
+            'Time it again',
+            ghost: true,
+            small: true,
+            onTap: () => _start(c),
+          ),
+        ],
+      );
+    } else {
+      row = Wrap(
+        spacing: 12,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          KButton(
+            'Time my reading',
+            ghost: true,
+            small: true,
+            onTap: () => _start(c),
+          ),
+          Text(
+            _tooOdd
+                ? 'That time looks off. Read the whole story, then try again.'
+                : 'Optional. Read the story, then tap finished.',
+            style: _p(13),
+          ),
+        ],
+      );
+    }
+    return Padding(padding: const EdgeInsets.only(bottom: 18), child: row);
   }
 }
 
@@ -362,6 +610,7 @@ class _ResultBanner extends StatelessWidget {
     final l = levels[res.level];
     final up = res.level > res.from, down = res.level < res.from;
     final top = res.level == levels.length - 1;
+    final teacher = story.byTeacher;
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
       padding: const EdgeInsets.all(18),
@@ -381,14 +630,55 @@ class _ResultBanner extends StatelessWidget {
                           : '${c.progress.up} of 3 strong scores toward ${levels[res.level + 1].name}.',
           style: _p(15, color: up ? l.fg : kIndigoText, weight: FontWeight.w600),
         ),
+        if (c.wpm != null) ...[
+          const SizedBox(height: 6),
+          Text('You read ${c.wpm} words a minute.', style: _p(15, color: up ? l.fg : kIndigoText, weight: FontWeight.w600)),
+        ],
+        const SizedBox(height: 12),
+        _SkillSummary(story: story, answers: c.answers, dark: up ? l.fg : kIndigoText),
         const SizedBox(height: 14),
         Wrap(spacing: 10, runSpacing: 10, children: [
-          KButton('Next ${story.topic} story', onTap: () => c.readTopic(story.topic)),
-          KButton('Pick a new topic', ghost: true, onTap: c.goHome),
+          // A teacher's story has no topic to write more of: the next story comes from the reader's page.
+          if (!teacher) KButton('Next ${story.topic} story', onTap: () => c.readTopic(story.topic)),
+          if (res.correct < res.total && c.retryOf == null) KButton('Try the missed ones again', ghost: true, onTap: c.startRetry),
+          KButton(teacher ? 'Back to my page' : 'Pick a new topic', ghost: true, onTap: c.goHome),
           if (c.mode == KulayMode.classroom) KButton('Done, next reader', ghost: true, onTap: c.switchReader),
         ]),
       ]),
     );
+  }
+}
+
+/// What this story showed, skill by skill, and what to look for next time.
+class _SkillSummary extends StatelessWidget {
+  const _SkillSummary({required this.story, required this.answers, required this.dark});
+  final Story story;
+  final List<int?> answers;
+  final Color dark;
+
+  @override
+  Widget build(BuildContext context) {
+    final totals = <String, (int, int)>{};
+    for (final (i, q) in story.questions.indexed) {
+      final (right, all) = totals[skillOf(q.question)] ?? (0, 0);
+      totals[skillOf(q.question)] = (right + (answers[i] == q.answer ? 1 : 0), all + 1);
+    }
+    final missed = totals.entries.where((e) => e.value.$1 < e.value.$2).map((e) => e.key).toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Wrap(spacing: 8, runSpacing: 6, children: [
+        for (final e in totals.entries)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(999)),
+            child: Text('${e.key}  ${e.value.$1} of ${e.value.$2}',
+                style: _p(13, color: e.value.$1 == e.value.$2 ? kGood : kBad, weight: FontWeight.w700)),
+          ),
+      ]),
+      if (missed.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text('Next time, practice: ${missed.first.toLowerCase()} (${_skillHint[missed.first]}).', style: _p(14, color: dark, weight: FontWeight.w600)),
+      ],
+    ]);
   }
 }
 
@@ -423,9 +713,12 @@ class _PlacementNext extends StatelessWidget {
 
 const _skillHint = {
   'Details': 'who, what, where, when',
+  'Sequence': 'what happened first, next, last',
   'Cause and effect': 'why something happened',
   'Feelings': 'how a character felt',
   'Word meaning': 'what a word means',
+  'Main idea': 'what the story is mostly about',
+  'Inference': 'figuring out what is not said',
 };
 
 /// Asks for the teacher PIN (sets it the first time). Returns the typed PIN.
@@ -480,7 +773,18 @@ class _TeacherPageState extends State<TeacherPage> {
         return ListView(padding: const EdgeInsets.fromLTRB(28, 8, 28, 28), children: [
           Text(classroom ? 'Class progress' : 'My progress', style: _h(32)),
           Text('${rep.readers.length} ${rep.readers.length == 1 ? 'reader' : 'readers'}. Scores stay on this computer.', style: _p(15)),
-          const SizedBox(height: 18),
+          Text('Word meanings: Open English WordNet 2025, CC BY 4.0 (en-word.net).', style: _p(12)),
+          const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: KButton(
+                'Save report as PDF',
+                ghost: true,
+                small: true,
+                onTap: rep.readers.isEmpty ? null : _print,
+              ),
+            ),
+            const SizedBox(height: 18),
           Wrap(spacing: 6, runSpacing: 6, children: [
             for (final (i, l) in levels.indexed)
               Container(
@@ -496,6 +800,8 @@ class _TeacherPageState extends State<TeacherPage> {
           const SizedBox(height: 24),
           _SkillsPanel(rep),
           const SizedBox(height: 24),
+            const TeacherStories(),
+            const SizedBox(height: 24),
           if (rep.readers.isEmpty)
             Text('No readers yet.', style: _p(15))
           else
@@ -505,7 +811,8 @@ class _TeacherPageState extends State<TeacherPage> {
                 headingTextStyle: _p(13, color: kIndigoText, weight: FontWeight.w800),
                 dataTextStyle: _p(14, color: kIndigoText),
                 columns: [
-                  for (final t in ['Reader', 'Color', 'Stories', 'Average', 'Recent scores', 'Needs work on', 'Status', if (classroom) ''])
+                  for (final t in ['Reader', 'Color', 'Stories', 'Average',
+                      'Speed', 'Recent scores', 'Needs work on', 'Status', if (classroom) ''])
                     DataColumn(label: Text(t)),
                 ],
                 rows: [
@@ -522,11 +829,28 @@ class _TeacherPageState extends State<TeacherPage> {
                           _refresh();
                         },
                       )),
-                      DataCell(Text('${r.stories}')),
+                      DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [Text('${r.stories}'),
+                                IconButton(
+                                  tooltip:
+                                      'Give ${r.reader.name} the reading check again',
+                                  icon: const Icon(
+                                    Icons.replay_rounded,
+                                    size: 18,
+                                    color: kSoft,
+                                  ),
+                                  onPressed: r.reader.placed
+                                      ? () => _retest(r.reader)
+                                      : null,
+                                ),
+                              ])),
                       DataCell(Text(r.avg == null ? '' : '${r.avg}%')),
+                          DataCell(Text(r.wpm == null ? '' : '${r.wpm} wpm')),
                       DataCell(_ScoreBars(r.recent)),
                       DataCell(Text(r.needs == null ? 'Nothing yet' : '${r.needs!.skill} (${r.needs!.right} of ${r.needs!.total})')),
-                      DataCell(Text(_status(r))),
+                      DataCell(Text(readerStatus(r))),
                       if (classroom)
                         DataCell(IconButton(
                           tooltip: 'Delete ${r.reader.name}',
@@ -540,6 +864,50 @@ class _TeacherPageState extends State<TeacherPage> {
         ]);
       },
     );
+  }
+
+  Future<void> _retest(Reader r) async {
+    final c = context.read<ReadingController>();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Give ${r.name} the reading check again?', style: _h(22)),
+        content: Text(
+          '${r.name} keeps their color until they finish the check, then it is set from the new result. Scores are kept.',
+          style: _p(14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Start again'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await c.retestReader(r.id);
+    _refresh();
+  }
+
+  Future<void> _print() async {
+    final c = context.read<ReadingController>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final path = await c.saveReport();
+      messenger.showSnackBar(SnackBar(content: Text('Report saved: $path')));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Couldn't save the report. If it is open in a PDF viewer, close it and try again.",
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _delete(Reader r) async {
@@ -558,14 +926,6 @@ class _TeacherPageState extends State<TeacherPage> {
     if (ok != true) return;
     await c.deleteReader(r.id);
     _refresh();
-  }
-
-  String _status(ReaderReport r) {
-    if (!r.reader.placed) return 'Reading check not done';
-    if (r.down >= 1 && r.reader.level > 0) return 'Needs help: last score under 60%';
-    if (r.up == 2 && r.reader.level < levels.length - 1) return 'One strong score from moving up';
-    if (r.stories == 0) return 'Has not read yet';
-    return 'On track';
   }
 }
 

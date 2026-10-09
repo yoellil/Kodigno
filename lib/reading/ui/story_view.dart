@@ -120,6 +120,11 @@ while ($null -ne ($line = [Console]::In.ReadLine())) {
 
 // ---------- pieces ----------
 
+/// The easy-read look: Verdana, with a little more room between letters and words.
+TextStyle readFont(TextStyle s, bool easy) => easy
+    ? s.copyWith(fontFamily: 'Verdana', letterSpacing: 0.4, wordSpacing: 2)
+    : s;
+
 class LevelChip extends StatelessWidget {
   const LevelChip(this.level, {super.key, this.big = false});
   final int level;
@@ -165,7 +170,9 @@ class KButton extends StatelessWidget {
 /// Title band, read-aloud, and the story with tappable words. Sentences in
 /// [proof] are highlighted (the ones that hold a missed answer).
 class StoryCard extends StatefulWidget {
-  const StoryCard({super.key, required this.passage, required this.label, required this.onWord, this.proof = const {}});
+  const StoryCard({super.key, required this.passage, required this.label, required this.onWord, this.proof = const {},
+    this.easy = false});
+  final bool easy;
   final Passage passage;
   final String label;
   final Set<int> proof;
@@ -203,7 +210,9 @@ class _StoryCardState extends State<StoryCard> {
       barrierLabel: 'Close',
       barrierColor: Colors.transparent,
       transitionDuration: const Duration(milliseconds: 120),
-      pageBuilder: (ctx, _, _) => _WordPop(word: word, at: at, meaning: widget.onWord(word, sentence), speaker: _speaker),
+      // showGeneralDialog does not carry this page's theme, so pass it on.
+      pageBuilder: (ctx, _, _) =>
+          Theme(data: Theme.of(context), child: _WordPop(word: word, at: at, meaning: widget.onWord(word, sentence), speaker: _speaker)),
     );
   }
 
@@ -256,7 +265,8 @@ class _StoryCardState extends State<StoryCard> {
                         _sentence(s, _index(pi, si), speaking),
                       ],
                     ]),
-                    style: body(size, weight: FontWeight.w500, color: const Color(0xFF1C1A2E)).copyWith(height: 1.6),
+                    style: readFont( body(size, weight: FontWeight.w500, color: const Color(0xFF1C1A2E)).copyWith(height: 1.6),
+                          widget.easy),
                   ),
                 ),
             ]),
@@ -286,7 +296,7 @@ class _StoryCardState extends State<StoryCard> {
     for (final m in RegExp(r"[A-Za-z][A-Za-z'’-]*").allMatches(s)) {
       if (m.start > last) parts.add(TextSpan(text: s.substring(last, m.start)));
       final w = m[0]!;
-      if (w.length >= 3 && RegExp('^[a-z]').hasMatch(w)) {
+      if (canExplain(w)) {
         Offset at = Offset.zero;
         final r = TapGestureRecognizer()
           ..onTapDown = ((d) => at = d.globalPosition)
@@ -302,6 +312,24 @@ class _StoryCardState extends State<StoryCard> {
     return TextSpan(children: parts, style: bg == null ? null : TextStyle(backgroundColor: bg));
   }
 }
+
+/// Small helper words are not tappable: the AI explains them badly ("about" came back as
+/// "concern") and a reader learns nothing from them.
+const _helperWords = {
+  'about', 'above', 'across', 'after', 'again', 'all', 'also', 'always', 'among', 'and', 'any', 'are', 'around', 'been', 'before',
+  'being', 'below', 'between', 'both', 'but', 'can', 'could', 'did', 'does', 'done', 'down', 'during', 'each', 'else', 'enough', 'even',
+  'ever', 'every', 'for', 'from', 'had', 'has', 'have', 'her', 'here', 'hers', 'him', 'his', 'how', 'however', 'into', 'its', 'just',
+  'many', 'may', 'might', 'more', 'most', 'much', 'must', 'never', 'not', 'now', 'off', 'often', 'once', 'only', 'onto', 'other', 'our',
+  'out', 'over', 'own', 'same', 'shall', 'she', 'should', 'since', 'some', 'such', 'than', 'that', 'the', 'their', 'them', 'then',
+  'there', 'these', 'they', 'this', 'those', 'through', 'too', 'under', 'until', 'upon', 'very', 'was', 'were', 'what', 'when', 'where',
+  'which', 'while', 'who', 'whom', 'whose', 'why', 'will', 'with', 'within', 'without', 'would', 'yet', 'you', 'your',
+};
+
+/// Words a reader can tap for help: lowercase, 3+ letters, and not a small helper word.
+/// (Capitalized words are mostly names and places.)
+bool canExplain(String w) => w.length >= 3 && RegExp('^[a-z]').hasMatch(w) && !_helperWords.contains(w.toLowerCase());
+
+final _popButton = TextButton.styleFrom(foregroundColor: kIndigoText, textStyle: body(14, weight: FontWeight.w700));
 
 class _WordPop extends StatelessWidget {
   const _WordPop({required this.word, required this.at, required this.meaning, required this.speaker});
@@ -333,8 +361,8 @@ class _WordPop extends StatelessWidget {
               Row(children: [
                 Expanded(child: Text(word, style: body(18, weight: FontWeight.w800, color: kIndigoText))),
                 if (speaker.available)
-                  TextButton(onPressed: () => speaker.sayWord(word), child: const Text('Hear it')),
-                TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
+                  TextButton(style: _popButton, onPressed: () => speaker.sayWord(word), child: const Text('Hear it')),
+                TextButton(style: _popButton, onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
               ]),
               FutureBuilder(
                 future: meaning,
@@ -365,7 +393,9 @@ class _WordPop extends StatelessWidget {
 /// [onChoose]; after, right and wrong are marked and a missed answer shows
 /// its proof sentence.
 class QuizPanel extends StatelessWidget {
-  const QuizPanel({super.key, required this.passage, required this.answers, required this.checked, required this.onChoose});
+  const QuizPanel({super.key, required this.passage, required this.answers, required this.checked, required this.onChoose,
+    this.easy = false});
+  final bool easy;
   final Passage passage;
   final List<int?> answers;
   final bool checked;
@@ -386,7 +416,8 @@ class QuizPanel extends StatelessWidget {
                 color: !checked ? kLine : answers[i] == q.answer ? kGood : kBad, width: checked ? 2 : 1),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('${i + 1}. ${q.question}', style: body(16, weight: FontWeight.w700, color: kIndigoText)),
+            Text('${i + 1}. ${q.question}', style: readFont( body(16, weight: FontWeight.w700, color: kIndigoText),
+                    easy)),
             const SizedBox(height: 10),
             for (final (j, c) in q.choices.indexed) _choice(i, j, c, q),
             if (checked && answers[i] == q.answer)
@@ -434,7 +465,8 @@ class QuizPanel extends StatelessWidget {
                 child: Text('ABCD'[j], style: body(12, weight: FontWeight.w800, color: picked ? Colors.white : kIndigoText)),
               ),
               const SizedBox(width: 10),
-              Expanded(child: Text(c, style: body(15, color: const Color(0xFF1C1A2E)))),
+              Expanded(child: Text(c, style: readFont( body(15, color: const Color(0xFF1C1A2E)),
+                      easy))),
             ]),
           ),
         ),
@@ -451,20 +483,30 @@ class ChecksNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = story.checks;
-    if (c['grade'] == null) return const SizedBox.shrink();
+    final hand = c['handwritten'] == true;
+    if (c['grade'] == null && !hand) return const SizedBox.shrink();
     final target = (c['target'] as List?) ?? const [0, 0];
+    final teacher = story.byTeacher;
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
-        title: Text('How the AI checked this story', style: body(14, weight: FontWeight.w700, color: kSoft)),
+        title: Text(
+          hand ? 'How this story was checked' : teacher ? 'How the AI checked these questions' : 'How the AI checked this story',
+          style: body(14, weight: FontWeight.w700, color: kSoft),
+        ),
         children: [
-          for (final t in [
+          for (final t in hand
+              ? ['A starter story: written and checked by hand before it shipped with Kodigno. Every answer is stated in the story, or is a main-idea or thinking question checked by a person.']
+              : [
+            if (teacher)
+              'Written by your teacher. Kulay measured it at reading grade ${c['grade']}, ${c['words']} words.',
+            if (!teacher)
             'Check 1: every sentence is complete, ${c['name'] ?? 'the main character'} is named from the first sentence, and it stays on topic. '
-                'Reading difficulty measured at grade ${c['grade']} (target ${target[0]} to ${target[1]}), ${c['words']} words. Draft ${c['drafts']} of up to 4.',
-            'Check 2: each answer is stated in the sentence it points to, each wrong choice was checked against the story, and the AI answered all '
+                'Reading difficulty measured at grade ${c['grade']} (target ${target[0]} to ${target[1]}), ${c['words']} words. Draft ${c['drafts']} of up to ${c['maxDrafts'] ?? 4}.',
+            'Check 2: each answer is stated in the sentence it points to (a main-idea or thinking question is judged by the AI instead), each wrong choice was checked against the story, and the AI answered all '
                 '${c['verified']} questions correctly from the story alone. ${c['rewritten']} rewritten, ${c['dropped']} thrown out.',
-            'Written by ${c['model']} on this computer in ${c['seconds']} seconds. No internet used.',
+            '${teacher ? 'Questions written' : 'Written'} by ${c['model']} on this computer in ${c['seconds']} seconds. No internet used.',
             if (c['reviewed'] == true) 'A starter story: read and checked by hand before it shipped with Kodigno.',
           ])
             Padding(

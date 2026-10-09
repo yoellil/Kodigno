@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../reading/reading_controller.dart';
 import '../reading/ui/kulay_pages.dart';
+import '../reading/ui/kulay_extras.dart' show WordsPage, showReadingLook;
 import '../reading/ui/story_view.dart' show LevelChip;
 import 'motion.dart';
 import 'theme.dart';
@@ -269,6 +270,19 @@ class _BurstPainter extends CustomPainter {
 // Full-screen Kulay: the landing (beside the shelves) until a reader is
 // picked, then the reading app inside the same white card.
 
+/// Kulay is always a white card, so its buttons, dialogs and fields use the light
+/// theme even when the app is dark (white text buttons vanished on the white card).
+final _kulayTheme = () {
+  final was = K.dark;
+  K.dark = false;
+  try {
+    final t = kTheme();
+    return t.copyWith(colorScheme: t.colorScheme.copyWith(primary: _indigoText, onSurface: const Color(0xFF1C1A2E)));
+  } finally {
+    K.dark = was;
+  }
+}();
+
 class KulayScreen extends StatelessWidget {
   const KulayScreen({super.key, required this.onBack});
   final VoidCallback onBack;
@@ -277,7 +291,9 @@ class KulayScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.watch<ReadingController>();
     final landing = c.screen == KulayScreenId.welcome || c.screen == KulayScreenId.readers;
-    return Scaffold(
+    return Theme(
+      data: _kulayTheme,
+      child: Scaffold(
       backgroundColor: _indigo,
       body: SafeArea(
         child: Container(
@@ -292,7 +308,7 @@ class KulayScreen extends StatelessWidget {
               : _Inside(onBack: onBack),
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -404,6 +420,7 @@ class _Inside extends StatelessWidget {
       KulayScreenId.home when r != null => const HomePage(),
       KulayScreenId.writing when r != null => const WritingPage(),
       KulayScreenId.placement || KulayScreenId.story when c.passage != null => const ReadPage(),
+      KulayScreenId.words when r != null => const WordsPage(),
       KulayScreenId.teacher => const TeacherPage(),
       _ => const SizedBox.shrink(),
     };
@@ -427,6 +444,7 @@ class _Inside extends StatelessWidget {
               ],
             ]),
             Row(mainAxisSize: MainAxisSize.min, children: [
+              TextButton(style: link, onPressed: () => showReadingLook(context), child: const Text('Aa')),
               if (r != null && c.screen != KulayScreenId.home && c.screen != KulayScreenId.placement)
                 TextButton(style: link, onPressed: c.goHome, child: const Text('My page')),
               if (classroom && c.screen != KulayScreenId.teacher)

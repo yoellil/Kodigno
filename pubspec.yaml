@@ -47,6 +47,7 @@ dependencies:
   pdfrx: ^2.6.5
   path: ^1.9.1
   flutter_animate: ^4.5.2
+  pdf: ^3.13.1
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +75,7 @@ flutter:
   assets:
     - assets/model_tiers.json
     - assets/kulay/starter_stories.json
+    - assets/kulay/dict/
   fonts:
     - family: Bricolage
       fonts:

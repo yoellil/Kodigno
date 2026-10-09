@@ -2642,6 +2642,15 @@ class $ReadingAttemptsTable extends ReadingAttempts
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
+  static const VerificationMeta _wpmMeta = const VerificationMeta('wpm');
+  @override
+  late final GeneratedColumn<int> wpm = GeneratedColumn<int>(
+    'wpm',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _takenAtMeta = const VerificationMeta(
     'takenAt',
   );
@@ -2664,6 +2673,7 @@ class $ReadingAttemptsTable extends ReadingAttempts
     total,
     moved,
     skills,
+    wpm,
     takenAt,
   ];
   @override
@@ -2733,6 +2743,12 @@ class $ReadingAttemptsTable extends ReadingAttempts
         skills.isAcceptableOrUnknown(data['skills']!, _skillsMeta),
       );
     }
+    if (data.containsKey('wpm')) {
+      context.handle(
+        _wpmMeta,
+        wpm.isAcceptableOrUnknown(data['wpm']!, _wpmMeta),
+      );
+    }
     if (data.containsKey('taken_at')) {
       context.handle(
         _takenAtMeta,
@@ -2784,6 +2800,10 @@ class $ReadingAttemptsTable extends ReadingAttempts
         DriftSqlType.string,
         data['${effectivePrefix}skills'],
       )!,
+      wpm: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}wpm'],
+      ),
       takenAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}taken_at'],
@@ -2806,6 +2826,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
   final int total;
   final int moved;
   final String skills;
+  final int? wpm;
   final DateTime takenAt;
   const ReadingAttempt({
     required this.id,
@@ -2816,6 +2837,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
     required this.total,
     required this.moved,
     required this.skills,
+    this.wpm,
     required this.takenAt,
   });
   @override
@@ -2829,6 +2851,9 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
     map['total'] = Variable<int>(total);
     map['moved'] = Variable<int>(moved);
     map['skills'] = Variable<String>(skills);
+    if (!nullToAbsent || wpm != null) {
+      map['wpm'] = Variable<int>(wpm);
+    }
     map['taken_at'] = Variable<DateTime>(takenAt);
     return map;
   }
@@ -2843,6 +2868,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
       total: Value(total),
       moved: Value(moved),
       skills: Value(skills),
+      wpm: wpm == null && nullToAbsent ? const Value.absent() : Value(wpm),
       takenAt: Value(takenAt),
     );
   }
@@ -2861,6 +2887,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
       total: serializer.fromJson<int>(json['total']),
       moved: serializer.fromJson<int>(json['moved']),
       skills: serializer.fromJson<String>(json['skills']),
+      wpm: serializer.fromJson<int?>(json['wpm']),
       takenAt: serializer.fromJson<DateTime>(json['takenAt']),
     );
   }
@@ -2876,6 +2903,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
       'total': serializer.toJson<int>(total),
       'moved': serializer.toJson<int>(moved),
       'skills': serializer.toJson<String>(skills),
+      'wpm': serializer.toJson<int?>(wpm),
       'takenAt': serializer.toJson<DateTime>(takenAt),
     };
   }
@@ -2889,6 +2917,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
     int? total,
     int? moved,
     String? skills,
+    Value<int?> wpm = const Value.absent(),
     DateTime? takenAt,
   }) => ReadingAttempt(
     id: id ?? this.id,
@@ -2899,6 +2928,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
     total: total ?? this.total,
     moved: moved ?? this.moved,
     skills: skills ?? this.skills,
+    wpm: wpm.present ? wpm.value : this.wpm,
     takenAt: takenAt ?? this.takenAt,
   );
   ReadingAttempt copyWithCompanion(ReadingAttemptsCompanion data) {
@@ -2911,6 +2941,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
       total: data.total.present ? data.total.value : this.total,
       moved: data.moved.present ? data.moved.value : this.moved,
       skills: data.skills.present ? data.skills.value : this.skills,
+      wpm: data.wpm.present ? data.wpm.value : this.wpm,
       takenAt: data.takenAt.present ? data.takenAt.value : this.takenAt,
     );
   }
@@ -2926,6 +2957,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
           ..write('total: $total, ')
           ..write('moved: $moved, ')
           ..write('skills: $skills, ')
+          ..write('wpm: $wpm, ')
           ..write('takenAt: $takenAt')
           ..write(')'))
         .toString();
@@ -2941,6 +2973,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
     total,
     moved,
     skills,
+    wpm,
     takenAt,
   );
   @override
@@ -2955,6 +2988,7 @@ class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
           other.total == this.total &&
           other.moved == this.moved &&
           other.skills == this.skills &&
+          other.wpm == this.wpm &&
           other.takenAt == this.takenAt);
 }
 
@@ -2967,6 +3001,7 @@ class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
   final Value<int> total;
   final Value<int> moved;
   final Value<String> skills;
+  final Value<int?> wpm;
   final Value<DateTime> takenAt;
   const ReadingAttemptsCompanion({
     this.id = const Value.absent(),
@@ -2977,6 +3012,7 @@ class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
     this.total = const Value.absent(),
     this.moved = const Value.absent(),
     this.skills = const Value.absent(),
+    this.wpm = const Value.absent(),
     this.takenAt = const Value.absent(),
   });
   ReadingAttemptsCompanion.insert({
@@ -2988,6 +3024,7 @@ class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
     required int total,
     this.moved = const Value.absent(),
     this.skills = const Value.absent(),
+    this.wpm = const Value.absent(),
     this.takenAt = const Value.absent(),
   }) : readerId = Value(readerId),
        storyId = Value(storyId),
@@ -3003,6 +3040,7 @@ class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
     Expression<int>? total,
     Expression<int>? moved,
     Expression<String>? skills,
+    Expression<int>? wpm,
     Expression<DateTime>? takenAt,
   }) {
     return RawValuesInsertable({
@@ -3014,6 +3052,7 @@ class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
       if (total != null) 'total': total,
       if (moved != null) 'moved': moved,
       if (skills != null) 'skills': skills,
+      if (wpm != null) 'wpm': wpm,
       if (takenAt != null) 'taken_at': takenAt,
     });
   }
@@ -3027,6 +3066,7 @@ class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
     Value<int>? total,
     Value<int>? moved,
     Value<String>? skills,
+    Value<int?>? wpm,
     Value<DateTime>? takenAt,
   }) {
     return ReadingAttemptsCompanion(
@@ -3038,6 +3078,7 @@ class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
       total: total ?? this.total,
       moved: moved ?? this.moved,
       skills: skills ?? this.skills,
+      wpm: wpm ?? this.wpm,
       takenAt: takenAt ?? this.takenAt,
     );
   }
@@ -3069,6 +3110,9 @@ class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
     if (skills.present) {
       map['skills'] = Variable<String>(skills.value);
     }
+    if (wpm.present) {
+      map['wpm'] = Variable<int>(wpm.value);
+    }
     if (takenAt.present) {
       map['taken_at'] = Variable<DateTime>(takenAt.value);
     }
@@ -3086,7 +3130,554 @@ class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
           ..write('total: $total, ')
           ..write('moved: $moved, ')
           ..write('skills: $skills, ')
+          ..write('wpm: $wpm, ')
           ..write('takenAt: $takenAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SavedWordsTable extends SavedWords
+    with TableInfo<$SavedWordsTable, SavedWord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SavedWordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _readerIdMeta = const VerificationMeta(
+    'readerId',
+  );
+  @override
+  late final GeneratedColumn<int> readerId = GeneratedColumn<int>(
+    'reader_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES readers (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _wordMeta = const VerificationMeta('word');
+  @override
+  late final GeneratedColumn<String> word = GeneratedColumn<String>(
+    'word',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _meaningMeta = const VerificationMeta(
+    'meaning',
+  );
+  @override
+  late final GeneratedColumn<String> meaning = GeneratedColumn<String>(
+    'meaning',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _synonymMeta = const VerificationMeta(
+    'synonym',
+  );
+  @override
+  late final GeneratedColumn<String> synonym = GeneratedColumn<String>(
+    'synonym',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sentenceMeta = const VerificationMeta(
+    'sentence',
+  );
+  @override
+  late final GeneratedColumn<String> sentence = GeneratedColumn<String>(
+    'sentence',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timesMeta = const VerificationMeta('times');
+  @override
+  late final GeneratedColumn<int> times = GeneratedColumn<int>(
+    'times',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _knownMeta = const VerificationMeta('known');
+  @override
+  late final GeneratedColumn<int> known = GeneratedColumn<int>(
+    'known',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _savedAtMeta = const VerificationMeta(
+    'savedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> savedAt = GeneratedColumn<DateTime>(
+    'saved_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    readerId,
+    word,
+    meaning,
+    synonym,
+    sentence,
+    times,
+    known,
+    savedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'saved_words';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SavedWord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('reader_id')) {
+      context.handle(
+        _readerIdMeta,
+        readerId.isAcceptableOrUnknown(data['reader_id']!, _readerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_readerIdMeta);
+    }
+    if (data.containsKey('word')) {
+      context.handle(
+        _wordMeta,
+        word.isAcceptableOrUnknown(data['word']!, _wordMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_wordMeta);
+    }
+    if (data.containsKey('meaning')) {
+      context.handle(
+        _meaningMeta,
+        meaning.isAcceptableOrUnknown(data['meaning']!, _meaningMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_meaningMeta);
+    }
+    if (data.containsKey('synonym')) {
+      context.handle(
+        _synonymMeta,
+        synonym.isAcceptableOrUnknown(data['synonym']!, _synonymMeta),
+      );
+    }
+    if (data.containsKey('sentence')) {
+      context.handle(
+        _sentenceMeta,
+        sentence.isAcceptableOrUnknown(data['sentence']!, _sentenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sentenceMeta);
+    }
+    if (data.containsKey('times')) {
+      context.handle(
+        _timesMeta,
+        times.isAcceptableOrUnknown(data['times']!, _timesMeta),
+      );
+    }
+    if (data.containsKey('known')) {
+      context.handle(
+        _knownMeta,
+        known.isAcceptableOrUnknown(data['known']!, _knownMeta),
+      );
+    }
+    if (data.containsKey('saved_at')) {
+      context.handle(
+        _savedAtMeta,
+        savedAt.isAcceptableOrUnknown(data['saved_at']!, _savedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {readerId, word},
+  ];
+  @override
+  SavedWord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SavedWord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      readerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reader_id'],
+      )!,
+      word: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}word'],
+      )!,
+      meaning: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}meaning'],
+      )!,
+      synonym: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}synonym'],
+      ),
+      sentence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sentence'],
+      )!,
+      times: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}times'],
+      )!,
+      known: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}known'],
+      )!,
+      savedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}saved_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SavedWordsTable createAlias(String alias) {
+    return $SavedWordsTable(attachedDatabase, alias);
+  }
+}
+
+class SavedWord extends DataClass implements Insertable<SavedWord> {
+  final int id;
+  final int readerId;
+  final String word;
+  final String meaning;
+  final String? synonym;
+  final String sentence;
+  final int times;
+  final int known;
+  final DateTime savedAt;
+  const SavedWord({
+    required this.id,
+    required this.readerId,
+    required this.word,
+    required this.meaning,
+    this.synonym,
+    required this.sentence,
+    required this.times,
+    required this.known,
+    required this.savedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['reader_id'] = Variable<int>(readerId);
+    map['word'] = Variable<String>(word);
+    map['meaning'] = Variable<String>(meaning);
+    if (!nullToAbsent || synonym != null) {
+      map['synonym'] = Variable<String>(synonym);
+    }
+    map['sentence'] = Variable<String>(sentence);
+    map['times'] = Variable<int>(times);
+    map['known'] = Variable<int>(known);
+    map['saved_at'] = Variable<DateTime>(savedAt);
+    return map;
+  }
+
+  SavedWordsCompanion toCompanion(bool nullToAbsent) {
+    return SavedWordsCompanion(
+      id: Value(id),
+      readerId: Value(readerId),
+      word: Value(word),
+      meaning: Value(meaning),
+      synonym: synonym == null && nullToAbsent
+          ? const Value.absent()
+          : Value(synonym),
+      sentence: Value(sentence),
+      times: Value(times),
+      known: Value(known),
+      savedAt: Value(savedAt),
+    );
+  }
+
+  factory SavedWord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SavedWord(
+      id: serializer.fromJson<int>(json['id']),
+      readerId: serializer.fromJson<int>(json['readerId']),
+      word: serializer.fromJson<String>(json['word']),
+      meaning: serializer.fromJson<String>(json['meaning']),
+      synonym: serializer.fromJson<String?>(json['synonym']),
+      sentence: serializer.fromJson<String>(json['sentence']),
+      times: serializer.fromJson<int>(json['times']),
+      known: serializer.fromJson<int>(json['known']),
+      savedAt: serializer.fromJson<DateTime>(json['savedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'readerId': serializer.toJson<int>(readerId),
+      'word': serializer.toJson<String>(word),
+      'meaning': serializer.toJson<String>(meaning),
+      'synonym': serializer.toJson<String?>(synonym),
+      'sentence': serializer.toJson<String>(sentence),
+      'times': serializer.toJson<int>(times),
+      'known': serializer.toJson<int>(known),
+      'savedAt': serializer.toJson<DateTime>(savedAt),
+    };
+  }
+
+  SavedWord copyWith({
+    int? id,
+    int? readerId,
+    String? word,
+    String? meaning,
+    Value<String?> synonym = const Value.absent(),
+    String? sentence,
+    int? times,
+    int? known,
+    DateTime? savedAt,
+  }) => SavedWord(
+    id: id ?? this.id,
+    readerId: readerId ?? this.readerId,
+    word: word ?? this.word,
+    meaning: meaning ?? this.meaning,
+    synonym: synonym.present ? synonym.value : this.synonym,
+    sentence: sentence ?? this.sentence,
+    times: times ?? this.times,
+    known: known ?? this.known,
+    savedAt: savedAt ?? this.savedAt,
+  );
+  SavedWord copyWithCompanion(SavedWordsCompanion data) {
+    return SavedWord(
+      id: data.id.present ? data.id.value : this.id,
+      readerId: data.readerId.present ? data.readerId.value : this.readerId,
+      word: data.word.present ? data.word.value : this.word,
+      meaning: data.meaning.present ? data.meaning.value : this.meaning,
+      synonym: data.synonym.present ? data.synonym.value : this.synonym,
+      sentence: data.sentence.present ? data.sentence.value : this.sentence,
+      times: data.times.present ? data.times.value : this.times,
+      known: data.known.present ? data.known.value : this.known,
+      savedAt: data.savedAt.present ? data.savedAt.value : this.savedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SavedWord(')
+          ..write('id: $id, ')
+          ..write('readerId: $readerId, ')
+          ..write('word: $word, ')
+          ..write('meaning: $meaning, ')
+          ..write('synonym: $synonym, ')
+          ..write('sentence: $sentence, ')
+          ..write('times: $times, ')
+          ..write('known: $known, ')
+          ..write('savedAt: $savedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    readerId,
+    word,
+    meaning,
+    synonym,
+    sentence,
+    times,
+    known,
+    savedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SavedWord &&
+          other.id == this.id &&
+          other.readerId == this.readerId &&
+          other.word == this.word &&
+          other.meaning == this.meaning &&
+          other.synonym == this.synonym &&
+          other.sentence == this.sentence &&
+          other.times == this.times &&
+          other.known == this.known &&
+          other.savedAt == this.savedAt);
+}
+
+class SavedWordsCompanion extends UpdateCompanion<SavedWord> {
+  final Value<int> id;
+  final Value<int> readerId;
+  final Value<String> word;
+  final Value<String> meaning;
+  final Value<String?> synonym;
+  final Value<String> sentence;
+  final Value<int> times;
+  final Value<int> known;
+  final Value<DateTime> savedAt;
+  const SavedWordsCompanion({
+    this.id = const Value.absent(),
+    this.readerId = const Value.absent(),
+    this.word = const Value.absent(),
+    this.meaning = const Value.absent(),
+    this.synonym = const Value.absent(),
+    this.sentence = const Value.absent(),
+    this.times = const Value.absent(),
+    this.known = const Value.absent(),
+    this.savedAt = const Value.absent(),
+  });
+  SavedWordsCompanion.insert({
+    this.id = const Value.absent(),
+    required int readerId,
+    required String word,
+    required String meaning,
+    this.synonym = const Value.absent(),
+    required String sentence,
+    this.times = const Value.absent(),
+    this.known = const Value.absent(),
+    this.savedAt = const Value.absent(),
+  }) : readerId = Value(readerId),
+       word = Value(word),
+       meaning = Value(meaning),
+       sentence = Value(sentence);
+  static Insertable<SavedWord> custom({
+    Expression<int>? id,
+    Expression<int>? readerId,
+    Expression<String>? word,
+    Expression<String>? meaning,
+    Expression<String>? synonym,
+    Expression<String>? sentence,
+    Expression<int>? times,
+    Expression<int>? known,
+    Expression<DateTime>? savedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (readerId != null) 'reader_id': readerId,
+      if (word != null) 'word': word,
+      if (meaning != null) 'meaning': meaning,
+      if (synonym != null) 'synonym': synonym,
+      if (sentence != null) 'sentence': sentence,
+      if (times != null) 'times': times,
+      if (known != null) 'known': known,
+      if (savedAt != null) 'saved_at': savedAt,
+    });
+  }
+
+  SavedWordsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? readerId,
+    Value<String>? word,
+    Value<String>? meaning,
+    Value<String?>? synonym,
+    Value<String>? sentence,
+    Value<int>? times,
+    Value<int>? known,
+    Value<DateTime>? savedAt,
+  }) {
+    return SavedWordsCompanion(
+      id: id ?? this.id,
+      readerId: readerId ?? this.readerId,
+      word: word ?? this.word,
+      meaning: meaning ?? this.meaning,
+      synonym: synonym ?? this.synonym,
+      sentence: sentence ?? this.sentence,
+      times: times ?? this.times,
+      known: known ?? this.known,
+      savedAt: savedAt ?? this.savedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (readerId.present) {
+      map['reader_id'] = Variable<int>(readerId.value);
+    }
+    if (word.present) {
+      map['word'] = Variable<String>(word.value);
+    }
+    if (meaning.present) {
+      map['meaning'] = Variable<String>(meaning.value);
+    }
+    if (synonym.present) {
+      map['synonym'] = Variable<String>(synonym.value);
+    }
+    if (sentence.present) {
+      map['sentence'] = Variable<String>(sentence.value);
+    }
+    if (times.present) {
+      map['times'] = Variable<int>(times.value);
+    }
+    if (known.present) {
+      map['known'] = Variable<int>(known.value);
+    }
+    if (savedAt.present) {
+      map['saved_at'] = Variable<DateTime>(savedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SavedWordsCompanion(')
+          ..write('id: $id, ')
+          ..write('readerId: $readerId, ')
+          ..write('word: $word, ')
+          ..write('meaning: $meaning, ')
+          ..write('synonym: $synonym, ')
+          ..write('sentence: $sentence, ')
+          ..write('times: $times, ')
+          ..write('known: $known, ')
+          ..write('savedAt: $savedAt')
           ..write(')'))
         .toString();
   }
@@ -3104,6 +3695,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ReadingAttemptsTable readingAttempts = $ReadingAttemptsTable(
     this,
   );
+  late final $SavedWordsTable savedWords = $SavedWordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3116,6 +3708,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     readers,
     stories,
     readingAttempts,
+    savedWords,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3146,6 +3739,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('reading_attempts', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'readers',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('saved_words', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -4696,6 +5296,24 @@ final class $$ReadersTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$SavedWordsTable, List<SavedWord>>
+  _savedWordsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.savedWords,
+    aliasName: 'readers__id__saved_words__reader_id',
+  );
+
+  $$SavedWordsTableProcessedTableManager get savedWordsRefs {
+    final manager = $$SavedWordsTableTableManager(
+      $_db,
+      $_db.savedWords,
+    ).filter((f) => f.readerId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_savedWordsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ReadersTableFilterComposer
@@ -4748,6 +5366,31 @@ class $$ReadersTableFilterComposer
           }) => $$ReadingAttemptsTableFilterComposer(
             $db: $db,
             $table: $db.readingAttempts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> savedWordsRefs(
+    Expression<bool> Function($$SavedWordsTableFilterComposer f) f,
+  ) {
+    final $$SavedWordsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.savedWords,
+      getReferencedColumn: (t) => t.readerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SavedWordsTableFilterComposer(
+            $db: $db,
+            $table: $db.savedWords,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4841,6 +5484,31 @@ class $$ReadersTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> savedWordsRefs<T extends Object>(
+    Expression<T> Function($$SavedWordsTableAnnotationComposer a) f,
+  ) {
+    final $$SavedWordsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.savedWords,
+      getReferencedColumn: (t) => t.readerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SavedWordsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.savedWords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ReadersTableTableManager
@@ -4856,7 +5524,10 @@ class $$ReadersTableTableManager
           $$ReadersTableUpdateCompanionBuilder,
           (Reader, $$ReadersTableReferences),
           Reader,
-          PrefetchHooks Function({bool readingAttemptsRefs})
+          PrefetchHooks Function({
+            bool readingAttemptsRefs,
+            bool savedWordsRefs,
+          })
         > {
   $$ReadersTableTableManager(_$AppDatabase db, $ReadersTable table)
     : super(
@@ -4905,37 +5576,63 @@ class $$ReadersTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({readingAttemptsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (readingAttemptsRefs) db.readingAttempts,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (readingAttemptsRefs)
-                    await $_getPrefetchedData<
-                      Reader,
-                      $ReadersTable,
-                      ReadingAttempt
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ReadersTableReferences
-                          ._readingAttemptsRefsTable(db),
-                      managerFromTypedResult: (p0) => $$ReadersTableReferences(
-                        db,
-                        table,
-                        p0,
-                      ).readingAttemptsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.readerId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({readingAttemptsRefs = false, savedWordsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (readingAttemptsRefs) db.readingAttempts,
+                    if (savedWordsRefs) db.savedWords,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (readingAttemptsRefs)
+                        await $_getPrefetchedData<
+                          Reader,
+                          $ReadersTable,
+                          ReadingAttempt
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ReadersTableReferences
+                              ._readingAttemptsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ReadersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).readingAttemptsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.readerId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (savedWordsRefs)
+                        await $_getPrefetchedData<
+                          Reader,
+                          $ReadersTable,
+                          SavedWord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ReadersTableReferences
+                              ._savedWordsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ReadersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).savedWordsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.readerId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -4952,7 +5649,7 @@ typedef $$ReadersTableProcessedTableManager =
       $$ReadersTableUpdateCompanionBuilder,
       (Reader, $$ReadersTableReferences),
       Reader,
-      PrefetchHooks Function({bool readingAttemptsRefs})
+      PrefetchHooks Function({bool readingAttemptsRefs, bool savedWordsRefs})
     >;
 typedef $$StoriesTableCreateCompanionBuilder = StoriesCompanion Function({
   Value<int> id,
@@ -5355,6 +6052,7 @@ typedef $$ReadingAttemptsTableCreateCompanionBuilder =
       required int total,
       Value<int> moved,
       Value<String> skills,
+      Value<int?> wpm,
       Value<DateTime> takenAt,
     });
 typedef $$ReadingAttemptsTableUpdateCompanionBuilder =
@@ -5367,6 +6065,7 @@ typedef $$ReadingAttemptsTableUpdateCompanionBuilder =
       Value<int> total,
       Value<int> moved,
       Value<String> skills,
+      Value<int?> wpm,
       Value<DateTime> takenAt,
     });
 
@@ -5450,6 +6149,11 @@ class $$ReadingAttemptsTableFilterComposer
 
   ColumnFilters<String> get skills => $composableBuilder(
     column: $table.skills,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get wpm => $composableBuilder(
+    column: $table.wpm,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5544,6 +6248,11 @@ class $$ReadingAttemptsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get wpm => $composableBuilder(
+    column: $table.wpm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get takenAt => $composableBuilder(
     column: $table.takenAt,
     builder: (column) => ColumnOrderings(column),
@@ -5622,6 +6331,9 @@ class $$ReadingAttemptsTableAnnotationComposer
 
   GeneratedColumn<String> get skills =>
       $composableBuilder(column: $table.skills, builder: (column) => column);
+
+  GeneratedColumn<int> get wpm =>
+      $composableBuilder(column: $table.wpm, builder: (column) => column);
 
   GeneratedColumn<DateTime> get takenAt =>
       $composableBuilder(column: $table.takenAt, builder: (column) => column);
@@ -5711,6 +6423,7 @@ class $$ReadingAttemptsTableTableManager
                 Value<int> total = const Value.absent(),
                 Value<int> moved = const Value.absent(),
                 Value<String> skills = const Value.absent(),
+                Value<int?> wpm = const Value.absent(),
                 Value<DateTime> takenAt = const Value.absent(),
               }) => ReadingAttemptsCompanion(
                 id: id,
@@ -5721,6 +6434,7 @@ class $$ReadingAttemptsTableTableManager
                 total: total,
                 moved: moved,
                 skills: skills,
+                wpm: wpm,
                 takenAt: takenAt,
               ),
           createCompanionCallback:
@@ -5733,6 +6447,7 @@ class $$ReadingAttemptsTableTableManager
                 required int total,
                 Value<int> moved = const Value.absent(),
                 Value<String> skills = const Value.absent(),
+                Value<int?> wpm = const Value.absent(),
                 Value<DateTime> takenAt = const Value.absent(),
               }) => ReadingAttemptsCompanion.insert(
                 id: id,
@@ -5743,6 +6458,7 @@ class $$ReadingAttemptsTableTableManager
                 total: total,
                 moved: moved,
                 skills: skills,
+                wpm: wpm,
                 takenAt: takenAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -5821,6 +6537,389 @@ typedef $$ReadingAttemptsTableProcessedTableManager =
       ReadingAttempt,
       PrefetchHooks Function({bool readerId, bool storyId})
     >;
+typedef $$SavedWordsTableCreateCompanionBuilder = SavedWordsCompanion Function({
+  Value<int> id,
+  required int readerId,
+  required String word,
+  required String meaning,
+  Value<String?> synonym,
+  required String sentence,
+  Value<int> times,
+  Value<int> known,
+  Value<DateTime> savedAt,
+});
+typedef $$SavedWordsTableUpdateCompanionBuilder = SavedWordsCompanion Function({
+  Value<int> id,
+  Value<int> readerId,
+  Value<String> word,
+  Value<String> meaning,
+  Value<String?> synonym,
+  Value<String> sentence,
+  Value<int> times,
+  Value<int> known,
+  Value<DateTime> savedAt,
+});
+
+final class $$SavedWordsTableReferences
+    extends BaseReferences<_$AppDatabase, $SavedWordsTable, SavedWord> {
+  $$SavedWordsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ReadersTable _readerIdTable(_$AppDatabase db) =>
+      db.readers.createAlias('saved_words__reader_id__readers__id');
+
+  $$ReadersTableProcessedTableManager get readerId {
+    final $_column = $_itemColumn<int>('reader_id')!;
+
+    final manager = $$ReadersTableTableManager(
+      $_db,
+      $_db.readers,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_readerIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SavedWordsTableFilterComposer
+    extends Composer<_$AppDatabase, $SavedWordsTable> {
+  $$SavedWordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get word => $composableBuilder(
+    column: $table.word,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get meaning => $composableBuilder(
+    column: $table.meaning,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get synonym => $composableBuilder(
+    column: $table.synonym,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sentence => $composableBuilder(
+    column: $table.sentence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get times => $composableBuilder(
+    column: $table.times,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get known => $composableBuilder(
+    column: $table.known,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get savedAt => $composableBuilder(
+    column: $table.savedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ReadersTableFilterComposer get readerId {
+    final $$ReadersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.readerId,
+      referencedTable: $db.readers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadersTableFilterComposer(
+            $db: $db,
+            $table: $db.readers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SavedWordsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SavedWordsTable> {
+  $$SavedWordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get word => $composableBuilder(
+    column: $table.word,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get meaning => $composableBuilder(
+    column: $table.meaning,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get synonym => $composableBuilder(
+    column: $table.synonym,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sentence => $composableBuilder(
+    column: $table.sentence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get times => $composableBuilder(
+    column: $table.times,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get known => $composableBuilder(
+    column: $table.known,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get savedAt => $composableBuilder(
+    column: $table.savedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ReadersTableOrderingComposer get readerId {
+    final $$ReadersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.readerId,
+      referencedTable: $db.readers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadersTableOrderingComposer(
+            $db: $db,
+            $table: $db.readers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SavedWordsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SavedWordsTable> {
+  $$SavedWordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get word =>
+      $composableBuilder(column: $table.word, builder: (column) => column);
+
+  GeneratedColumn<String> get meaning =>
+      $composableBuilder(column: $table.meaning, builder: (column) => column);
+
+  GeneratedColumn<String> get synonym =>
+      $composableBuilder(column: $table.synonym, builder: (column) => column);
+
+  GeneratedColumn<String> get sentence =>
+      $composableBuilder(column: $table.sentence, builder: (column) => column);
+
+  GeneratedColumn<int> get times =>
+      $composableBuilder(column: $table.times, builder: (column) => column);
+
+  GeneratedColumn<int> get known =>
+      $composableBuilder(column: $table.known, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get savedAt =>
+      $composableBuilder(column: $table.savedAt, builder: (column) => column);
+
+  $$ReadersTableAnnotationComposer get readerId {
+    final $$ReadersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.readerId,
+      referencedTable: $db.readers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SavedWordsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SavedWordsTable,
+          SavedWord,
+          $$SavedWordsTableFilterComposer,
+          $$SavedWordsTableOrderingComposer,
+          $$SavedWordsTableAnnotationComposer,
+          $$SavedWordsTableCreateCompanionBuilder,
+          $$SavedWordsTableUpdateCompanionBuilder,
+          (SavedWord, $$SavedWordsTableReferences),
+          SavedWord,
+          PrefetchHooks Function({bool readerId})
+        > {
+  $$SavedWordsTableTableManager(_$AppDatabase db, $SavedWordsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SavedWordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SavedWordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SavedWordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> readerId = const Value.absent(),
+                Value<String> word = const Value.absent(),
+                Value<String> meaning = const Value.absent(),
+                Value<String?> synonym = const Value.absent(),
+                Value<String> sentence = const Value.absent(),
+                Value<int> times = const Value.absent(),
+                Value<int> known = const Value.absent(),
+                Value<DateTime> savedAt = const Value.absent(),
+              }) => SavedWordsCompanion(
+                id: id,
+                readerId: readerId,
+                word: word,
+                meaning: meaning,
+                synonym: synonym,
+                sentence: sentence,
+                times: times,
+                known: known,
+                savedAt: savedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int readerId,
+                required String word,
+                required String meaning,
+                Value<String?> synonym = const Value.absent(),
+                required String sentence,
+                Value<int> times = const Value.absent(),
+                Value<int> known = const Value.absent(),
+                Value<DateTime> savedAt = const Value.absent(),
+              }) => SavedWordsCompanion.insert(
+                id: id,
+                readerId: readerId,
+                word: word,
+                meaning: meaning,
+                synonym: synonym,
+                sentence: sentence,
+                times: times,
+                known: known,
+                savedAt: savedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SavedWordsTable, SavedWord>(table),
+                  $$SavedWordsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({readerId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (readerId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.readerId,
+                        referencedTable: $$SavedWordsTableReferences
+                            ._readerIdTable(db),
+                        referencedColumn: $$SavedWordsTableReferences
+                            ._readerIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SavedWordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SavedWordsTable,
+      SavedWord,
+      $$SavedWordsTableFilterComposer,
+      $$SavedWordsTableOrderingComposer,
+      $$SavedWordsTableAnnotationComposer,
+      $$SavedWordsTableCreateCompanionBuilder,
+      $$SavedWordsTableUpdateCompanionBuilder,
+      (SavedWord, $$SavedWordsTableReferences),
+      SavedWord,
+      PrefetchHooks Function({bool readerId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5839,4 +6938,6 @@ class $AppDatabaseManager {
       $$StoriesTableTableManager(_db, _db.stories);
   $$ReadingAttemptsTableTableManager get readingAttempts =>
       $$ReadingAttemptsTableTableManager(_db, _db.readingAttempts);
+  $$SavedWordsTableTableManager get savedWords =>
+      $$SavedWordsTableTableManager(_db, _db.savedWords);
 }
