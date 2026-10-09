@@ -303,12 +303,12 @@ class _FlashDeckState extends State<FlashDeck>
                                   showBack: _back,
                                   front: _Face(
                                     text: card.front,
-                                    label: 'question',
+                                    side: _Side.question,
                                     color: K.lavender,
                                   ),
                                   back: _Face(
                                     text: card.back,
-                                    label: 'answer',
+                                    side: _Side.answer,
                                     color: K.yellow,
                                   ),
                                 ),
@@ -379,38 +379,103 @@ double faceFontSize(String text) {
   return 19;
 }
 
+enum _Side { question, answer }
+
+/// One side of a flashcard: an index card with a symbol for its side (a
+/// question mark or a lightbulb) instead of a word, and a faint ruled texture.
 class _Face extends StatelessWidget {
-  const _Face({required this.text, required this.label, required this.color});
+  const _Face({required this.text, required this.side, required this.color});
   final String text;
-  final String label;
+  final _Side side;
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Panel(
-    color: color,
-    padding: const EdgeInsets.all(36),
-    child: SizedBox.expand(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(label, style: body(13, color: Colors.black54)),
-          const SizedBox(height: 14),
-          // Long text steps down in size; scrolling is only a last resort.
-          Flexible(
-            child: SingleChildScrollView(
-              child: Text(
-                text,
-                // A numbered list reads best left-aligned, with air between lines.
-                textAlign: text.contains('\n')
-                    ? TextAlign.left
-                    : TextAlign.center,
-                style: display(faceFontSize(text))
-                    .copyWith(height: text.contains('\n') ? 1.4 : null),
+  Widget build(BuildContext context) {
+    final question = side == _Side.question;
+    final symbol = question ? Icons.question_mark_rounded : Icons.lightbulb_rounded;
+    return Semantics(
+      label: question ? 'Question' : 'Answer',
+      child: Panel(
+        color: color,
+        child: Stack(children: [
+          // Paper: drawn once and kept, so dragging and flipping stay smooth.
+          Positioned.fill(
+            child: RepaintBoundary(child: CustomPaint(painter: _CardTexture(color, seed: question ? 3 : 7))),
+          ),
+          // A large, faint copy of the symbol in the corner.
+          Positioned(
+            right: -18,
+            bottom: -26,
+            child: Transform.rotate(
+              angle: question ? 0.18 : -0.12,
+              child: Icon(symbol, size: 190, color: K.ink.withValues(alpha: 0.06)),
+            ),
+          ),
+          Positioned(
+            left: 22,
+            top: 20,
+            child: KSticker(icon: symbol, color: Colors.white, size: 44, tilt: question ? -0.1 : 0.08),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(36, 56, 36, 36),
+            child: SizedBox.expand(
+              child: Center(
+                // Long text steps down in size; scrolling is only a last resort.
+                child: SingleChildScrollView(
+                  child: Text(
+                    text,
+                    // A numbered list reads best left-aligned, with air between lines.
+                    textAlign: text.contains('\n') ? TextAlign.left : TextAlign.center,
+                    style: display(faceFontSize(text)).copyWith(height: text.contains('\n') ? 1.4 : null),
+                  ),
+                ),
               ),
             ),
           ),
-        ],
+        ]),
       ),
-    ),
-  );
+    );
+  }
+}
+
+/// Index-card paper: fine grain, faint ruled lines, and a stronger rule near
+/// the top, all tinted to the card's color so the text stays the focus.
+class _CardTexture extends CustomPainter {
+  const _CardTexture(this.color, {required this.seed});
+  final Color color;
+  final int seed;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final ink = Color.lerp(color, K.ink, 0.55)!;
+    // Ruled lines.
+    final rule = Paint()
+      ..color = ink.withValues(alpha: 0.10)
+      ..strokeWidth = 1;
+    const gap = 34.0;
+    for (var y = 92.0; y < size.height - 18; y += gap) {
+      canvas.drawLine(Offset(18, y), Offset(size.width - 18, y), rule);
+    }
+    // The header rule, like the line under an index card's title.
+    canvas.drawLine(
+      const Offset(18, 76),
+      Offset(size.width - 18, 76),
+      Paint()
+        ..color = ink.withValues(alpha: 0.22)
+        ..strokeWidth = 1.6,
+    );
+    // Grain: light and dark specks, fixed per side so it never shimmers.
+    final r = math.Random(seed);
+    final dark = Path(), light = Path();
+    final count = (size.width * size.height / 900).round().clamp(200, 1400);
+    for (var i = 0; i < count; i++) {
+      final o = Offset(r.nextDouble() * size.width, r.nextDouble() * size.height);
+      (i.isEven ? dark : light).addOval(Rect.fromCircle(center: o, radius: 0.4 + r.nextDouble() * 0.7));
+    }
+    canvas.drawPath(dark, Paint()..color = ink.withValues(alpha: 0.10));
+    canvas.drawPath(light, Paint()..color = Colors.white.withValues(alpha: 0.30));
+  }
+
+  @override
+  bool shouldRepaint(_CardTexture old) => old.color != color || old.seed != seed;
 }

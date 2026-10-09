@@ -11,6 +11,7 @@ import 'quiz_screen.dart';
 import 'summary_screen.dart';
 import 'teach_back_screen.dart';
 import 'theme.dart';
+import 'waves.dart';
 import 'widgets.dart';
 
 class SetDetailScreen extends StatefulWidget {
@@ -42,8 +43,10 @@ class _SetDetailScreenState extends State<SetDetailScreen> {
     final repo = widget.repo;
     final setId = widget.setId;
     final loaded = _d;
-    return PanelPage(
-        child: Builder(
+    return Scaffold(
+      body: Stack(children: [
+        const Positioned.fill(child: WavyBackground()),
+        SafeArea(child: Builder(
           builder: (context) {
             if (loaded == null) return const Center(child: CircularProgressIndicator());
             final d = loaded;
@@ -53,13 +56,17 @@ class _SetDetailScreenState extends State<SetDetailScreen> {
               await _reload();
             }
             final hasQuiz = d.questions.isNotEmpty;
-            return Center(
+            // Left-aligned, so the waves have the right side to themselves.
+            return Align(
+              alignment: Alignment.centerLeft,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: ListView(padding: const EdgeInsets.all(28), shrinkWrap: true, children: [
-                  const Align(alignment: Alignment.centerRight, child: CloseX()),
-                  Align(alignment: Alignment.centerLeft, child: SourceTag(d.set.sourceType))
-                      .enter(context),
+                constraints: const BoxConstraints(maxWidth: 700),
+                child: ListView(padding: const EdgeInsets.fromLTRB(56, 28, 28, 28), shrinkWrap: true, children: [
+                  Row(children: [
+                    SourceTag(d.set.sourceType).enter(context),
+                    const Spacer(),
+                    const CloseX(),
+                  ]),
                   const SizedBox(height: 12),
                   Text(d.set.title, style: display(42)).enter(context, index: 1),
                   const SizedBox(height: 26),
@@ -137,7 +144,8 @@ class _SetDetailScreenState extends State<SetDetailScreen> {
               ),
             );
           },
-        ),
+        )),
+        ]),
       );
   }
 }

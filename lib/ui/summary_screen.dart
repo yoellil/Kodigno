@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -126,7 +128,7 @@ class _Start extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(28),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const KSticker(icon: Icons.auto_stories_outlined, color: K.lavender, size: 64),
+            const _PenScribble(),
             const SizedBox(height: 20),
             Text('Make a lesson', style: display(28)),
             const SizedBox(height: 8),
@@ -156,7 +158,7 @@ class _Writing extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 48),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const KSticker(icon: Icons.auto_stories_outlined, color: K.lavender, size: 64),
+          const _PenScribble(),
           const SizedBox(height: 20),
           Text('Writing your lesson…', style: display(24)),
           const SizedBox(height: 6),
@@ -167,6 +169,123 @@ class _Writing extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A pen writing a curvy line, over and over: it fades in, draws, holds,
+/// then line and pen fade out together, so each loop starts from nothing.
+class _PenScribble extends StatefulWidget {
+  const _PenScribble();
+  @override
+  State<_PenScribble> createState() => _PenScribbleState();
+}
+
+class _PenScribbleState extends State<_PenScribble> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 3400));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (reduceMotion(context)) {
+      _c
+        ..stop()
+        ..value = 0.8; // the finished line, pen at rest
+    } else if (!_c.isAnimating) {
+      _c.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: 'Writing',
+        child: SizedBox(
+          width: 170,
+          height: 96,
+          child: CustomPaint(painter: _ScribblePainter(_c, ink: K.lavender, outline: K.ink)),
+        ),
+      );
+}
+
+class _ScribblePainter extends CustomPainter {
+  _ScribblePainter(this.t, {required this.ink, required this.outline}) : super(repaint: t);
+  final Animation<double> t;
+  final Color ink, outline;
+
+  static double _seg(double v, double a, double b) => ((v - a) / (b - a)).clamp(0.0, 1.0);
+
+  /// A loose handwriting stroke: a rise, a small loop, and a wave out.
+  static Path _stroke(Size s) {
+    final w = s.width, h = s.height;
+    return Path()
+      ..moveTo(w * 0.069, h * 0.70)
+      ..cubicTo(w * 0.151, h * 0.30, w * 0.233, h * 0.28, w * 0.282, h * 0.52)
+      ..cubicTo(w * 0.332, h * 0.80, w * 0.414, h * 0.86, w * 0.430, h * 0.56)
+      ..cubicTo(w * 0.446, h * 0.30, w * 0.348, h * 0.30, w * 0.381, h * 0.50)
+      ..cubicTo(w * 0.414, h * 0.72, w * 0.528, h * 0.78, w * 0.594, h * 0.50)
+      ..cubicTo(w * 0.643, h * 0.30, w * 0.725, h * 0.32, w * 0.791, h * 0.58);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final v = t.value;
+    // Timeline: fade in, draw, hold, fade everything out.
+    final appear = Curves.easeOut.transform(_seg(v, 0.0, 0.10));
+    final drawn = Curves.easeInOutCubic.transform(_seg(v, 0.06, 0.72));
+    final vanish = 1 - Curves.easeIn.transform(_seg(v, 0.84, 1.0));
+    final alpha = appear * vanish;
+    if (alpha <= 0.001) return;
+
+    final metric = _stroke(size).computeMetrics().first;
+    final len = metric.length * drawn;
+    if (len > 0.5) {
+      canvas.drawPath(
+        metric.extractPath(0, len),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..color = ink.withValues(alpha: alpha),
+      );
+    }
+
+    // The pen, its tip on the end of the line, tilting with the stroke a little.
+    final at = metric.getTangentForOffset(math.max(len, 0.001))!;
+    final tilt = 0.62 + 0.15 * math.sin(at.angle); // body up and to the right, like a right hand
+    canvas.save();
+    canvas.translate(at.position.dx, at.position.dy);
+    canvas.rotate(tilt);
+    final edge = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeJoin = StrokeJoin.round
+      ..color = outline.withValues(alpha: alpha);
+    // Nib, from the tip up to the body.
+    final nib = Path()
+      ..moveTo(0, 0)
+      ..lineTo(-5, -12)
+      ..lineTo(5, -12)
+      ..close();
+    canvas.drawPath(nib, Paint()..color = Colors.white.withValues(alpha: alpha));
+    canvas.drawPath(nib, edge);
+    canvas.drawCircle(const Offset(0, -2.5), 1.6, Paint()..color = outline.withValues(alpha: alpha));
+    // Body and cap.
+    final body = RRect.fromLTRBR(-6, -50, 6, -12, const Radius.circular(3));
+    canvas.drawRRect(body.shift(const Offset(3, 2)), Paint()..color = outline.withValues(alpha: 0.9 * alpha));
+    canvas.drawRRect(body, Paint()..color = ink.withValues(alpha: alpha));
+    canvas.drawRRect(body, edge);
+    canvas.drawLine(const Offset(-6, -40), const Offset(6, -40), edge);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_ScribblePainter old) => old.ink != ink || old.outline != outline;
 }
 
 class _Lesson extends StatelessWidget {
