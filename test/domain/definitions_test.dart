@@ -181,10 +181,40 @@ Intellectual Property Office of the Philippines (IPOPHL) as the primary agency.
     });
   });
 
-  test('a heading over a few short bullets becomes one numbered list card', () {
+  test('a heading over a few short bullets becomes one bulleted list card', () {
     const text = 'Types of Hackers\n- White hat\n- Black hat hackers\n- Grey hat hackers\n';
     final d = extractDefinitions(text).single;
     expect(d.term, 'Types of Hackers');
-    expect(d.definition, '1. White hat\n2. Black hat hackers\n3. Grey hat hackers');
+    expect(d.definition, '\u2022 White hat\n\u2022 Black hat hackers\n\u2022 Grey hat hackers');
+  });
+
+  group('list cards ask a question', () {
+    test('a title that names a group becomes "What are the ...?"', () {
+      expect(questionForTitle('Extra-curricular activities in Ateneo'), 'What are the extra-curricular activities in Ateneo?');
+      expect(questionForTitle('General Ethical Principles'), 'What are the General Ethical Principles?');
+      expect(questionForTitle('Reasons why Rizal did not perform well in UST'),
+          'What are the reasons why Rizal did not perform well in UST?');
+      expect(questionForTitle('Why did Rizal shift to a medical course?'), 'Why did Rizal shift to a medical course?');
+      expect(questionForTitle('IEEE GRADES OF MEMBERSHIP'), 'What are the "IEEE GRADES OF MEMBERSHIP"?');
+    });
+
+    test('only titles that name a group make list cards', () {
+      for (final t in ['Extra-curricular activities in Ateneo', 'Logical Oppositions', 'Three Processes of Eduction', 'Why Philosophy & Letters?']) {
+        expect(looksLikeCategory(t), isTrue, reason: t);
+      }
+      for (final t in ['Paciano went to Manila', 'June 1876', 'Spanish', 'Dr. Feodor Jagor', 'Sanchez', 'Santa Cruz in order to visit', 'Prayed at the college chapel']) {
+        expect(looksLikeCategory(t), isFalse, reason: t);
+      }
+    });
+
+    test('bullets unless the notes numbered the points', () {
+      expect(formatList(['A one', 'B two'], bullets: true), '• A one\n• B two');
+      expect(formatList(['A one', 'B two']), '1. A one\n2. B two');
+    });
+
+    test('a lone name, language or date with a line below is not a card', () {
+      const t = 'Sanchez\nHe won five medals at the end of the school term and was proud of it.\nJune 1876\nHe obtained the highest grades in all subjects that year at school.\n';
+      expect(extractDefinitions(t), isEmpty);
+    });
   });
 }

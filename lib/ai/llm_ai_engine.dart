@@ -60,6 +60,18 @@ class LlmAiEngine implements AiEngine {
   /// Questions whose answer is a person. Their fallback choices are other people.
   static final _who = RegExp(r'\bwho(m|se)?\b', caseSensitive: false);
 
+  /// What sort of answer [question] wants, so wrong choices are the same sort.
+  static String _kindOf(String question) {
+    final q = question.toLowerCase();
+    if (_who.hasMatch(q)) return 'who';
+    if (RegExp(r'\b(?:how many|how much|how long|how old|what age|what number)\b').hasMatch(q)) return 'count';
+    if (RegExp(r'\b(?:when|what year|which year|what date|what month|in what year|in which year)\b').hasMatch(q)) return 'when';
+    if (RegExp(r'\b(?:where|which city|what city|which town|what town|which country|what country|which province)\b|\bin which (?:city|town|country|place|province)\b').hasMatch(q)) {
+      return 'where';
+    }
+    return 'other';
+  }
+
   @override
   Future<GeneratedSet> generate(
     String notes, {
@@ -73,16 +85,33 @@ class LlmAiEngine implements AiEngine {
     final lists = <NotesList>[];
     final titles = <String>{};
     for (final l in notesLists(source)) {
-      if (l.heading.isEmpty || !isGoodList(l.items)) continue;
+      if (l.heading.isEmpty || l.heading.split(' ').length < 2 || !looksLikeCategory(l.heading) || !isGoodList(l.items)) continue;
       if (titles.add(l.heading.toLowerCase())) lists.add(l);
     }
     bool usable(Definition d) =>
         !looksLikeCitation('${d.term}: ${d.definition}') && !titles.contains(d.term.toLowerCase());
-    final defs = [for (final d in extractDefinitions(source)) if (usable(d)) d];
+    // Cards from the notes alone: real definitions ("X - ...", "X is a ...") and lists under
+    // a title that names a group. A slide title with one sentence under it is not kept:
+    // on picture captions and wrapped lines it gave cards with no question in them.
+    final patterns = {
+      for (final d in extractDefinitions(source, headingCards: false)) '${d.term}\n${d.definition}',
+    };
+    final defs = [
+      for (final d in extractDefinitions(source))
+        if (usable(d) &&
+            (patterns.contains('${d.term}\n${d.definition}') || d.definition.contains('\n') || d.term.endsWith('?')))
+          d,
+    ];
     // "Which term is this?" needs real definitions ("X - ...", "X is a ..."), not a
     // slide title with a sentence under it.
-    final quizDefs = [for (final d in extractDefinitions(source, headingCards: false)) if (usable(d)) d];
-    final listBacks = {for (final l in lists) formatList(l.items)};
+    var quizDefs = [
+      for (final d in extractDefinitions(source, headingCards: false))
+        if (usable(d) && d.definition.split(RegExp(r'\s+')).length >= 6) d,
+    ];
+    // Three or four terms cannot give a fair "which term" question: too little to choose from.
+    if (quizDefs.length < 5) quizDefs = const [];
+    String backOf(NotesList l) => formatList(l.items, bullets: !l.ordered);
+    final listBacks = {for (final l in lists) backOf(l)};
     final index = NoteIndex(source);
     var all = chunkText(text, tier.chunkChars);
     final long = all.where((c) => c.length >= _minChunkChars).toList();
@@ -101,6 +130,7 @@ class LlmAiEngine implements AiEngine {
         // One card per list: not again under a second question, nor when the
         // list already has its own titled card.
         if (it.answer.contains('\n') && (listBacks.contains(it.answer) || !seen.add(it.answer))) continue;
+        if (items.any((x) => sameQuestion(x.question, x.answer, it.question, it.answer))) continue;
         if (seen.add(it.question.toLowerCase().trim())) items.add(it);
       }
     }
@@ -172,16 +202,17 @@ class LlmAiEngine implements AiEngine {
     final usedAnswers = <String>{};
     for (final it in quizItems) {
       if (!usedAnswers.add(it.answer.toLowerCase().trim())) continue;
-      // ponytail: "who" vs the rest is the only kind split; add place/thing if mixes show up
-      final who = _who.hasMatch(it.question);
+      // Wrong choices are other answers of the same kind (a person for "who", a year for
+      // "when", a place for "where", a count for "how many").
+      final kind = _kindOf(it.question);
       final pool = [
         for (final p in quizItems)
-          if (_who.hasMatch(p.question) == who) p.answer,
-        // Definitions from the notes are true of something else: good wrong
-        // choices for a phrase answer.
-        if (!who)
-          for (final d in defs)
-            if (!d.definition.contains('\n')) shortenDefinition(withoutTerm(d.definition, d.term), max: 80),
+          if (_kindOf(p.question) == kind) p.answer,
+        // Definitions from the notes are true of something else: good wrong choices for a
+        // phrase answer (only real ones, and only enough of them to be fair).
+        if (kind == 'other')
+          for (final d in quizDefs)
+            shortenDefinition(withoutTerm(d.definition, d.term), max: 80),
       ];
       final wrong = pickDistractors(it.answer, pool, _random,
           preferred: it.wrong, question: it.question, fact: it.fact);
@@ -196,7 +227,7 @@ class LlmAiEngine implements AiEngine {
       ));
     }
     return GeneratedSet(questions, [
-      for (final l in lists) Flashcard(front: l.heading, back: formatList(l.items)),
+      for (final l in lists) Flashcard(front: questionForTitle(l.heading), back: backOf(l)),
       for (final d in defs)
         Flashcard(
             front: d.term,
@@ -289,6 +320,7 @@ class LlmAiEngine implements AiEngine {
             answer = formatList(list);
             plain = list.join(', ');
           }
+          if (hasLooseReference(q.question)) continue; // "When did he...?" teaches nothing without the notes
           final question = unleak(q.question, plain);
           // Strict fidelity: one fact, its own words. A question or answer that needs
           // more than that fact (or invents) is dropped, not shown.

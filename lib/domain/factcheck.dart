@@ -204,3 +204,24 @@ FactCheck checkQa(NoteIndex index, String question, String answer) {
   }
   return FactCheck(Verdict.unverified, reason);
 }
+
+final _personPronoun = RegExp(r"\b(?:he|she|they|him|her|hers|his|their|theirs|them)\b", caseSensitive: false);
+
+/// A question that points at someone it never names: "When did he become an
+/// interno?". Away from the notes nobody knows who "he" is. "What did Rizal give
+/// to his mother?" is fine, since a name comes before the pronoun.
+bool hasLooseReference(String question) {
+  final m = _personPronoun.firstMatch(question);
+  if (m == null) return false;
+  final before = question.substring(0, m.start).replaceFirst(RegExp(r'^\W*\w+'), ''); // not the first word
+  return !RegExp(r'\b(?:[A-Z][a-z]{2,}|[A-Z]{2,})\b').hasMatch(before);
+}
+
+/// True if two questions ask for the same thing: the same answer and mostly the same words.
+bool sameQuestion(String q1, String a1, String q2, String a2) {
+  if (_plain(a1) != _plain(a2)) return false;
+  final t1 = nlp.terms(q1).toSet();
+  final t2 = nlp.terms(q2).toSet();
+  if (t1.isEmpty || t2.isEmpty) return false;
+  return t1.intersection(t2).length / min(t1.length, t2.length) >= 0.6;
+}

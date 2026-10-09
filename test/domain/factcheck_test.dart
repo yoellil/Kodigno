@@ -85,4 +85,17 @@ void main() {
       expect(answerTypeProblem('What is the age of consent?', '18'), isNull);
     });
   });
+
+  test('a question that says "he" with no name before it is too vague to keep', () {
+    expect(hasLooseReference('When did he become an interno at Ateneo?'), isTrue);
+    expect(hasLooseReference('Where did they spend the summer?'), isTrue);
+    expect(hasLooseReference('What did Rizal give to his mother?'), isFalse);
+    expect(hasLooseReference('When did Rizal become an interno at Ateneo?'), isFalse);
+  });
+
+  test('two questions with the same answer and mostly the same words are one card', () {
+    expect(sameQuestion('What date did Rizal become an interno in Ateneo?', 'June 16, 1875',
+        'When did Rizal become an interno at Ateneo?', 'June 16, 1875'), isTrue);
+    expect(sameQuestion('Where was Rizal born?', 'Calamba', 'Where was Rizal executed?', 'Bagumbayan'), isFalse);
+  });
 }

@@ -78,6 +78,7 @@ List<Definition> extractDefinitions(String notes, {bool headingCards = true}) {
           isGoodTitle(m[1]!.trim()) &&
           !_dateLike(term) &&
           _readsAsDefinition(definition) &&
+          definition.split(RegExp(r'\s+')).length >= 6 && // a caption or a label is not a definition
           !term.toLowerCase().split(' ').any(_notTerms.contains) &&
           words.length >= 4 &&
           !titleCase) {
@@ -103,8 +104,12 @@ List<Definition> extractDefinitions(String notes, {bool headingCards = true}) {
         if (fromPatterns(paras[j].text) != null) break; // a section title, not a term
         bullets.add(paras[j].text);
       }
-      final isList = isGoodList(bullets);
-      final def = isList ? formatList(bullets) : _explain(p.text.trim(), bullets);
+      final isList = looksLikeCategory(p.text) && p.text.trim().split(' ').length >= 2 && isGoodList(bullets);
+      // A heading with one sentence under it needs a real title (two words, not a name
+      // or a date): "Sanchez" or "Spanish" with a line below is just a wrapped line.
+      final def = isList
+          ? formatList(bullets, bullets: true)
+          : (p.text.trim().split(RegExp(r'\s+')).length >= 2 ? _explain(p.text.trim(), bullets) : null);
       if (def != null) d = (term: p.text.trim(), definition: def);
     }
     if (d != null && seen.add(d.term.toLowerCase())) out.add(d);
@@ -159,10 +164,27 @@ bool _isHeading(String s) {
 /// A title that is a title: not a sentence fragment, a label ("Q: what"), a
 /// caption or a wrapped line that stops mid-thought.
 bool isGoodTitle(String s) {
-  final t = s.trim();
+  var t = s.trim();
+  // A title that is already a question ("Why did Rizal shift to a medical course?") or
+  // starts like a list ("Reasons why ...") may contain a verb.
+  final isQuestion = RegExp(r'^(?:what|why|how|which|who|when|where)\b.*\?$', caseSensitive: false).hasMatch(t);
+  final isReasons = RegExp(r'^(?:reasons|causes|effects|ways|steps|types|kinds|factors|things|examples|facts)\b',
+          caseSensitive: false)
+      .hasMatch(t);
+  if (isQuestion) t = t.substring(0, t.length - 1).trim();
   final words = t.split(RegExp(r'\s+'));
   if (!RegExp(r'^[A-Z"\u201C(\d]').hasMatch(t) || words.length > 12) return false;
-  if (RegExp(r'[.!?:,;&\u2026-]$|[,:;]|\u2026').hasMatch(t)) return false;
+  // A date, a wrapped line of a sentence ("Paciano went to Manila", "Santa Cruz in order
+  // to visit") and a bare surname or language are not slide titles.
+  if (RegExp(r'^\W*(?:1[5-9]|20)\d\d\W*$').hasMatch(t) ||
+      RegExp(r'^(?:' '$_months' r')\b.*\d', caseSensitive: false).hasMatch(t)) {
+    return false;
+  }
+  if (!isQuestion && !isReasons &&
+      RegExp(r'\b(?:in order|' '$_pastVerbs' r')\b|\bto [a-z]+$', caseSensitive: false).hasMatch(t)) {
+    return false;
+  }
+  if (RegExp(r'[.!?:,;&\u2026-]$|[,:;]|\u2026|\s[-\u2013\u2014]\s').hasMatch(t)) return false;
   // a full stop inside is a sentence break, unless it ends "No.", "Dr." or an initial
   if (RegExp(r'(?<!\b(?:No|Nos|Dr|Mr|Mrs|Ms|St|Jr|Sr|Mt|Ma|Prof|Gen|Fig)|\b[A-Z])\.\s').hasMatch(t)) return false;
   if (RegExp(r'^[^"\u201C]*\u201D').hasMatch(t)) return false; // a closing quote with no opening one
@@ -170,7 +192,8 @@ bool isGoodTitle(String s) {
       .hasMatch(t)) {
     return false;
   }
-  return !RegExp(
+  return isQuestion ||
+      !RegExp(
           r'^(?:to|it|its|he|she|they|but|so|then|however|unfortunately|because|when|if|while|although|also|from|this|these)\b',
           caseSensitive: false)
       .hasMatch(t);
@@ -190,6 +213,9 @@ bool _readsAsDefinition(String s) =>
     !RegExp(r'\b1\.\s.*\b2\.\s').hasMatch(s) && // a run-in list belongs on a list card
     !RegExp(r'[?:]$').hasMatch(s) &&
     !RegExp(r'\b(?:of|and|or|to|for|the|a|an|in|on|by|with|that|which)$', caseSensitive: false).hasMatch(s);
+
+const _pastVerbs =
+    'was|were|is|are|went|took|had|has|did|became|got|made|said|saw|came|left|gave|told|wrote|won|lost|began|brought|found|kept|held|knew|thought|stood|ran|sat|asked|called|visited|returned|prayed|studied|attended|joined|decided|wanted|obtained|earned|shifted|failed|passed';
 
 final _months = 'January|February|March|April|May|June|July|August|September|October|November|December';
 
@@ -362,7 +388,47 @@ List<String> relatedTerms(Definition d, List<Definition> all) {
 
 /// [items] as a numbered list, one per line, each kept brief:
 /// "1. Contribute to society\n2. Avoid harm\n3. Be honest".
-String formatList(List<String> items, {int maxItem = 70}) => [
+String formatList(List<String> items, {int maxItem = 70, bool bullets = false}) => [
       for (var i = 0; i < items.length; i++)
-        '${i + 1}. ${shortenDefinition(items[i], max: maxItem, early: true).replaceAll(RegExp(r'[.;,]+$'), '')}',
+        '${bullets ? '\u2022' : '${i + 1}.'} ${shortenDefinition(items[i], max: maxItem, early: true).replaceAll(RegExp(r'[.;,]+$'), '')}',
     ].join('\n');
+
+/// A title that names a group of things ("Extra-curricular activities in Ateneo",
+/// "Three Processes of Eduction", "Reasons why..."): the only kind whose bullets
+/// make a list card. A name, a date or a place with some facts under it is not.
+bool looksLikeCategory(String title) {
+  final t = title.trim();
+  if (!isGoodTitle(t)) return false;
+  if (RegExp(r'^(?:what|why|how|which|who|when|where)\b.*\?$', caseSensitive: false).hasMatch(t)) return true;
+  if (RegExp(r'^(?:reasons|causes|effects|ways|steps|types|kinds|factors|examples)\b', caseSensitive: false).hasMatch(t)) return true;
+  if (RegExp(r'^(?:two|three|four|five|six|seven|eight|nine|ten|\d+)\b', caseSensitive: false).hasMatch(t)) return true;
+  return t.split(RegExp(r'\s+')).any((w) {
+    final x = w.replaceAll(RegExp(r'[^A-Za-z-]'), '');
+    if (x.length < 6 || !x.toLowerCase().endsWith('s') || RegExp("(?:ss|us|is|\u2019s|'s)\$").hasMatch(w)) return false;
+    // a lower-case plural is a noun; a capitalised one only counts with a noun ending
+    return RegExp(r'^[a-z]').hasMatch(x) ||
+        RegExp(r'(?:ions|ies|ers|ors|ments|ings|ances|ences|ples|ures|ives|ases|ests|ents|ages|ods|ades|ities|ules)$', caseSensitive: false)
+            .hasMatch(x);
+  });
+}
+
+const _smallWords = {'a', 'an', 'the', 'of', 'in', 'on', 'at', 'to', 'for', 'and', 'or', 'by', 'with', 'from', 'as', 'vs'};
+
+/// The question a list card asks: "Extra-curricular activities in Ateneo" ->
+/// "What are the extra-curricular activities in Ateneo?".
+String questionForTitle(String title) {
+  var t = title.trim().replaceAll(RegExp(r'[:?]+$'), '');
+  if (RegExp(r'^(?:what|which|who|when|where|why|how)\b', caseSensitive: false).hasMatch(t)) return '$t?';
+  if (t == t.toUpperCase() && RegExp(r'[A-Z]{3}').hasMatch(t)) return 'What are the "$t"?'; // ALL CAPS: as written
+
+  // A sentence-case title ("Extra-curricular activities in Ateneo") reads as "the extra-curricular
+  // activities in Ateneo"; a Title Case one ("General Ethical Principles") is kept as written.
+  final words = t.split(' ');
+  final lower = words.where((w) => RegExp(r'^[a-z]').hasMatch(w)).length;
+  final first = words.first;
+  final keep = lower * 2 < words.length ||
+      RegExp(r'^[A-Z]{2,}').hasMatch(first) ||
+      RegExp("^[A-Z][a-z]+(?:'s|\u2019s)\$").hasMatch(first);
+  final body = keep || t.isEmpty ? t : t[0].toLowerCase() + t.substring(1);
+  return RegExp("^[A-Z][a-z]+(?:'s|\\u2019s) ").hasMatch(body) ? 'What are $body?' : 'What are the $body?';
+}
