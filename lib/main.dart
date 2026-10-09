@@ -25,6 +25,7 @@ import 'sources/source_reader.dart';
 import 'ui/add_source_screen.dart';
 import 'ui/app_shell.dart';
 import 'ui/home_screen.dart';
+import 'ui/kulay.dart';
 import 'ui/library_screen.dart';
 import 'ui/loaders.dart';
 import 'ui/model_setup.dart';
@@ -129,16 +130,22 @@ class _KodignoAppState extends State<KodignoApp> with WidgetsBindingObserver {
             ? AppShell(
                 tab: _tab,
                 onHome: () => _go(_Stage.home),
+                onKulay: () => _go(_Stage.kulayLoading),
                 pages: [
                   LibraryScreen(repo: widget.repo, tab: _tab),
                   AddSourceScreen(repo: widget.repo, reader: widget.reader),
-                  KulayPage(tab: _tab, index: 2),
                   const SettingsScreen(),
                 ],
               )
             : SetupScreen(onBack: () => _go(_Stage.home)),
+        _Stage.kulayLoading => LoadingScreen(
+            art: LoaderArt.eye,
+            label: 'Opening Kulay',
+            onDone: () => _go(_Stage.kulay),
+          ),
+        _Stage.kulay => KulayScreen(onBack: () => _go(_Stage.kodigno)),
       };
 }
 
-/// Landing, then the loader, then the app.
-enum _Stage { home, kodignoLoading, kodigno }
+/// Landing, then the loader, then the app; Kulay opens full screen from it.
+enum _Stage { home, kodignoLoading, kodigno, kulayLoading, kulay }

@@ -17,22 +17,4 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   }
-
-  testWidgets('Kulay tab plays the eye loader each time it is opened', (tester) async {
-    final tab = ValueNotifier(0);
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: KulayPage(tab: tab, index: 2))));
-    tab.value = 2;
-    await tester.pump();
-    expect(find.textContaining('Opening Kulay'), findsWidgets);
-    await tester.pump(const Duration(milliseconds: 2400));
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('Kulay'), findsOneWidget);
-
-    tab.value = 0;
-    tab.value = 2; // reopen
-    await tester.pump();
-    expect(find.textContaining('Opening Kulay'), findsWidgets);
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.pumpWidget(const SizedBox());
-  });
 }

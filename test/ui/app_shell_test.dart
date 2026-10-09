@@ -16,7 +16,6 @@ void main() {
         pages: const [
           Text('page-library'),
           Text('page-create'),
-          Text('page-kulay'),
           Text('page-settings'),
         ],
       ),
