@@ -78,6 +78,31 @@ class NoteIndex {
 
 enum Verdict { supported, contradicted, unverified }
 
+final _yesNo = RegExp(r'^\s*(?:is|are|was|were|do|does|did|can|could|will|would|has|have|had|should)\b', caseSensitive: false);
+final _asksNumber = RegExp(
+    r'\b(?:how many|how much|how long|how old|how far|what year|which year|what date|what number|what percentage|what age|what century|when)\b',
+    caseSensitive: false);
+final _numberWord = RegExp(
+    r'\d|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|hundred|thousand|million|january|february|march|april|may|june|july|august|september|october|november|december|century|decade)\b',
+    caseSensitive: false);
+
+/// Why [answer] cannot be the kind of answer [question] asks for, or null. A small
+/// model writes "What instruments did the laboratory have?" with the answer "300".
+String? answerTypeProblem(String question, String answer) {
+  final a = answer.trim();
+  if (_yesNo.hasMatch(question)) return 'a yes/no question teaches little and can be guessed';
+  final numeric = RegExp(r'^[\d][\d,.\s]*$').hasMatch(a);
+  final wantsNumber = _asksNumber.hasMatch(question) ||
+      RegExp(r'\b(?:number|age|year|date|percent|total|amount|count|cost|price|many|much)\b', caseSensitive: false)
+          .hasMatch(question);
+  if (numeric && !wantsNumber) return 'the question does not ask for a number';
+  if (_asksNumber.hasMatch(question) && !_numberWord.hasMatch(a)) return 'the question asks for a number or date';
+  if (RegExp(r'^\s*(?:who|whom|whose)\b', caseSensitive: false).hasMatch(question) && RegExp(r'^\d').hasMatch(a)) {
+    return 'the question asks who';
+  }
+  return null;
+}
+
 class FactCheck {
   const FactCheck(this.verdict, this.reason, {this.quote, this.passage, this.exact = false});
   final Verdict verdict;
@@ -93,6 +118,10 @@ class FactCheck {
   final String? quote;
   bool get ok => verdict == Verdict.supported;
 }
+
+/// "not", "never"...: a question and the sentence it comes from must agree on it.
+/// A small model turns "BART did not know of this" into "Who was aware of this?".
+final _polarity = RegExp(r"\b(?:not|never|cannot|neither|nor|without)\b|n['\u2019]t\b", caseSensitive: false);
 
 final _negation = RegExp(
     r"\b(?:not|no|never|cannot|without|neither|nor|none)\b|n['’]t\b",
@@ -145,6 +174,8 @@ String _quoteFor(String answer, String passage) {
 /// and names. That is what stops a small model joining a date from one slide
 /// with a rule from another, or inventing a year or a name.
 FactCheck checkQa(NoteIndex index, String question, String answer) {
+  final wrongKind = answerTypeProblem(question, answer);
+  if (wrongKind != null) return FactCheck(Verdict.unverified, wrongKind);
   final hits = index.search('$question $answer', k: 4);
   if (hits.isEmpty) return const FactCheck(Verdict.unverified, 'nothing in the notes matches');
   var reason = 'the answer is not stated in the notes';
@@ -163,6 +194,10 @@ FactCheck checkQa(NoteIndex index, String question, String answer) {
     // An answer that is not word for word may have flipped the meaning.
     if (said < 1 && !_negation.hasMatch(question) && _negation.hasMatch(quote) != _negation.hasMatch(answer)) {
       return FactCheck(Verdict.contradicted, 'the notes say the opposite', quote: quote, passage: h.text);
+    }
+    if (_polarity.hasMatch(question) != _polarity.hasMatch(quote)) {
+      reason = 'the question and the notes disagree on "not"';
+      continue;
     }
     return FactCheck(Verdict.supported, said == 1 ? 'stated word for word' : 'stated in other words',
         quote: quote, passage: h.text, exact: said == 1);

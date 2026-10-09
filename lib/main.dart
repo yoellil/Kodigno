@@ -51,7 +51,8 @@ Future<void> main() async {
     profiler: WindowsDeviceProfiler(modelsDir),
     models: ModelManager(modelsDir, ModelDownloader()),
     repo: repo,
-    engineFactory: (tier, file) => LlmAiEngine(LlamaServerRuntime.bundled(file.path), tier),
+    engineFactory: (tier, file) =>
+        LlmAiEngine(LlamaServerRuntime.bundled(file.path), tier, readBack: true),
     prefs: await SharedPreferences.getInstance(),
   );
   await controller.init();

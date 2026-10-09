@@ -388,52 +388,41 @@ void main() {
     expect(q.choices.length, greaterThanOrEqualTo(3));
   });
 
-  group('the judge', () {
-    final facts = _facts(['Rizal wrote the novel Noli Me Tangere in Berlin in 1887.']);
-    // not word for word in the notes, so it goes to the judge
+  group('reading the answer back', () {
+    final facts = _facts(['Rizal was born in Calamba in 1861.']);
     final qa = _qa([
-      ['What did Rizal write in Berlin?', 'Noli Me Tangere novel']
+      ['In which town was Rizal born?', 'Calamba']
     ]);
-    LlmAiEngine withJudge(FakeLlmRuntime rt, {Duration budget = const Duration(minutes: 3)}) =>
-        LlmAiEngine(rt, _tier, random: Random(1), judge: true, judgeBudget: budget);
+    LlmAiEngine reading(FakeLlmRuntime rt, {Duration budget = const Duration(minutes: 3)}) =>
+        LlmAiEngine(rt, _tier, random: Random(1), readBack: true, readBackBudget: budget);
 
-    test('a supported answer is kept, with the judge\'s quote as its evidence', () async {
-      final rt = FakeLlmRuntime([
-        facts, qa,
-        '{"verdict":"supported","quote":"wrote the novel Noli Me Tangere in Berlin"}',
-        'x',
-      ]);
-      final set = await withJudge(rt).generate(_notes);
-      expect(set.flashcards.where((c) => c.front == 'What did Rizal write in Berlin?'), hasLength(1));
+    test('a card is kept when the model reads the same answer out of the notes', () async {
+      final rt = FakeLlmRuntime([facts, qa, '{"answer":"Calamba"}', 'x']);
+      final set = await reading(rt).generate(_notes);
+      expect(set.flashcards.where((c) => c.back == 'Calamba'), hasLength(1));
       expect(rt.prompts.where((p) => p.contains('PASSAGE:')), hasLength(1));
     });
 
-    test('a "not stated" or unreadable verdict drops the card', () async {
-      for (final verdict in ['{"verdict":"not_stated","quote":""}', 'garbage']) {
-        final rt = FakeLlmRuntime([facts, qa, verdict, qa, verdict, qa, verdict, 'x']);
-        // the only card was dropped, so there is nothing to study from
-        await expectLater(withJudge(rt).generate(_notes), throwsA(isA<GenerationFailed>()), reason: verdict);
+    test('a card is dropped when the model reads something else, nothing, or garbage', () async {
+      for (final reply in ['{"answer":"Berlin"}', '{"answer":""}', 'garbage']) {
+        final rt = FakeLlmRuntime([facts, qa, reply, qa, reply, qa, reply, 'x']);
+        await expectLater(reading(rt).generate(_notes), throwsA(isA<GenerationFailed>()), reason: reply);
       }
     });
 
-    test('an answer word for word in the notes skips the judge', () async {
-      final exact = _qa([
-        ['In which town was Rizal born?', 'Calamba']
-      ]);
-      final rt = FakeLlmRuntime([_facts(['Rizal was born in Calamba in 1861.']), exact, 'x']);
-      final set = await withJudge(rt).generate(_notes);
+    test('an answer it invents from nowhere does not count', () async {
+      final rt = FakeLlmRuntime([facts, qa, '{"answer":"Intramuros"}', qa, '{"answer":"Intramuros"}', qa, '{"answer":"Intramuros"}', 'x']);
+      await expectLater(reading(rt).generate(_notes), throwsA(isA<GenerationFailed>()));
+    });
+
+    test('with no time left the cheap checks decide and the model is not asked', () async {
+      final rt = FakeLlmRuntime([facts, qa, 'x']);
+      final set = await reading(rt, budget: Duration.zero).generate(_notes);
       expect(set.flashcards.where((c) => c.back == 'Calamba'), hasLength(1));
       expect(rt.prompts.where((p) => p.contains('PASSAGE:')), isEmpty);
     });
 
-    test('with no time left the judge is skipped and the cheap checks decide', () async {
-      final rt = FakeLlmRuntime([facts, qa, 'x']);
-      final set = await withJudge(rt, budget: Duration.zero).generate(_notes);
-      expect(set.flashcards.where((c) => c.front == 'What did Rizal write in Berlin?'), hasLength(1));
-      expect(rt.prompts.where((p) => p.contains('PASSAGE:')), isEmpty);
-    });
-
-    test('without the judge flag nothing is asked', () async {
+    test('by default nothing is asked', () async {
       final rt = FakeLlmRuntime([facts, qa, 'x']);
       await _engine(rt).generate(_notes);
       expect(rt.prompts.where((p) => p.contains('PASSAGE:')), isEmpty);

@@ -26,8 +26,8 @@ class LlmAiEngine implements AiEngine {
     this.tier, {
     this.maxChunks = 12,
     this.maxAttempts = 3,
-    this.judge = false,
-    this.judgeBudget = const Duration(minutes: 3),
+    this.readBack = false,
+    this.readBackBudget = const Duration(minutes: 3),
     Random? random,
   }) : _random = random ?? Random();
 
@@ -36,13 +36,13 @@ class LlmAiEngine implements AiEngine {
   final int maxChunks;
   final int maxAttempts;
 
-  /// Ask the model, once the cheap checks pass, whether the notes really settle each
-  /// answer that is not word for word in them. Off until the judge is measured.
-  final bool judge;
+  /// After the cheap checks, have the model read the answer back out of the notes
+  /// and keep the card only if it reads what the card says. See judge.dart.
+  final bool readBack;
 
-  /// Judging stops after this long (slow devices): the rest rely on the cheap checks.
-  final Duration judgeBudget;
-  final Stopwatch _judging = Stopwatch();
+  /// Reading back stops after this long (slow devices): the rest rely on the cheap checks.
+  final Duration readBackBudget;
+  final Stopwatch _reading = Stopwatch();
   final Random _random;
 
   /// Sections shorter than this are headings and filler, not worth a model call.
@@ -314,23 +314,22 @@ class LlmAiEngine implements AiEngine {
             final check = checkQa(index, question, plain);
             if (!check.ok) continue;
             evidence = check.quote ?? '';
-            if (judge && !check.exact && _judging.elapsed < judgeBudget) {
-              _judging.start();
+            if (readBack && _reading.elapsed < readBackBudget) {
+              _reading.start();
               try {
-                final r = parseJudge(
+                final read = parseReader(
                   await runtime.complete(
-                    buildJudgePrompt(passage: check.passage ?? '', question: question, answer: plain),
-                    maxTokens: 120,
-                    schema: judgeSchema(),
+                    buildReaderPrompt(passage: check.passage ?? '', question: question),
+                    maxTokens: 80,
+                    schema: readerSchema(),
                   ),
                   check.passage ?? '',
                 );
-                if (r.verdict != Verdict.supported) continue;
-                if (r.quote.isNotEmpty) evidence = r.quote;
+                if (!answerWithin(plain, read)) continue; // the notes do not say what the card says
               } on FormatException {
-                continue; // an unreadable verdict is not a pass
+                continue; // an unreadable reply is not a pass
               } finally {
-                _judging.stop();
+                _reading.stop();
               }
             }
           }

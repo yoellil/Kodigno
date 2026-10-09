@@ -1,35 +1,49 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kodigno/domain/factcheck.dart';
 import 'package:kodigno/domain/judge.dart';
 
-const _passage = 'He wrote the novel Noli Me Tangere in Berlin in 1887.';
+const _passage = 'He wrote the novel Noli Me Tangere in Berlin in 1887. He was executed at Bagumbayan in 1896.';
 
 void main() {
-  test('supported needs a quote that is really in the passage', () {
-    final ok = parseJudge('{"verdict":"supported","quote":"wrote the novel Noli Me Tangere in Berlin"}', _passage);
-    expect(ok.verdict, Verdict.supported);
-    expect(ok.quote, contains('Berlin'));
+  test('the prompt shows the passage and the question, not the card\'s answer', () {
+    final p = buildReaderPrompt(passage: _passage, question: 'Where was he executed?');
+    expect(p, allOf(contains(_passage), contains('QUESTION: Where was he executed?')));
   });
 
-  test('a quote the model made up downgrades "supported" to unverified', () {
-    final r = parseJudge('{"verdict":"supported","quote":"wrote El Filibusterismo in Ghent"}', _passage);
-    expect(r.verdict, Verdict.unverified);
-    expect(parseJudge('{"verdict":"supported","quote":""}', _passage).verdict, Verdict.unverified);
+  test('what the model read is kept only if it is really in the passage', () {
+    expect(parseReader('{"answer":"Bagumbayan"}', _passage), 'Bagumbayan');
+    expect(parseReader('{"answer":"in Berlin in 1887"}', _passage), 'in Berlin in 1887');
+    expect(parseReader('{"answer":"Intramuros"}', _passage), ''); // made up
+    expect(parseReader('{"answer":""}', _passage), '');
   });
 
-  test('contradicted and not_stated are read', () {
-    expect(parseJudge('{"verdict":"contradicted","quote":"x"}', _passage).verdict, Verdict.contradicted);
-    expect(parseJudge('{"verdict":"not_stated","quote":""}', _passage).verdict, Verdict.unverified);
+  test('reads JSON wrapped in prose and rejects anything else', () {
+    expect(parseReader('Sure: {"answer":"Berlin"} ok', _passage), 'Berlin');
+    expect(() => parseReader('no json', _passage), throwsFormatException);
+    expect(() => parseReader('{"nope":1}', _passage), throwsFormatException);
   });
 
-  test('reads JSON wrapped in prose; rejects anything else', () {
-    expect(parseJudge('Sure! {"verdict":"not_stated","quote":""} done', _passage).verdict, Verdict.unverified);
-    expect(() => parseJudge('no json', _passage), throwsFormatException);
-    expect(() => parseJudge('{"verdict":"maybe","quote":""}', _passage), throwsFormatException);
-  });
+  group('answerWithin', () {
+    test('the card\'s answer may be part of what the notes say', () {
+      expect(answerWithin('1891', 'February 1891'), isTrue);
+      expect(answerWithin('Laundering Council', 'Money Laundering Council'), isTrue);
+      expect(answerWithin('Rizal', 'Rizal visited Oakland and ate supper in Sacramento.'), isTrue);
+    });
 
-  test('the prompt shows the passage, the question and the answer', () {
-    final p = buildJudgePrompt(passage: _passage, question: 'Where?', answer: 'Berlin');
-    expect(p, allOf(contains(_passage), contains('QUESTION: Where?'), contains('ANSWER: Berlin')));
+    test('a longer answer that rewords the notes counts when most of its words were read', () {
+      expect(
+          answerWithin('Inspire and guide the ethical conduct of computing professionals.',
+              'inspire and guide the ethical conduct of all computing professionals, including students'),
+          isTrue);
+      expect(answerWithin('It leads to broader discussions about software impacts, announced in 1999',
+          'more discussion about the broader impacts of the technical work'), isFalse);
+    });
+
+    test('a different, longer or part-word answer is not within it', () {
+      expect(answerWithin('1998', 'February 1891'), isFalse);
+      expect(answerWithin('Berlin, as announced in 1999 by the Ministry of Finance', 'Berlin'), isFalse);
+      expect(answerWithin('19', 'February 1891'), isFalse);
+      expect(answerWithin('', 'Berlin'), isFalse);
+      expect(answerWithin('Berlin', ''), isFalse);
+    });
   });
 }

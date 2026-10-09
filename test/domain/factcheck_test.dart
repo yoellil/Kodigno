@@ -61,4 +61,28 @@ void main() {
   test('nothing in the notes matches', () {
     expect(checkQa(NoteIndex(''), 'Anything?', 'No').ok, isFalse);
   });
+
+  test('a question that reverses a "not" in the notes is not supported', () {
+    final idx = NoteIndex('BART Case Amicus Curiae did not know of this in 1975.');
+    expect(checkQa(idx, 'Who was aware of the ECPD Canons in 1975?', 'BART Case Amicus Curiae').ok, isFalse);
+    expect(checkQa(idx, 'Who did not know of the ECPD Canons in 1975?', 'BART Case Amicus Curiae').ok, isTrue);
+  });
+
+  group('answerTypeProblem', () {
+    test('catches an answer of the wrong kind', () {
+      expect(answerTypeProblem('What instruments did the laboratory have?', '300'), isNotNull);
+      expect(answerTypeProblem('Who wrote it?', '1887'), isNotNull);
+      expect(answerTypeProblem('When was he born?', 'Calamba'), isNotNull);
+      expect(answerTypeProblem('How many principles are there?', 'Several'), isNotNull);
+      expect(answerTypeProblem('Was Rizal discriminated against at UST?', 'No'), isNotNull);
+    });
+
+    test('lets sensible answers through', () {
+      expect(answerTypeProblem('How many principles are there?', '10'), isNull);
+      expect(answerTypeProblem('When was he born?', 'June 19, 1861'), isNull);
+      expect(answerTypeProblem('What year was it adopted?', '1912'), isNull);
+      expect(answerTypeProblem('Where was he born?', 'Calamba'), isNull);
+      expect(answerTypeProblem('What is the age of consent?', '18'), isNull);
+    });
+  });
 }
