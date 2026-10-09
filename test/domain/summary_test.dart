@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kodigno/domain/source_ref.dart';
 import 'package:kodigno/domain/summary.dart';
 
 void main() {
@@ -169,6 +170,54 @@ Cells are the units of life.
         'Employees must follow a code of ethics.');
     expect(dropContradictions('IT workers are not recognized as professionals by the state.', items),
         'IT workers are not recognized as professionals by the state.');
+  });
+
+  group('sources of a lesson', () {
+    final locator = SourceLocator(parsePages([
+      pageMarker(5),
+      'Patents\n- A patent permits its owner to exclude the public from making, using, or selling a protected invention.\n'
+          '- Utility patents last up to twenty years from the date of filing.',
+      '',
+      pageMarker(9),
+      'Copyrights\n- A copyright is the exclusive right to distribute, display, perform, or reproduce an original work.',
+    ].join('\n')));
+    const copied = 'A patent permits its owner to exclude the public from making, using, or selling a protected invention.';
+    const explained = 'A patent lets the owner stop the public from making or selling the invention.';
+    const fact = 'Utility patents last up to twenty years from the date of filing.';
+    const invented = 'Volcanoes erupt when magma rises through cracks in the crust of the planet.';
+    final lesson = const LessonSummary(
+      overview: 'About patents.',
+      sections: [
+        SummarySection(heading: 'Patents', explanation: explained, keyPoints: [copied], facts: [fact]),
+      ],
+      takeaways: [invented],
+    ).withSources(locator);
+
+    test('every explanation, point, fact and takeaway is traced to a page, or flagged', () {
+      expect(lesson.sourceOf(explained)!.kind, SourceKind.explained);
+      expect(lesson.sourceOf(explained)!.page, 5);
+      expect(lesson.sourceOf(copied)!.kind, SourceKind.copied);
+      expect(lesson.sourceOf(fact)!.kind, SourceKind.copied);
+      expect(lesson.sourceOf(fact)!.page, 5);
+      expect(lesson.sourceOf(invented)!.kind, SourceKind.unmatched); // flagged, not hidden
+      expect(lesson.sourceOf('never looked up'), isNull);
+      expect(lesson.sections.single.keyPoints, [copied]); // the lesson itself is unchanged
+    });
+
+    test('the sources are saved with the lesson and read back', () {
+      final back = LessonSummary.decode(lesson.encode())!;
+      expect(back.sourceOf(explained)!.kind, SourceKind.explained);
+      expect(back.sourceOf(explained)!.pages, lesson.sourceOf(explained)!.pages);
+      expect(back.sourceOf(copied)!.quote, startsWith('A patent permits'));
+      expect(back.sourceOf(invented)!.kind, SourceKind.unmatched);
+    });
+
+    test('a lesson saved before sources existed reads with none, and no locator changes nothing', () {
+      final old = LessonSummary.decode('{"overview":"x","sections":[{"heading":"H","explanation":"E"}]}')!;
+      expect(old.sources, isEmpty);
+      expect(old.sourceOf('E'), isNull);
+      expect(identical(old.withSources(null), old), isTrue);
+    });
   });
 
   group('keyFacts', () {

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../data/repository.dart';
 import '../domain/models.dart';
+import '../domain/source_ref.dart';
 import 'flash_deck.dart';
+import 'slide_tag.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -19,7 +21,7 @@ class FlashcardsScreen extends StatelessWidget {
             if (!snap.hasData) return const Center(child: CircularProgressIndicator());
             final rows = snap.data!.flashcards;
             if (rows.isEmpty) return const Center(child: Text('No flashcards in this set.'));
-            return Center(
+            return SourceScope.forSet(snap.data!.set, child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
                 child: Padding(
@@ -32,13 +34,16 @@ class FlashcardsScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     Expanded(
                       child: FlashDeck(
-                        cards: [for (final r in rows) Flashcard(front: r.front, back: r.back)],
+                        cards: [
+                          for (final r in rows)
+                            Flashcard(front: r.front, back: r.back, source: SourceRef.decode(r.source)),
+                        ],
                       ),
                     ),
                   ]),
                 ),
               ),
-            );
+            ));
           },
         ),
       );

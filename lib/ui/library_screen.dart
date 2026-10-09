@@ -3,8 +3,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../data/database.dart';
 import '../data/repository.dart';
+import '../data/review_repository.dart';
 import 'anim.dart';
 import 'motion.dart';
+import 'practice_card.dart';
+import 'practice_screen.dart';
 import 'set_detail_screen.dart';
 import 'theme.dart';
 import 'widgets.dart';
@@ -33,6 +36,10 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   String _query = '';
   String? _type; // null = all
+  late final _reviews = ReviewRepository(widget.repo.db);
+
+  void _practice(int minutes, int? setId) => Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => PracticeScreen(repo: widget.repo, reviews: _reviews, minutes: minutes, setId: setId)));
 
   void _open(StudySet s) => Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => SetDetailScreen(repo: widget.repo, setId: s.id)));
@@ -103,7 +110,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
           return ListView(padding: const EdgeInsets.fromLTRB(32, 30, 32, 36), children: [
             header,
             const SizedBox(height: 22),
-            if (lib.sets.isNotEmpty) ...[chips, const SizedBox(height: 18)],
+            if (lib.sets.isNotEmpty) ...[
+              PracticeCard(reviews: _reviews, sets: lib.sets, snapshot: lib, onStart: _practice),
+              const SizedBox(height: 22),
+              chips,
+              const SizedBox(height: 18),
+            ],
             grid,
             const SizedBox(height: 24),
             if (wide)

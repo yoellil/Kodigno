@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'nlp.dart';
 import 'prompt.dart';
+import 'source_ref.dart';
 
 /// One topic of a lesson: what it is, in the teacher's own words, and the few
 /// points a student must remember from it.
@@ -51,10 +52,41 @@ class LessonSummary {
     required this.sections,
     this.takeaways = const [],
     this.keyTerms = const [],
+    this.sources = const {},
   });
   final String overview;
   final List<SummarySection> sections;
   final List<String> takeaways;
+
+  /// Where each explanation, point, fact and takeaway came from, keyed by its text.
+  final Map<String, SourceRef> sources;
+
+  /// The page behind [text], or null if it was not looked up.
+  SourceRef? sourceOf(String text) => sources[text];
+
+  /// This lesson with the page behind each piece of it looked up in [locator].
+  /// Without a locator (no pages in the notes) it is returned as it is.
+  LessonSummary withSources(SourceLocator? locator) {
+    if (locator == null) return this;
+    final found = <String, SourceRef>{};
+    void add(String text) {
+      if (text.trim().isNotEmpty) found[text] = locator.locate(text);
+    }
+
+    for (final s in sections) {
+      add(s.explanation);
+      s.keyPoints.forEach(add);
+      s.facts.forEach(add);
+    }
+    takeaways.forEach(add);
+    return LessonSummary(
+      overview: overview,
+      sections: sections,
+      takeaways: takeaways,
+      keyTerms: keyTerms,
+      sources: found,
+    );
+  }
 
   /// The words and phrases the whole lesson keeps coming back to.
   final List<String> keyTerms;
@@ -65,6 +97,7 @@ class LessonSummary {
         'sections': [for (final s in sections) s.toJson()],
         'takeaways': takeaways,
         'keyTerms': keyTerms,
+        if (sources.isNotEmpty) 'sources': {for (final e in sources.entries) e.key: e.value.toJson()},
       });
 
   /// A saved lesson, or null if [saved] is empty or unreadable.
@@ -82,6 +115,12 @@ class LessonSummary {
         sections: sections,
         takeaways: _strings(j['takeaways']),
         keyTerms: _strings(j['keyTerms']),
+        sources: {
+          if (j['sources'] is Map)
+            for (final e in (j['sources'] as Map).entries)
+              if (e.key is String && e.value is Map<String, dynamic>)
+                e.key as String: SourceRef.fromJson(e.value as Map<String, dynamic>),
+        },
       );
     } on FormatException {
       return null;
@@ -247,23 +286,34 @@ final _figure = RegExp(
     r'\d{1,3}(?:,\d{3})+|\d{2,}|\d+(?:\.\d+)?\s*(?:million|billion|thousand|percent|%)',
     caseSensitive: false);
 
-/// True if every year and figure in [text] is also in [source]. A small model
-/// invents years ("the war of 1898") that no word-overlap check can catch.
-bool figuresInSource(String text, String source) {
+/// The years and figures in [text] that [source] does not have.
+List<String> figuresNotIn(String text, String source) {
   final src = _tightNumbers(source);
-  return _figure.allMatches(_tightNumbers(text)).every((m) => src.contains(m[0]!));
+  return [
+    for (final m in _figure.allMatches(_tightNumbers(text)))
+      if (!src.contains(m[0]!)) m[0]!,
+  ];
 }
 
-/// True if every name in [text] (a capitalised word not at the start, or an
-/// acronym) is also in [source]. A small model writes "the movement in China"
-/// or "nationalism in Mindanao" for places and people the slides never mention.
-bool namesInSource(String text, String source) {
+/// True if every year and figure in [text] is also in [source]. A small model
+/// invents years ("the war of 1898") that no word-overlap check can catch.
+bool figuresInSource(String text, String source) => figuresNotIn(text, source).isEmpty;
+
+/// The names in [text] (a capitalised word not at the start, or an acronym) that
+/// [source] does not have.
+List<String> namesNotIn(String text, String source) {
   final src = source.toLowerCase();
   final inner = text.replaceFirst(RegExp(r'^\W*\w+'), ''); // the first word is capitalised anyway
-  return RegExp(r'\b(?:[A-Z][a-z]{3,}|[A-Z]{3,})\b')
-      .allMatches(inner)
-      .every((m) => src.contains(m[0]!.toLowerCase()));
+  return [
+    for (final m in RegExp(r'\b(?:[A-Z][a-z]{3,}|[A-Z]{3,})\b').allMatches(inner))
+      if (!src.contains(m[0]!.toLowerCase())) m[0]!,
+  ];
 }
+
+/// True if every name in [text] is also in [source]. A small model writes "the
+/// movement in China" or "nationalism in Mindanao" for places and people the
+/// slides never mention.
+bool namesInSource(String text, String source) => namesNotIn(text, source).isEmpty;
 
 /// The sentences of [text] that are based on [source], so a model's made-up
 /// detail is dropped: words, years and figures must all come from [source].

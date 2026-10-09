@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../domain/models.dart';
 import 'motion.dart';
+import 'slide_tag.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -296,6 +297,11 @@ class _FlashDeckState extends State<FlashDeck>
             'Space flips · ← → or swipe to move',
             style: body(12, color: K.muted),
           ),
+          // Where the answer comes from, once it is showing.
+          if (_back && widget.cards[_i].source != null) ...[
+            const SizedBox(height: 8),
+            SlideTag(widget.cards[_i].source!),
+          ],
         ],
       ),
     );

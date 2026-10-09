@@ -83,6 +83,13 @@ double _cosine(Map<String, double> a, Map<String, double> b) {
   return na == 0 || nb == 0 ? 0 : dot / (sqrt(na) * sqrt(nb));
 }
 
+/// A text as weighted terms, to compare it with many others without reading
+/// each again.
+Map<String, double> vectorOf(String s, Map<String, double> idf) => _tfidf(s, idf);
+
+/// How alike two [vectorOf] vectors are, 0 to 1.
+double cosineOf(Map<String, double> a, Map<String, double> b) => _cosine(a, b);
+
 /// How alike two texts are in their vocabulary, 0 (nothing shared) to 1.
 double similarity(String a, String b, Map<String, double> idf) =>
     _cosine(_tfidf(a, idf), _tfidf(b, idf));
@@ -281,6 +288,39 @@ bool contradicts(String claim, List<String> sourceItems) {
   if (best == null || bestScore < 0.45) return false;
   if (c.intersection(terms(best).toSet()).length < 3) return false;
   return _negation.hasMatch(claim) != _negation.hasMatch(best);
+}
+
+/// Only the plain negators: "without" ("...without asking the owner") and
+/// "unable" do not flip a statement the way these do.
+final _plainNegation = RegExp(r"\b(?:not|no|never|cannot|neither|nor)\b|n['’]t\b", caseSensitive: false);
+
+/// True if exactly one of [a] and [b] has a plain "not", "no" or "never". Two
+/// statements about the same thing that differ in this are likely opposites.
+bool plainNegationDiffers(String a, String b) => _plainNegation.hasMatch(a) != _plainNegation.hasMatch(b);
+
+/// The line of [sourceItems] that [claim] seems to say the opposite of, or null.
+/// Stricter than [contradicts], for telling a student something about their own
+/// words: the claim must share at least 5 of its meaningful words with the line
+/// and be mostly made of that line's words, and only a plain "not", "no" or
+/// "never" on one side and not the other counts.
+String? oppositeLine(String claim, List<String> sourceItems) {
+  final c = terms(claim).toSet();
+  if (c.length < 5) return null;
+  String? best;
+  var bestScore = 0.0;
+  var bestShared = 0;
+  for (final it in sourceItems) {
+    final t = terms(it).toSet();
+    final shared = c.where(t.contains).length;
+    final score = shared / c.length;
+    if (score > bestScore) {
+      bestScore = score;
+      bestShared = shared;
+      best = it;
+    }
+  }
+  if (best == null || bestScore < 0.5 || bestShared < 5) return null;
+  return _plainNegation.hasMatch(claim) != _plainNegation.hasMatch(best) ? best : null;
 }
 
 List<String> _wordsOf(String s) =>

@@ -7,7 +7,9 @@ import '../domain/models.dart';
 import '../domain/nlp.dart';
 import '../domain/output_parser.dart';
 import '../domain/prompt.dart';
+import '../domain/source_ref.dart';
 import '../domain/summary.dart';
+import '../study/teach_judge.dart';
 import '../domain/topics.dart';
 import '../models/tier.dart';
 import 'ai_engine.dart';
@@ -40,7 +42,7 @@ class LlmAiEngine implements AiEngine {
   /// PDFs bring "\r\n"), no reference lists, run-together headings spaced, no
   /// footers that repeat on every page.
   static String _cleaned(String text) => dropRepeatedLines(
-      stripReferences(fixSquashedText(text.replaceAll('\r\n', '\n').replaceAll('\r', '\n'))));
+      stripReferences(fixSquashedText(stripPageMarkers(text).replaceAll('\r\n', '\n').replaceAll('\r', '\n'))));
 
   /// Enough list questions to fill a quiz without crowding out the rest.
   static const _maxListQuestions = 8;
@@ -348,6 +350,7 @@ class LlmAiEngine implements AiEngine {
     String notes, {
     void Function(double fraction)? onProgress,
   }) async {
+    notes = stripPageMarkers(notes); // page markers are for the viewer, not the model
     final groups = groupSlides(notes, maxGroups: _maxSections) ?? _plainGroups(notes);
     final idf = idfOf([for (final g in groups) g.text]);
 
@@ -531,12 +534,67 @@ class LlmAiEngine implements AiEngine {
     return ('', const <String>[]);
   }
 
+  /// The most central lines of [text] that fit in [maxChars], for a prompt.
+  String _core(String text, int maxChars) => condense(textItems(text), maxChars: maxChars).join('\n');
+
+  /// The key ideas of a topic, written by the model from its slides and kept only
+  /// if the slides back them up. None if the model could not write at least two.
+  @override
+  Future<List<String>> topicConcepts(String slideText, {String? topic}) async {
+    final core = _core(slideText, min(tier.chunkChars * 2, 1800));
+    for (var i = 0; i < maxAttempts; i++) {
+      try {
+        // First try with no randomness: the same slides give the same ideas.
+        final concepts = parseConcepts(
+          await runtime.chat([
+            {'role': 'user', 'content': buildConceptsPrompt(core, topic: topic)},
+          ], maxTokens: 450, temperature: i == 0 ? 0 : 0.3, schema: conceptsSchema()),
+          slideText,
+        );
+        if (concepts.length >= 2) return concepts;
+      } on FormatException {
+        continue; // malformed output: retry
+      }
+    }
+    return const [];
+  }
+
+  /// What the model makes of a student's explanation against the topic's key ideas.
+  /// Every verdict is checked against the student's own words. Throws
+  /// [GenerationFailed] if the model gives nothing usable.
+  @override
+  Future<TeachBackJudgement> judgeExplanation({
+    required List<String> concepts,
+    required String answer,
+    required String slideText,
+  }) async {
+    final shown = answer.length > 1500 ? answer.substring(0, 1500) : answer;
+    final core = _core(slideText, 900);
+    for (var i = 0; i < maxAttempts; i++) {
+      try {
+        // No randomness: the same explanation gets the same verdict.
+        return parseJudgement(
+          await runtime.chat([
+            {'role': 'user', 'content': buildJudgePrompt(concepts: concepts, answer: shown, slideText: core)},
+          ], maxTokens: 550, temperature: i == 0 ? 0 : 0.3, schema: judgeSchema(concepts.length)),
+          conceptCount: concepts.length,
+          answer: answer,
+          slideText: slideText,
+        );
+      } on FormatException {
+        continue;
+      }
+    }
+    throw GenerationFailed();
+  }
+
   /// Room for the lesson text in the chat prompt (the context window is small).
   static const _chatNotesChars = 5000;
   static const _chatHistoryTurns = 6;
 
   @override
   Future<String> ask(String notes, List<ChatTurn> history) async {
+    notes = stripPageMarkers(notes);
     final recent = history.length > _chatHistoryTurns
         ? history.sublist(history.length - _chatHistoryTurns)
         : history;
