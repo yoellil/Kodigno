@@ -90,6 +90,10 @@ final _numberWord = RegExp(
 /// model writes "What instruments did the laboratory have?" with the answer "300".
 String? answerTypeProblem(String question, String answer) {
   final a = answer.trim();
+  // "He" answers nothing once the card is away from the notes.
+  if (RegExp(r"^(?:he|she|they|it|him|her|them|his|hers|its|their)\.?$", caseSensitive: false).hasMatch(a)) {
+    return 'a pronoun is not an answer';
+  }
   if (_yesNo.hasMatch(question)) return 'a yes/no question teaches little and can be guessed';
   final numeric = RegExp(r'^[\d][\d,.\s]*$').hasMatch(a);
   final wantsNumber = _asksNumber.hasMatch(question) ||

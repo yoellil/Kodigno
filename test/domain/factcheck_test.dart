@@ -75,6 +75,8 @@ void main() {
       expect(answerTypeProblem('When was he born?', 'Calamba'), isNotNull);
       expect(answerTypeProblem('How many principles are there?', 'Several'), isNotNull);
       expect(answerTypeProblem('Was Rizal discriminated against at UST?', 'No'), isNotNull);
+      expect(answerTypeProblem('Who was known as the pride of the Jesuits?', 'He'), isNotNull);
+      expect(answerTypeProblem('Who wrote it?', 'Helen'), isNull);
     });
 
     test('lets sensible answers through', () {

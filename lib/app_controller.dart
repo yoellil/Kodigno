@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai/ai_engine.dart';
 import 'ai/llm_ai_engine.dart';
+import 'domain/card_assist.dart';
 import 'data/repository.dart';
 import 'domain/models.dart';
 import 'domain/source_attach.dart';
@@ -190,6 +191,50 @@ class AppController extends ChangeNotifier implements TeachBackModel {
       throw ChatFailed('The AI model could not run. Close other apps and try again.');
     } catch (e) {
       throw ChatFailed("Couldn't get an answer, try again.");
+    }
+  }
+
+  /// A suggestion for the missing side of a flashcard (marked with where it came from): the definition for [term], or the
+  /// term for [definition], with the set's [notes] for context. Throws
+  /// [CardAssistFailed] with a message fit to show the user.
+  Future<CardSuggestion> suggestCard({
+    required AssistField want,
+    String term = '',
+    String definition = '',
+    String notes = '',
+    String setTitle = '',
+  }) async {
+    final given = want == AssistField.definition ? term : definition;
+    if (given.trim().isEmpty) {
+      throw CardAssistFailed(want == AssistField.definition
+          ? 'Type the term first, then ask the AI for its definition.'
+          : 'Type the definition first, then ask the AI for the term.');
+    }
+    if (!modelReady) throw CardAssistFailed('The AI model is not set up yet. Open Settings to download it.');
+    try {
+      final reply = await (await runtime()).chat(
+        buildCardAssistMessages(
+            want: want, term: term, definition: definition, notes: notes, setTitle: setTitle),
+        maxTokens: 160,
+        temperature: 0.2,
+        schema: cardAssistSchema(want),
+      );
+      var s = parseCardAssist(reply, want);
+      if (s.isEmpty) {
+        throw CardAssistFailed("The AI wasn't sure about that one. Try adding a little more detail, or write it yourself.");
+      }
+      if (want == AssistField.definition) s = withoutEchoedTerm(s, term);
+      // The subject is the typed term, or for a suggested term the term itself.
+      return CardSuggestion(s, fromNotes: mentionedIn(want == AssistField.definition ? term : s, notes));
+    } on CardAssistFailed {
+      rethrow;
+    } on ModelUnavailableException {
+      await _dropEngine();
+      throw CardAssistFailed('The AI model could not run. Close other apps and try again.');
+    } on FormatException {
+      throw CardAssistFailed("The AI's answer was not usable. Try again.");
+    } catch (_) {
+      throw CardAssistFailed("Couldn't get a suggestion. Try again.");
     }
   }
 

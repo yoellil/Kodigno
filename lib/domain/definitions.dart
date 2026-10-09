@@ -465,8 +465,6 @@ bool looksLikeCategory(String title) {
   });
 }
 
-const _smallWords = {'a', 'an', 'the', 'of', 'in', 'on', 'at', 'to', 'for', 'and', 'or', 'by', 'with', 'from', 'as', 'vs'};
-
 /// The question a list card asks: "Extra-curricular activities in Ateneo" ->
 /// "What are the extra-curricular activities in Ateneo?".
 String questionForTitle(String title) {

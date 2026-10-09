@@ -18,9 +18,12 @@ class QuizQuestion {
 }
 
 class Flashcard {
-  const Flashcard({required this.front, required this.back, this.source});
+  const Flashcard({required this.front, required this.back, this.id, this.source});
   final String front;
   final String back;
+
+  /// The card's row in the database, once saved. A card with an id can be edited.
+  final int? id;
 
   /// The page of the student's file this card rests on, once it is known.
   final SourceRef? source;

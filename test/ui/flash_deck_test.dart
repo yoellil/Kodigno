@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kodigno/domain/card_assist.dart';
 import 'package:kodigno/domain/models.dart';
+import 'package:kodigno/ui/card_editor.dart';
 import 'package:kodigno/ui/flash_deck.dart';
 import 'package:kodigno/ui/theme.dart';
 
@@ -10,14 +12,19 @@ const _cards = [
   Flashcard(front: 'F2', back: 'B2'),
 ];
 
-Future<void> _pump(WidgetTester t, {List<Flashcard> cards = _cards}) async {
+Future<void> _pump(
+  WidgetTester t, {
+  List<Flashcard> cards = _cards,
+  Future<void> Function(Flashcard, String, String)? onSave,
+  CardSuggester? suggest,
+}) async {
   t.view.devicePixelRatio = 1.0;
   t.view.physicalSize = const Size(1000, 900);
   addTearDown(t.view.reset);
   await t.pumpWidget(
     MaterialApp(
       theme: kTheme(),
-      home: Scaffold(body: FlashDeck(cards: cards)),
+      home: Scaffold(body: FlashDeck(cards: cards, onSave: onSave, suggest: suggest)),
     ),
   );
   await t.pumpAndSettle();
@@ -173,5 +180,101 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('1. Be fair\n2. Be kind\n3. Be honest'), findsOneWidget);
     expect(t.takeException(), isNull);
+  });
+
+  group('editing a card in place', () {
+    const saved = [
+      Flashcard(front: 'F1', back: 'B1', id: 1),
+      Flashcard(front: 'F2', back: 'B2', id: 2),
+    ];
+    Finder field(String k) => find.byKey(ValueKey('card-$k'));
+    String text(WidgetTester t, String k) => t.widget<TextField>(field(k)).controller!.text;
+
+    testWidgets('there is no Edit button unless the deck can save, or for a card with no id', (t) async {
+      await _pump(t, cards: saved);
+      expect(find.byTooltip('Edit card'), findsNothing);
+      await _pump(t, cards: _cards, onSave: (c, f, b) async {});
+      expect(find.byTooltip('Edit card'), findsNothing);
+    });
+
+    testWidgets('Edit shows the card\'s own text; Save sends the corrections and goes back to the card', (t) async {
+      (Flashcard, String, String)? got;
+      await _pump(t, cards: saved, onSave: (c, f, b) async => got = (c, f, b));
+      await t.tap(find.byTooltip('Edit card'));
+      await t.pumpAndSettle();
+      expect(text(t, 'term'), 'F1');
+      expect(text(t, 'definition'), 'B1');
+      expect(find.text('Flip'), findsNothing); // the study controls step aside
+
+      await t.enterText(field('term'), 'F1 corrected');
+      await t.enterText(field('definition'), 'B1 corrected');
+      await t.pump();
+      await t.tap(find.text('Save changes'));
+      await t.pumpAndSettle();
+      expect(got!.$1.id, 1);
+      expect((got!.$2, got!.$3), ('F1 corrected', 'B1 corrected'));
+      expect(find.byKey(const ValueKey('card-term')), findsNothing); // back to studying
+      expect(find.text('Flip'), findsOneWidget);
+    });
+
+    testWidgets('Cancel leaves the card as it was', (t) async {
+      var saves = 0;
+      await _pump(t, cards: saved, onSave: (c, f, b) async => saves++);
+      await t.tap(find.byTooltip('Edit card'));
+      await t.pumpAndSettle();
+      await t.enterText(field('term'), 'changed my mind');
+      await t.tap(find.text('Cancel'));
+      await t.pumpAndSettle();
+      expect(saves, 0);
+      expect(find.text('F1'), findsOneWidget);
+    });
+
+    testWidgets('typing a space or arrow does not flip or move the deck', (t) async {
+      await _pump(t, cards: saved, onSave: (c, f, b) async {});
+      await t.tap(find.byTooltip('Edit card'));
+      await t.pumpAndSettle();
+      await t.tap(field('definition'));
+      await t.pump();
+      await t.sendKeyEvent(LogicalKeyboardKey.space);
+      await t.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await t.pump();
+      await t.tap(find.text('Cancel'));
+      await t.pumpAndSettle();
+      expect(find.text('F1'), findsOneWidget); // still card 1, still the question side
+      expect(find.text('1 / 2'), findsOneWidget);
+    });
+
+    testWidgets('a failed save keeps the editor open', (t) async {
+      await _pump(t, cards: saved, onSave: (c, f, b) async => throw Exception('db'));
+      await t.tap(find.byTooltip('Edit card'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Save changes'));
+      await t.pumpAndSettle();
+      expect(find.text("Couldn't save the card. Try again."), findsOneWidget);
+      expect(field('term'), findsOneWidget);
+    });
+
+    testWidgets('Ask AI works inside the editor too', (t) async {
+      await _pump(t,
+          cards: saved,
+          onSave: (c, f, b) async {},
+          suggest: (want, term, def) async =>
+              CardSuggestion(want == AssistField.definition ? 'AI definition for $term' : 'AI term'));
+      await t.tap(find.byTooltip('Edit card'));
+      await t.pumpAndSettle();
+      await t.tap(find.byTooltip('Suggest the definition from this term'));
+      await t.pumpAndSettle();
+      expect(text(t, 'definition'), 'AI definition for F1');
+    });
+
+    testWidgets('the deck can start on a later card', (t) async {
+      t.view.devicePixelRatio = 1.0;
+      t.view.physicalSize = const Size(1000, 900);
+      addTearDown(t.view.reset);
+      await t.pumpWidget(MaterialApp(theme: kTheme(), home: const Scaffold(body: FlashDeck(cards: _cards, startAt: 1))));
+      await t.pumpAndSettle();
+      expect(find.text('F2'), findsOneWidget);
+      expect(find.text('2 / 2'), findsOneWidget);
+    });
   });
 }

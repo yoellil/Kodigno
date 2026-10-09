@@ -110,6 +110,26 @@ class StudyRepository {
     return StudySetDetail(set, qs, cs);
   }
 
+  /// Adds a card the student wrote to set [setId]; returns its id. Throws
+  /// [ArgumentError] if either side is blank.
+  Future<int> addFlashcard(int setId, String front, String back) {
+    final f = front.trim(), b = back.trim();
+    if (f.isEmpty || b.isEmpty) throw ArgumentError('A card needs both a term and a definition.');
+    return db
+        .into(db.flashcardRows)
+        .insert(FlashcardRowsCompanion.insert(studySetId: setId, front: f, back: b));
+  }
+
+  /// Saves the student's corrections to card [id], whether the AI or the student wrote it.
+  /// Returns false if the card no longer exists. Throws [ArgumentError] if either side is blank.
+  Future<bool> updateFlashcard(int id, String front, String back) async {
+    final f = front.trim(), b = back.trim();
+    if (f.isEmpty || b.isEmpty) throw ArgumentError('A card needs both a term and a definition.');
+    final changed = await (db.update(db.flashcardRows)..where((t) => t.id.equals(id)))
+        .write(FlashcardRowsCompanion(front: Value(f), back: Value(b)));
+    return changed > 0;
+  }
+
   /// Saves [summary] as the set's lesson, replacing any earlier one.
   Future<void> saveSummary(int id, LessonSummary summary) =>
       (db.update(db.studySets)..where((t) => t.id.equals(id)))

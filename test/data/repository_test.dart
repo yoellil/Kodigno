@@ -246,4 +246,41 @@ void main() {
     expect(await db.select(db.questionRows).get(), isEmpty);
     expect(await db.select(db.flashcardRows).get(), isEmpty);
   });
+
+  group('flashcards the student writes or corrects', () {
+    test('addFlashcard saves a trimmed card to the set and returns its id', () async {
+      final setId = await repo.saveSet('Bio', set);
+      final id = await repo.addFlashcard(setId, '  Mitochondria ', ' Makes ATP.  ');
+      final cards = (await repo.getSet(setId)).flashcards;
+      expect(cards, hasLength(2));
+      final added = cards.firstWhere((c) => c.id == id);
+      expect((added.front, added.back), ('Mitochondria', 'Makes ATP.'));
+    });
+
+    test('updateFlashcard rewrites one card and leaves the others alone', () async {
+      final setId = await repo.saveSet('Bio', set);
+      final other = await repo.addFlashcard(setId, 'Nucleus', 'Holds the DNA.');
+      final first = (await repo.getSet(setId)).flashcards.first;
+      expect(await repo.updateFlashcard(first.id, 'Corrected term', ' Corrected answer '), isTrue);
+      final cards = {for (final c in (await repo.getSet(setId)).flashcards) c.id: c};
+      expect((cards[first.id]!.front, cards[first.id]!.back), ('Corrected term', 'Corrected answer'));
+      expect(cards[other]!.front, 'Nucleus');
+    });
+
+    test('a blank side is refused, and a card that is gone returns false', () async {
+      final setId = await repo.saveSet('Bio', set);
+      expect(() => repo.addFlashcard(setId, 'Term', '   '), throwsArgumentError);
+      final id = (await repo.getSet(setId)).flashcards.first.id;
+      expect(() => repo.updateFlashcard(id, '', 'x'), throwsArgumentError);
+      expect(await repo.updateFlashcard(9999, 'a', 'b'), isFalse);
+      expect((await repo.getSet(setId)).flashcards.first.front, 'f'); // unchanged
+    });
+
+    test('deleting the set removes its added cards too', () async {
+      final setId = await repo.saveSet('Bio', set);
+      await repo.addFlashcard(setId, 'Nucleus', 'Holds the DNA.');
+      await repo.deleteSet(setId);
+      expect(await db.select(db.flashcardRows).get(), isEmpty);
+    });
+  });
 }
