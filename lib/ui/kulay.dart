@@ -471,7 +471,18 @@ class _Inside extends StatelessWidget {
           ],
         ),
       ),
-      Expanded(child: page),
+      Expanded(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 420),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, a) => FadeTransition(
+            opacity: a,
+            child: ScaleTransition(scale: Tween(begin: 0.98, end: 1.0).animate(a), child: child),
+          ),
+          child: KeyedSubtree(key: ValueKey(c.screen), child: page),
+        ),
+      ),
     ]);
   }
 }
