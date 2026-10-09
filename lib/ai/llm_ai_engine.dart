@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import '../domain/definitions.dart';
+import '../domain/factcheck.dart';
 import '../domain/hygiene.dart';
+import '../domain/judge.dart';
 import '../domain/lists.dart';
 import '../domain/models.dart';
 import '../domain/nlp.dart';
@@ -24,6 +26,8 @@ class LlmAiEngine implements AiEngine {
     this.tier, {
     this.maxChunks = 12,
     this.maxAttempts = 3,
+    this.judge = false,
+    this.judgeBudget = const Duration(minutes: 3),
     Random? random,
   }) : _random = random ?? Random();
 
@@ -31,6 +35,14 @@ class LlmAiEngine implements AiEngine {
   final Tier tier;
   final int maxChunks;
   final int maxAttempts;
+
+  /// Ask the model, once the cheap checks pass, whether the notes really settle each
+  /// answer that is not word for word in them. Off until the judge is measured.
+  final bool judge;
+
+  /// Judging stops after this long (slow devices): the rest rely on the cheap checks.
+  final Duration judgeBudget;
+  final Stopwatch _judging = Stopwatch();
   final Random _random;
 
   /// Sections shorter than this are headings and filler, not worth a model call.
@@ -71,6 +83,7 @@ class LlmAiEngine implements AiEngine {
     // slide title with a sentence under it.
     final quizDefs = [for (final d in extractDefinitions(source, headingCards: false)) if (usable(d)) d];
     final listBacks = {for (final l in lists) formatList(l.items)};
+    final index = NoteIndex(source);
     var all = chunkText(text, tier.chunkChars);
     final long = all.where((c) => c.length >= _minChunkChars).toList();
     if (long.isNotEmpty) all = long;
@@ -82,7 +95,7 @@ class LlmAiEngine implements AiEngine {
     final items = <QaItem>[];
     final seen = <String>{};
     for (var i = 0; i < chunks.length; i++) {
-      final got = await _itemsFor(chunks[i], original);
+      final got = await _itemsFor(chunks[i], original, index);
       onProgress?.call((i + 1) / chunks.length);
       for (final it in got ?? const <QaItem>[]) {
         // One card per list: not again under a second question, nor when the
@@ -179,7 +192,7 @@ class LlmAiEngine implements AiEngine {
         prompt: it.question,
         choices: choices,
         answerIndex: choices.indexOf(answer),
-        explanation: it.fact,
+        explanation: it.evidence.isNotEmpty ? it.evidence : it.fact,
       ));
     }
     return GeneratedSet(questions, [
@@ -222,7 +235,7 @@ class LlmAiEngine implements AiEngine {
 
   /// Question/answer pairs for one section, or null if the model cannot
   /// produce usable ones. Only items backed by the section's text are kept.
-  Future<List<QaItem>?> _itemsFor(String chunk, String? original) async {
+  Future<List<QaItem>?> _itemsFor(String chunk, String? original, NoteIndex index) async {
     final n = tier.questionsPerChunk;
     List<String>? facts;
     for (var i = 0; i < maxAttempts && facts == null; i++) {
@@ -294,7 +307,34 @@ class LlmAiEngine implements AiEngine {
               (original != null && !answerInNotes(plain, original))) {
             continue;
           }
-          items.add(QaItem(question, answer, fact: source));
+          // The notes themselves must state the answer, in one passage with the question's
+          // subject, years and names. Lists come from the notes already.
+          var evidence = '';
+          if (!wantsList) {
+            final check = checkQa(index, question, plain);
+            if (!check.ok) continue;
+            evidence = check.quote ?? '';
+            if (judge && !check.exact && _judging.elapsed < judgeBudget) {
+              _judging.start();
+              try {
+                final r = parseJudge(
+                  await runtime.complete(
+                    buildJudgePrompt(passage: check.passage ?? '', question: question, answer: plain),
+                    maxTokens: 120,
+                    schema: judgeSchema(),
+                  ),
+                  check.passage ?? '',
+                );
+                if (r.verdict != Verdict.supported) continue;
+                if (r.quote.isNotEmpty) evidence = r.quote;
+              } on FormatException {
+                continue; // an unreadable verdict is not a pass
+              } finally {
+                _judging.stop();
+              }
+            }
+          }
+          items.add(QaItem(question, answer, fact: source, evidence: evidence));
         }
         todo = [for (final f in todo) if (!items.any((it) => it.fact == f)) f];
       } on FormatException {
@@ -323,6 +363,7 @@ class LlmAiEngine implements AiEngine {
           else
             QaItem(it.question, it.answer,
                 fact: it.fact,
+                evidence: it.evidence,
                 wrong: single.indexOf(it) < wrong.length ? wrong[single.indexOf(it)] : const []),
       ];
     } on FormatException {

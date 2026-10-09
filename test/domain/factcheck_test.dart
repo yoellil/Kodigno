@@ -1,0 +1,64 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:kodigno/domain/factcheck.dart';
+
+const _notes = '''
+Rizal was born in Calamba in 1861.
+He wrote the novel Noli Me Tangere in Berlin in 1887.
+He was executed at Bagumbayan in 1896.
+
+IT workers are not recognized as professionals.
+The ACM Code of Ethics was adopted in 1992.
+The IEEE Code of Ethics comprises 10 principles.
+''';
+
+void main() {
+  final index = NoteIndex(_notes);
+
+  test('search finds the passage that settles the question', () {
+    final hit = index.search('When was the ACM Code of Ethics adopted? 1992').first;
+    expect(hit.text, contains('ACM Code of Ethics was adopted in 1992'));
+  });
+
+  test('an answer stated in the notes is supported, with the sentence as its quote', () {
+    final r = checkQa(index, 'Where was Rizal executed?', 'Bagumbayan');
+    expect(r.ok, isTrue);
+    expect(r.exact, isTrue);
+    expect(r.quote, 'He was executed at Bagumbayan in 1896.');
+  });
+
+  test('a line that leans on the one before it ("He wrote...") still finds its subject', () {
+    expect(checkQa(index, 'In which city did Rizal write Noli Me Tangere?', 'Berlin').ok, isTrue);
+  });
+
+  test('an invented year, figure or name is not supported', () {
+    expect(checkQa(index, 'When was the ACM Code of Ethics adopted?', '1998').ok, isFalse);
+    expect(checkQa(index, 'How many principles does the IEEE Code of Ethics comprise?', '12').ok, isFalse);
+    expect(checkQa(index, 'Where was Rizal executed?', 'Intramuros').ok, isFalse);
+  });
+
+  test('an answer from one fact under a question about another is not supported', () {
+    final r = checkQa(index, 'In which year was Rizal born?', '1992');
+    expect(r.ok, isFalse);
+  });
+
+  test('a question that mixes a date with a rule from elsewhere is not supported', () {
+    final r = checkQa(index, 'What is the first principle of the revised IEEE Code?', 'Rizal was born in Calamba');
+    expect(r.ok, isFalse);
+  });
+
+  test('a paraphrase that flips the meaning is contradicted', () {
+    final r = checkQa(index, 'How are IT workers regarded?', 'IT workers are recognized as professionals');
+    expect(r.verdict, Verdict.contradicted);
+  });
+
+  test('a faithful paraphrase is supported but not exact, so it can go to the judge', () {
+    final r = checkQa(index, 'What did Rizal write in Berlin?', 'Noli Me Tangere novel');
+    expect(r.ok, isTrue);
+    expect(r.exact, isFalse);
+    expect(r.passage, isNotNull);
+  });
+
+  test('nothing in the notes matches', () {
+    expect(checkQa(NoteIndex(''), 'Anything?', 'No').ok, isFalse);
+  });
+}
