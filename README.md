@@ -7,7 +7,7 @@ Status: Windows desktop first. Android, iOS, audio and YouTube sources are plann
 ## How it works
 - Text comes from the file: OCR for images (bundled Tesseract), text layer for PDFs, XML for DOCX.
 - A local llama.cpp server (`llama-server`, bound to 127.0.0.1) runs a small Qwen2.5 model that writes the questions.
-- The model is downloaded once on first run (Basic about 470 MB, Standard about 1 GB, High about 2 GB), picked by your PC's RAM. After that it works offline.
+- The model is downloaded once on first run (Standard about 1 GB by default, or High about 2 GB if you pick it). After that it works offline.
 - Study sets, quiz scores and streaks are stored locally in SQLite.
 
 ## Kulay reading lab

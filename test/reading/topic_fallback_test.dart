@@ -73,23 +73,26 @@ void main() {
       await c.goHome();
     }
 
-    // The offered story opens only when chosen, and says what it is.
-    await c.readTopic('Basketball');
+    // A typed topic has no saved story: the AI failing means a different
+    // topic is offered, opens only when chosen, and says what it is.
+    await c.readTopic('my pet cat');
+    expect(c.screen, KulayScreenId.writing);
+    expect(c.error, contains('my pet cat'));
     final offered = c.fallbackTopic!;
     await c.readFallback();
     expect(c.screen, KulayScreenId.story);
     expect((c.passage! as Story).topic, offered);
-    expect(c.notice, contains('Basketball'));
+    expect(c.notice, contains('my pet cat'));
     expect(c.notice, contains(offered));
   });
 
-  test('when the AI cannot start, it says so and points to Basic quality', () async {
+  test('when the AI cannot start, it says so and points to Standard quality', () async {
     final (c, db) = await limeReader(ModelUnavailableException('out of memory'));
     addTearDown(db.close);
-    await c.readTopic('Coral reef');
+    await c.readTopic('my pet cat');
     expect(c.screen, KulayScreenId.writing);
-    expect(c.error, contains('Coral reef'));
-    expect(c.error, contains('Basic quality'));
+    expect(c.error, contains('my pet cat'));
+    expect(c.error, contains('Standard quality'));
     expect(c.fallbackTopic, isNotNull);
   });
 }

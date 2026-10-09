@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:ffi/ffi.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as path;
 
 import '../../ui/theme.dart';
 import '../levels.dart';
@@ -28,102 +32,153 @@ Color get kInk => kulayDark ? const Color(0xFFECE8F8) : const Color(0xFF1C1A2E);
 Color get kAccent => kulayDark ? const Color(0xFF6C5AE0) : const Color(0xFF2E2378); // filled buttons (white text)
 Color get kSpeaking => kulayDark ? const Color(0xFF33406E) : const Color(0xFFD6E4FF); // sentence being read aloud
 
-// ---------- read aloud: the computer's own voices, no internet ----------
+// ---------- read aloud: a neural voice (Piper) that runs on this computer, no internet ----------
 
-/// Reads text aloud with the speech engine built into Windows (System.Speech),
-/// through one PowerShell process that speaks a line at a time. No plugin and
-/// no download. [available] is false off Windows, in tests, or with no English voice.
+/// Reads text aloud with the bundled Piper voice. Piper turns one line of text into a
+/// WAV file; Windows' own `PlaySound` plays it. The next sentence is made while the
+/// current one plays, so there is no gap. [available] is false off Windows,
+/// in tests, or when `piper/` was not bundled next to the app.
 class Speaker {
   Speaker._();
   static final instance = Speaker._();
 
   final speaking = ValueNotifier<int?>(null); // sentence index being read
   bool available = false;
-  Process? _ps;
-  StreamIterator<String>? _lines;
-  Future<bool>? _starting;
+  Process? _piper;
+  StreamIterator<String>? _piperOut;
+  Completer<void>? _playing;
+  Future<bool> _boot = Future.value(false);
+  Future<void> _synthLine = Future.value(); // piper answers one line at a time
+  double _pace = 1.12; // piper length_scale: bigger is slower
   int _run = 0;
 
-  // Input: "rate|text" per line (rate -10..10, 0 = normal). Output: "ready", then "done" per line.
-  static const _script = r'''
-$ErrorActionPreference = 'Stop'
-[Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
-Add-Type -AssemblyName System.Speech
-$s = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$v = @($s.GetInstalledVoices() | Where-Object { $_.Enabled -and $_.VoiceInfo.Culture.Name -like 'en-*' })
-if ($v.Count -eq 0) { [Console]::Out.WriteLine('none'); exit }
-$pick = @($v | Where-Object { $_.VoiceInfo.Culture.Name -eq 'en-PH' }) + $v | Select-Object -First 1
-$s.SelectVoice($pick.VoiceInfo.Name)
-$s.SetOutputToDefaultAudioDevice()
-[Console]::Out.WriteLine('ready'); [Console]::Out.Flush()
-while ($null -ne ($line = [Console]::In.ReadLine())) {
-  $parts = $line.Split([char]'|', 2)
-  $s.Rate = [int]$parts[0]
-  $s.Speak($parts[1])
-  [Console]::Out.WriteLine('done'); [Console]::Out.Flush()
-}
-''';
+  // winmm PlaySoundW: plays a WAV file in the background; a null name stops it.
+  static final _playSound = DynamicLibrary.open('winmm.dll')
+      .lookupFunction<Int32 Function(Pointer<Utf16>, IntPtr, Uint32), int Function(Pointer<Utf16>, int, int)>('PlaySoundW');
+  static const _sndFilenameAsync = 0x20000 | 0x1 | 0x2; // SND_FILENAME | SND_ASYNC | SND_NODEFAULT
 
-  Future<bool> _start() => _starting ??= () async {
-        if (!Platform.isWindows || Platform.environment.containsKey('FLUTTER_TEST')) return false;
-        try {
-          final ps = await Process.start('powershell', ['-NoProfile', '-NonInteractive', '-Command', _script]);
-          unawaited(ps.stderr.drain<void>());
-          final lines = StreamIterator(ps.stdout.transform(utf8.decoder).transform(const LineSplitter()));
-          final ready = await lines.moveNext().timeout(const Duration(seconds: 20), onTimeout: () => false) &&
-              lines.current.trim() == 'ready';
-          if (!ready) {
-            ps.kill();
-            return false;
-          }
-          _ps = ps;
-          _lines = lines;
-          return true;
-        } catch (_) {
-          return false;
-        }
-      }();
+  Future<bool> _ensure(double pace) => _boot = _boot.then((_) => _bring(pace));
 
-  /// Checks once whether this computer can read aloud.
-  Future<void> init() async => available = await _start();
+  Future<bool> _bring(double pace) async {
+    if (!Platform.isWindows || Platform.environment.containsKey('FLUTTER_TEST')) return false;
+    if (_piper != null && pace != _pace) {
+      _piper!.kill();
+      _piper = _piperOut = null;
+    }
+    _pace = pace;
+    try {
+      if (_piper == null) {
+        final dir = path.join(File(Platform.resolvedExecutable).parent.path, 'piper');
+        final out = Directory(path.join(Directory.systemTemp.path, 'kodigno-voice'))..createSync(recursive: true);
+        final ps = await Process.start(
+            path.join(dir, 'piper.exe'),
+            ['-m', path.join(dir, 'en_US-lessac-medium.onnx'), '--output_dir', out.path, '--length_scale', '$pace'],
+            workingDirectory: dir);
+        unawaited(ps.stderr.drain<void>());
+        unawaited(ps.exitCode.then((_) {
+          if (identical(_piper, ps)) _piper = _piperOut = null;
+        }));
+        _piperOut = StreamIterator(ps.stdout.transform(utf8.decoder).transform(const LineSplitter()));
+        _piper = ps;
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Checks once whether this computer can read aloud (and warms the voice up).
+  Future<void> init() async => available = await _ensure(_pace);
+
+  /// Makes a WAV file for [text]; null if the voice failed.
+  Future<String?> _synth(String text) {
+    final f = _synthLine.then((_) async {
+      final ps = _piper, out = _piperOut;
+      if (ps == null || out == null) return null;
+      final line = text.replaceAll(RegExp(r'[“”]'), '"').replaceAll(RegExp(r'[‘’]'), "'").replaceAll(RegExp(r'\s+'), ' ');
+      try {
+        ps.stdin.add(utf8.encode('$line\n'));
+        await ps.stdin.flush();
+        return await out.moveNext() ? out.current.trim() : null;
+      } catch (_) {
+        return null;
+      }
+    });
+    _synthLine = f.then<void>((_) {});
+    return f;
+  }
+
+  /// Plays a WAV file, then deletes it. Returns when it ends or [stop] cuts it off.
+  Future<void> _play(String file) async {
+    try {
+      final wav = await File(file).readAsBytes();
+      // 44-byte header; byte rate sits at offset 28. The clip is as long as its data at that rate.
+      final secs = (wav.length - 44) / ByteData.sublistView(wav).getUint32(28, Endian.little);
+      final done = _playing = Completer<void>();
+      final name = file.toNativeUtf16();
+      _playSound(name, 0, _sndFilenameAsync);
+      calloc.free(name);
+      Timer(Duration(milliseconds: (secs * 1000).round() + 60), () {
+        if (!done.isCompleted) done.complete();
+      });
+      await done.future;
+    } catch (_) {
+    } finally {
+      _drop(file);
+    }
+  }
+
+  void _drop(String? file) {
+    if (file != null) File(file).delete().ignore();
+  }
 
   /// Speaks [text] and returns when it is done (or stopped).
-  Future<void> say(String text, {int rate = -1}) async {
-    if (!await _start()) return;
-    final ps = _ps, lines = _lines;
-    if (ps == null || lines == null) return;
-    ps.stdin.add(utf8.encode('$rate|${text.replaceAll(RegExp(r'\s+'), ' ')}\n'));
-    try {
-      await ps.stdin.flush();
-      await lines.moveNext(); // "done", or false once stop() ends the process
-    } catch (_) {}
+  Future<void> say(String text) async {
+    if (!await _ensure(_pace)) return;
+    final file = await _synth(text);
+    if (file != null) await _play(file);
   }
 
   /// One word, cutting off anything being read.
   Future<void> sayWord(String word) async {
     stop();
-    await say(word, rate: -2);
+    await say(word);
   }
 
-  Future<void> readAll(List<String> sentences, {required bool young}) async {
+  /// Reads the story one sentence at a time. [paragraphStarts] are sentence indexes that
+  /// open a new paragraph; the reader takes a longer breath before them.
+  Future<void> readAll(List<String> sentences, {required bool young, Set<int> paragraphStarts = const {}}) async {
     stop();
     final run = _run;
+    if (sentences.isEmpty || !await _ensure(young ? 1.3 : 1.12) || run != _run) return;
+    Future<String?>? ahead = _synth(sentences[0]);
     for (var i = 0; i < sentences.length; i++) {
-      if (run != _run) return;
+      final file = await ahead;
+      ahead = i + 1 < sentences.length ? _synth(sentences[i + 1]) : null;
+      if (run != _run) {
+        _drop(file);
+        break;
+      }
+      if (file == null) continue;
       speaking.value = i;
-      await say(sentences[i], rate: young ? -2 : -1);
+      await _play(file);
+      if (run == _run && i + 1 < sentences.length) {
+        await Future<void>.delayed(Duration(milliseconds: paragraphStarts.contains(i + 1) ? 600 : 220));
+      }
     }
+    if (ahead != null) unawaited(ahead.then(_drop));
     if (run == _run) speaking.value = null;
   }
 
-  /// Stops at once: the voice process is ended and restarted on the next [say].
+  /// Stops at once. The voice stays loaded.
   void stop() {
     _run++;
     speaking.value = null;
-    _ps?.kill();
-    _ps = null;
-    _lines = null;
-    _starting = null;
+    final playing = _playing;
+    if (playing == null) return;
+    _playing = null;
+    _playSound(nullptr, 0, 0);
+    if (!playing.isCompleted) playing.complete();
   }
 }
 
@@ -260,7 +315,10 @@ class _StoryCardState extends State<StoryCard> {
                   KButton(speaking == null ? 'Listen to the story' : 'Stop reading',
                       small: true,
                       ghost: true,
-                      onTap: () => speaking == null ? _speaker.readAll(sentences, young: p.level < 2) : _speaker.stop()),
+                      onTap: () => speaking == null
+                          ? _speaker.readAll(sentences,
+                              young: p.level < 2, paragraphStarts: {for (var i = 1; i < p.paras.length; i++) _index(i, 0)})
+                          : _speaker.stop()),
                 Text('Tap a word to see what it means.', style: body(13, color: kSoft)),
               ]),
               const SizedBox(height: 16),

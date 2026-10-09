@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'hygiene.dart';
 import 'models.dart';
 
 Map<dynamic, dynamic> _jsonObject(String raw) {
@@ -34,8 +35,8 @@ List<QaItem> parseQa(String raw) {
   for (final i in (_jsonObject(raw)['items'] as List? ?? const [])) {
     if (i is! Map) continue;
     final q = _text(i['question']);
-    final a = _text(i['answer']);
-    if (q.isNotEmpty && a.isNotEmpty) items.add(QaItem(q, a));
+    final a = withoutQuestionEcho(cleanAnswer(_text(i['answer'])), q);
+    if (q.isNotEmpty && !isPlaceholderAnswer(a)) items.add(QaItem(q, a));
   }
   if (items.isEmpty) throw const FormatException('no question/answer pairs');
   return items;
@@ -51,7 +52,7 @@ List<List<String>> parseWrong(String raw) {
       [
         if (i is Map)
           for (final w in (i['wrong'] is List ? i['wrong'] as List : const []))
-            if (_text(w).isNotEmpty) _text(w),
+            if (!isPlaceholderAnswer(_text(w))) _text(w),
       ],
   ];
 }

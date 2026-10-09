@@ -63,7 +63,7 @@ class AppController extends ChangeNotifier {
   Future<void> init() async {
     _device = await profiler.read();
     final saved = prefs.getString('tier');
-    tier = saved != null ? tiers.byId(saved) : tiers.pick(_device!.ramMb);
+    tier = tiers.tiers.where((t) => t.id == saved).firstOrNull ?? tiers.pick(_device!.ramMb);
     modelReady = await models.isInstalled(tier!);
     themeMode = ThemeMode.values.asNameMap()[prefs.getString('theme')] ?? ThemeMode.system;
     notifyListeners();

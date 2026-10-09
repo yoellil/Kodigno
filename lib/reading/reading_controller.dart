@@ -40,14 +40,14 @@ const stepNames = [
 /// All Kulay state: mode, readers, the screen, the story being read, and the
 /// next story being written in the background.
 class ReadingController extends ChangeNotifier {
-  ReadingController({required this.repo, required this.engine, required this.prefs, this.tierInfo});
+  ReadingController({required this.repo, required this.engine, required this.prefs, this.modelName});
 
   final ReadingRepository repo;
   final StoryEngine engine;
   final SharedPreferences prefs;
 
-  /// The current model tier. Basic (0.5B) writes fewer drafts, then falls back to a saved story.
-  final ({bool basic, String model}) Function()? tierInfo;
+  /// The current model's name.
+  final String Function()? modelName;
 
   KulayMode? get mode => KulayMode.values.asNameMap()[prefs.getString('kulay.mode')];
   bool get hasPin => prefs.getString('kulay.pin') != null;
@@ -290,9 +290,8 @@ class ReadingController extends ChangeNotifier {
       onStep?.call(2, 'This story is already being written. Almost ready.');
       return running.$2;
     }
-    final tier = tierInfo?.call();
-    engine.maxDrafts = tier?.basic ?? false ? 3 : 4;
-    if (tier != null) engine.modelName = tier.model;
+    final model = modelName?.call();
+    if (model != null) engine.modelName = model;
     final future = engine
         .makeStory(level, topic, job: job, onStep: onStep)
         .then((s) => repo.saveStory(s))
@@ -315,7 +314,7 @@ class ReadingController extends ChangeNotifier {
     step = 1;
     stepDetail.fillRange(0, 8, '');
     stepDetail[0] = '${levels[r.level].name}, $topic';
-    var id = await repo.unread(r.id, r.level, topic);
+    var id = await repo.premade(r.id, r.level, topic!) ?? await repo.unread(r.id, r.level, topic);
     final waited = id == null;
     if (id == null) {
       _go(KulayScreenId.writing);
@@ -340,17 +339,25 @@ class ReadingController extends ChangeNotifier {
           }
           return;
         }
-        // AI down or stuck: say so, and offer a ready story at this color,
-        // which is likely on another topic, instead of swapping it in.
-        final other = await repo.unread(r.id, r.level, null) ?? await repo.anyStory(r.level);
-        fallbackStory = other;
-        fallbackTopic = other == null ? null : (await repo.story(other))?.topic;
-        error = e is ModelUnavailableException
-            ? 'The AI could not start on this computer, so it could not write a $asked story. '
-                'If this keeps happening, choose Basic quality in Settings.'
-            : "The AI couldn't finish a $asked story this time.";
-        notifyListeners();
-        return;
+        // AI down or stuck: a saved story for this very book is served as is;
+        // a story on another topic is only offered, never swapped in.
+        final saved = await repo.savedFor(r.id, r.level, asked);
+        final savedTopic = saved == null ? null : (await repo.story(saved))?.topic;
+        if (saved != null && savedTopic?.toLowerCase() == asked.toLowerCase()) {
+          id = saved;
+          notice = e is ModelUnavailableException
+              ? 'The AI could not start, so here is a saved story.'
+              : 'Here is a ready story while the AI rests.';
+        } else {
+          fallbackStory = saved;
+          fallbackTopic = savedTopic;
+          error = e is ModelUnavailableException
+              ? 'The AI could not start on this computer, so it could not write a $asked story. '
+                  'If this keeps happening, choose Standard quality in Settings.'
+              : "The AI couldn't finish a $asked story this time.";
+          notifyListeners();
+          return;
+        }
       }
     }
     if (_asking == asked) _asking = null;
@@ -373,7 +380,7 @@ class ReadingController extends ChangeNotifier {
   Future<void> readSavedInstead() async {
     final r = reader;
     if (r == null || screen != KulayScreenId.writing) return;
-    final id = await repo.unread(r.id, r.level, null) ?? await repo.anyStory(r.level);
+    final id = await repo.savedFor(r.id, r.level, topic);
     if (reader?.id != r.id || screen != KulayScreenId.writing) return; // the reader moved on while we looked
     if (id == null) {
       error = 'There are no saved stories for this color yet. Keep waiting, or pick another topic.';
@@ -566,8 +573,8 @@ class ReadingController extends ChangeNotifier {
     teacherBusy = true;
     notifyListeners();
     try {
-      final tier = tierInfo?.call();
-      if (tier != null) engine.modelName = tier.model;
+      final model = modelName?.call();
+      if (model != null) engine.modelName = model;
       final s = await engine.makeTeacherStory(
         t.length > 60 ? t.substring(0, 60) : t,
         text,

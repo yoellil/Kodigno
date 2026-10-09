@@ -302,6 +302,15 @@ class _FlashDeckState extends State<FlashDeck>
   }
 }
 
+/// Big for a word or two, smaller as the card text gets longer.
+double faceFontSize(String text) {
+  final n = text.length + 20 * '\n'.allMatches(text).length; // lists need room per line
+  if (n <= 40) return 34;
+  if (n <= 80) return 28;
+  if (n <= 140) return 23;
+  return 19;
+}
+
 class _Face extends StatelessWidget {
   const _Face({required this.text, required this.label, required this.color});
   final String text;
@@ -318,7 +327,17 @@ class _Face extends StatelessWidget {
         children: [
           Text(label, style: body(13, color: Colors.black54)),
           const SizedBox(height: 14),
-          Text(text, textAlign: TextAlign.center, style: display(34)),
+          // Long text steps down in size; scrolling is only a last resort.
+          Flexible(
+            child: SingleChildScrollView(
+              child: Text(
+                text,
+                // A numbered list reads best left-aligned, with air between lines.
+                textAlign: text.contains('\n') ? TextAlign.left : TextAlign.center,
+                style: display(faceFontSize(text)).copyWith(height: text.contains('\n') ? 1.4 : null),
+              ),
+            ),
+          ),
         ],
       ),
     ),

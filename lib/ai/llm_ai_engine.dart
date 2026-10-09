@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import '../domain/definitions.dart';
+import '../domain/hygiene.dart';
+import '../domain/lists.dart';
 import '../domain/models.dart';
 import '../domain/nlp.dart';
 import '../domain/output_parser.dart';
@@ -34,6 +36,15 @@ class LlmAiEngine implements AiEngine {
   /// Sections shorter than this are headings and filler, not worth a model call.
   static const _minChunkChars = 80;
 
+  /// [text] ready for generation: one kind of line break (Windows files and
+  /// PDFs bring "\r\n"), no reference lists, run-together headings spaced, no
+  /// footers that repeat on every page.
+  static String _cleaned(String text) => dropRepeatedLines(
+      stripReferences(fixSquashedText(text.replaceAll('\r\n', '\n').replaceAll('\r', '\n'))));
+
+  /// Enough list questions to fill a quiz without crowding out the rest.
+  static const _maxListQuestions = 8;
+
   /// Questions whose answer is a person. Their fallback choices are other people.
   static final _who = RegExp(r'\bwho(m|se)?\b', caseSensitive: false);
 
@@ -43,9 +54,23 @@ class LlmAiEngine implements AiEngine {
     String? verifyIn,
     void Function(double fraction)? onProgress,
   }) async {
-    final text = dropRepeatedLines(notes);
-    final original = verifyIn == null ? null : dropRepeatedLines(verifyIn);
-    final defs = extractDefinitions(original ?? text);
+    final text = _cleaned(notes);
+    final original = verifyIn == null ? null : _cleaned(verifyIn);
+    final source = original ?? text; // the lesson's own structure: lists and "Term - definition" lines
+    // The notes' own titled lists ("General Ethical Principles" + its points).
+    final lists = <NotesList>[];
+    final titles = <String>{};
+    for (final l in notesLists(source)) {
+      if (l.heading.isEmpty || !isGoodList(l.items)) continue;
+      if (titles.add(l.heading.toLowerCase())) lists.add(l);
+    }
+    bool usable(Definition d) =>
+        !looksLikeCitation('${d.term}: ${d.definition}') && !titles.contains(d.term.toLowerCase());
+    final defs = [for (final d in extractDefinitions(source)) if (usable(d)) d];
+    // "Which term is this?" needs real definitions ("X - ...", "X is a ..."), not a
+    // slide title with a sentence under it.
+    final quizDefs = [for (final d in extractDefinitions(source, headingCards: false)) if (usable(d)) d];
+    final listBacks = {for (final l in lists) formatList(l.items)};
     var all = chunkText(text, tier.chunkChars);
     final long = all.where((c) => c.length >= _minChunkChars).toList();
     if (long.isNotEmpty) all = long;
@@ -60,32 +85,76 @@ class LlmAiEngine implements AiEngine {
       final got = await _itemsFor(chunks[i], original);
       onProgress?.call((i + 1) / chunks.length);
       for (final it in got ?? const <QaItem>[]) {
+        // One card per list: not again under a second question, nor when the
+        // list already has its own titled card.
+        if (it.answer.contains('\n') && (listBacks.contains(it.answer) || !seen.add(it.answer))) continue;
         if (seen.add(it.question.toLowerCase().trim())) items.add(it);
       }
     }
-    if (items.isEmpty && defs.isEmpty) throw GenerationFailed();
+    if (items.isEmpty && defs.isEmpty && lists.isEmpty) throw GenerationFailed();
 
     // Show the definition, pick the term; the other terms are the wrong choices.
     final questions = <QuizQuestion>[];
-    final terms = [for (final d in defs) d.term];
-    for (final d in defs) {
-      final masked = maskTerm(d.definition, d.term);
+    final terms = [for (final d in quizDefs) d.term];
+    for (final d in quizDefs) {
+      if (d.definition.contains('\n')) continue; // a list is for a card, not a "which term" question
+      final masked = maskTerm(shortenDefinition(d.definition, max: 160), d.term);
       final wrong = pickDistractors(d.term, terms, _random,
-          preferred: relatedTerms(d, defs).take(3).toList(), question: masked);
+          preferred: relatedTerms(d, quizDefs).take(3).toList(), question: masked);
       if (wrong.length < 2) continue;
-      final choices = [d.term, ...wrong]..shuffle(_random);
+      final term = normalizeChoice(d.term);
+      final choices = [term, ...wrong]..shuffle(_random);
       questions.add(QuizQuestion(
         prompt: 'Which term is this? $masked',
         choices: choices,
-        answerIndex: choices.indexOf(d.term),
-        explanation: '${d.term}: ${d.definition}',
+        answerIndex: choices.indexOf(term),
+        explanation: '${d.term}: ${shortenDefinition(d.definition, max: 160)}',
       ));
+    }
+
+    // "Which of these belongs under <title>?": the right choice is a point from
+    // that list, the wrong ones real points from the notes' other lists. All four
+    // are worded by the notes, so none is a rewording and none looks made up.
+    String point(String item) =>
+        shortenDefinition(item, max: 70, early: true).replaceAll(RegExp(r'[.;,…]+$'), '');
+    var listQuestions = 0;
+    for (var round = 0; round < 2 && listQuestions < _maxListQuestions; round++) {
+      for (final l in lists) {
+        if (listQuestions >= _maxListQuestions || l.items.length <= round || l.items.length < 3) continue;
+        final correct = normalizeChoice(point(l.items[round]));
+        if (correct.split(' ').length > 14) continue;
+        // Points from the lists most like this one first (a "principles" list for a
+        // "principles" list), so the wrong choices are the same kind of thing.
+        // Only lists whose points are built like these (a word or two each, or a
+        // short sentence each): otherwise a wrong choice is plain from its length.
+        final byLikeness = [
+          for (final o in lists)
+            if (o.heading != l.heading && _similarShape(l, o)) o,
+        ]..sort((a, b) => _likeness(l, b).compareTo(_likeness(l, a)));
+        if (byLikeness.isEmpty) continue;
+        var wrong = const <String>[];
+        for (var take = 1; take <= byLikeness.length; take++) {
+          wrong = pickDistractors(
+              correct, [for (final o in byLikeness.take(take)) for (final x in o.items) point(x)], _random,
+              question: l.heading, fact: l.items.join('. '));
+          if (wrong.length == 3) break;
+        }
+        if (wrong.length < 2) continue;
+        final choices = [correct, ...wrong]..shuffle(_random);
+        questions.add(QuizQuestion(
+          prompt: 'Which of these belongs under "${l.heading}"?',
+          choices: choices,
+          answerIndex: choices.indexOf(correct),
+          explanation: '${l.heading}: ${l.items.take(4).map(point).join('; ')}',
+        ));
+        listQuestions++;
+      }
     }
 
     // Quiz choices must be short phrases, and each answer is used once.
     final quizItems = [
       for (final it in items)
-        if (it.answer.split(RegExp(r'\s+')).length <= 14) it,
+        if (!it.answer.contains('\n') && it.answer.split(RegExp(r'\s+')).length <= 14) it,
     ];
     final usedAnswers = <String>{};
     for (final it in quizItems) {
@@ -95,22 +164,60 @@ class LlmAiEngine implements AiEngine {
       final pool = [
         for (final p in quizItems)
           if (_who.hasMatch(p.question) == who) p.answer,
+        // Definitions from the notes are true of something else: good wrong
+        // choices for a phrase answer.
+        if (!who)
+          for (final d in defs)
+            if (!d.definition.contains('\n')) shortenDefinition(withoutTerm(d.definition, d.term), max: 80),
       ];
       final wrong = pickDistractors(it.answer, pool, _random,
-          preferred: it.wrong, question: it.question);
+          preferred: it.wrong, question: it.question, fact: it.fact);
       if (wrong.length < 2) continue; // too little to choose between
-      final choices = [it.answer, ...wrong]..shuffle(_random);
+      final answer = normalizeChoice(it.answer);
+      final choices = [answer, ...wrong]..shuffle(_random);
       questions.add(QuizQuestion(
         prompt: it.question,
         choices: choices,
-        answerIndex: choices.indexOf(it.answer),
+        answerIndex: choices.indexOf(answer),
         explanation: it.fact,
       ));
     }
     return GeneratedSet(questions, [
-      for (final d in defs) Flashcard(front: d.term, back: d.definition),
-      for (final it in items) Flashcard(front: it.question, back: it.answer),
+      for (final l in lists) Flashcard(front: l.heading, back: formatList(l.items)),
+      for (final d in defs)
+        Flashcard(
+            front: d.term,
+            back: d.definition.contains('\n')
+                ? d.definition
+                : shortenDefinition(withoutTerm(d.definition, d.term))),
+      for (final it in items)
+        Flashcard(
+            front: it.question,
+            back: it.answer.contains('\n') ? it.answer : shortenDefinition(it.answer)),
     ]);
+  }
+
+  static double _avgWords(NotesList l) =>
+      l.items.map((x) => x.split(' ').length).reduce((x, y) => x + y) / l.items.length;
+
+  /// Points written alike: both lists start their points with lower case ("to see
+  /// ...") or both with capitals, and of about the same length (within 2 words, or
+  /// 40% for longer ones).
+  static bool _similarShape(NotesList a, NotesList b) {
+    bool lower(NotesList l) => l.items.where((x) => RegExp(r'^[a-z]').hasMatch(x)).length * 2 >= l.items.length;
+    final x = _avgWords(a), y = _avgWords(b);
+    return lower(a) == lower(b) && (x - y).abs() <= max(2, 0.4 * max(x, y));
+  }
+
+  /// How alike two lists are: shared title words count most, then points of similar length.
+  static double _likeness(NotesList a, NotesList b) {
+    Set<String> stems(String s) => {
+          for (final m in RegExp(r'[a-z]{4,}').allMatches(s.toLowerCase()))
+            m[0]!.endsWith('s') ? m[0]!.substring(0, m[0]!.length - 1) : m[0]!,
+        };
+    double avg(NotesList l) =>
+        l.items.map((x) => x.split(' ').length).reduce((x, y) => x + y) / l.items.length;
+    return stems(a.heading).intersection(stems(b.heading)).length * 10 - (avg(a) - avg(b)).abs();
   }
 
   /// Question/answer pairs for one section, or null if the model cannot
@@ -124,7 +231,7 @@ class LlmAiEngine implements AiEngine {
           buildFactsPrompt(chunk, facts: n),
           maxTokens: 700,
           schema: factsSchema(n),
-        )).where((f) => !isVague(f) && isGrounded(f, chunk, minRatio: 0.5)).toList();
+        )).where((f) => !isVague(f) && !looksLikeCitation(f) && isGrounded(f, chunk, minRatio: 0.5)).toList();
         if (got.isNotEmpty) facts = got;
       } on FormatException {
         continue; // malformed output: retry
@@ -143,16 +250,51 @@ class LlmAiEngine implements AiEngine {
           schema: qaSchema(todo.length),
         ));
         for (final q in got) {
-          final question = unleak(q.question, q.answer);
-          if (question == null ||
-              isVague(question) ||
-              q.answer.trimRight().endsWith(',') || // cut off mid-sentence
-              !isGrounded(question, chunk) ||
-              !answerInNotes(q.answer, chunk) ||
-              (original != null && !answerInNotes(q.answer, original))) {
+          // The fact this question was written from: the closest one (the model does not
+          // always keep the facts' order).
+          final source = bestFact(todo, '${q.question} ${q.answer}');
+          var answer = q.answer;
+          var plain = q.answer; // the answer's words, without list numbering
+          var grounded = answerInNotes(q.answer, chunk);
+          // "What are the three principles...?" needs all three, each brief. The model
+          // often gives two or runs them together, so the notes' own list is used then.
+          final n = expectedCount(q.question);
+          final wantsList = asksForList(q.question);
+          if (wantsList) {
+            // The notes' own list is the complete one; the model's is the fallback.
+            var list = listFromNotes(chunk, n, '${q.question} ${q.answer}', minShared: 2);
+            grounded = list != null;
+            if (list == null) {
+              list = numberedItems(q.answer);
+              if (list != null && (n == null || list.length == n) && answerInNotes(list.join(', '), chunk)) {
+                grounded = true;
+              } else {
+                list = null;
+              }
+            }
+            if (list == null) continue; // a single sentence or an incomplete list would mislead
+            answer = formatList(list);
+            plain = list.join(', ');
+          }
+          final question = unleak(q.question, plain);
+          // Strict fidelity: one fact, its own words. A question or answer that needs
+          // more than that fact (or invents) is dropped, not shown.
+          if (!wantsList &&
+              question != null &&
+              (!isGrounded(question, source, minRatio: 0.6) || !answerInFact(plain, source, question))) {
             continue;
           }
-          items.add(QaItem(question, q.answer, fact: bestFact(todo, '$question ${q.answer}')));
+          if (question == null ||
+              isVague(question) ||
+              looksLikeCitation(question) ||
+              looksLikeCitation(plain) ||
+              (!wantsList && q.answer.trimRight().endsWith(',')) || // cut off mid-sentence
+              !isGrounded(question, chunk) ||
+              !grounded ||
+              (original != null && !answerInNotes(plain, original))) {
+            continue;
+          }
+          items.add(QaItem(question, answer, fact: source));
         }
         todo = [for (final f in todo) if (!items.any((it) => it.fact == f)) f];
       } on FormatException {
@@ -165,16 +307,23 @@ class LlmAiEngine implements AiEngine {
   /// [items] with the model's believable wrong answers attached. Asked once:
   /// if it fails, other answers from the notes still fill the quiz.
   Future<List<QaItem>> _withWrongAnswers(List<QaItem> items) async {
+    // List answers are card-only; they get no multiple-choice wrong answers.
+    final single = [for (final it in items) if (!it.answer.contains('\n')) it];
+    if (single.isEmpty) return items;
     try {
       final wrong = parseWrong(await runtime.complete(
-        buildWrongPrompt(items),
+        buildWrongPrompt(single),
         maxTokens: 900,
-        schema: wrongSchema(items.length),
+        schema: wrongSchema(single.length),
       ));
       return [
-        for (var i = 0; i < items.length; i++)
-          QaItem(items[i].question, items[i].answer,
-              fact: items[i].fact, wrong: i < wrong.length ? wrong[i] : const []),
+        for (final it in items)
+          if (it.answer.contains('\n'))
+            it
+          else
+            QaItem(it.question, it.answer,
+                fact: it.fact,
+                wrong: single.indexOf(it) < wrong.length ? wrong[single.indexOf(it)] : const []),
       ];
     } on FormatException {
       return items;

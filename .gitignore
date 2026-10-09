@@ -9,3 +9,4 @@ build/
 /third_party/llama/
 /models-dev/
 /tool/goldens/
+/third_party/piper/

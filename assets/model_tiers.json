@@ -1,8 +1,5 @@
 {"tiers":[
- {"id":"low","label":"Basic quality","maxRamMb":3500,"model":"qwen2.5-0.5b-instruct-q4_k_m",
-  "url":"https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf",
-  "sha256":"74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db","sizeMb":469,"chunkChars":800,"questionsPerChunk":3,"cardsPerChunk":3},
- {"id":"standard","label":"Standard","maxRamMb":7000,"model":"qwen2.5-1.5b-instruct-q4_k_m",
+ {"id":"standard","label":"Standard","maxRamMb":null,"model":"qwen2.5-1.5b-instruct-q4_k_m",
   "url":"https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf",
   "sha256":"6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e","sizeMb":1066,"chunkChars":1500,"questionsPerChunk":5,"cardsPerChunk":5},
  {"id":"high","label":"High quality","maxRamMb":null,"model":"qwen2.5-3b-instruct-q4_k_m",
