@@ -262,17 +262,17 @@ class LlmAiEngine implements AiEngine {
       ));
     }
     return GeneratedSet(questions, [
-      for (final l in lists) Flashcard(front: backOf(l), back: questionForTitle(l.heading)),
+      for (final l in lists) Flashcard(front: questionForTitle(l.heading), back: backOf(l)),
       for (final d in defs)
         Flashcard(
-            front: d.definition.contains('\n')
+            front: d.term,
+            back: d.definition.contains('\n')
                 ? d.definition
-                : shortenDefinition(withoutTerm(d.definition, d.term)),
-            back: d.term),
+                : shortenDefinition(withoutTerm(d.definition, d.term))),
       for (final it in items)
         Flashcard(
-            front: it.answer.contains('\n') ? it.answer : shortenDefinition(it.answer),
-            back: it.question),
+            front: it.question,
+            back: it.answer.contains('\n') ? it.answer : shortenDefinition(it.answer)),
     ]);
   }
 

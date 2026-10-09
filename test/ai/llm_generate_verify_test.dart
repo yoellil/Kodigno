@@ -47,23 +47,23 @@ void main() {
     final rt = FakeLlmRuntime([_twoQa, _twoQa, _twoQa, _wrong([['Cebu', 'Davao', 'Iloilo']])]);
     final set = await LlmAiEngine(rt, _tier, random: Random(1)).generate(_summaryText, verifyIn: _original);
 
-    final backs = set.flashcards.map((c) => c.back).toList();
-    expect(backs, contains('In which town was Rizal born?'));
-    expect(backs, isNot(contains('In which city did Rizal write Noli Me Tangere?'))); // "Manila" is not in the slides
-    expect(set.flashcards.map((c) => c.front), isNot(contains('Manila')));
+    final fronts = set.flashcards.map((c) => c.front).toList();
+    expect(fronts, contains('In which town was Rizal born?'));
+    expect(fronts, isNot(contains('In which city did Rizal write Noli Me Tangere?'))); // "Manila" is not in the slides
+    expect(set.flashcards.map((c) => c.back), isNot(contains('Manila')));
   });
 
   test('without the original, the same answer is kept', () async {
     final rt = FakeLlmRuntime([_twoQa, _wrongs]);
     final set = await LlmAiEngine(rt, _tier, random: Random(1)).generate(_summaryText);
-    expect(set.flashcards.map((c) => c.front), containsAll(['Calamba', 'Manila']));
+    expect(set.flashcards.map((c) => c.back), containsAll(['Calamba', 'Manila']));
   });
 
   test('"Term - definition" lines of the original become cards even if the summary left them out', () async {
     final rt = FakeLlmRuntime([_twoQa, _twoQa, _twoQa, _wrong([['Cebu', 'Davao', 'Iloilo']])]);
     final set = await LlmAiEngine(rt, _tier, random: Random(1)).generate(_summaryText, verifyIn: _original);
-    expect(set.flashcards.map((c) => c.back), contains('Trade secret'));
-    expect(set.flashcards.firstWhere((c) => c.back == 'Trade secret').front,
+    expect(set.flashcards.map((c) => c.front), contains('Trade secret'));
+    expect(set.flashcards.firstWhere((c) => c.front == 'Trade secret').back,
         'Information used in business that is generally unknown to the public.');
   });
 }

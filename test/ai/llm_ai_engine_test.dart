@@ -73,8 +73,8 @@ void main() {
   test('questions from the notes\' own lines, then wrong answers of the same kind, then a fact check each', () async {
     final rt = FakeLlmRuntime([..._ok]);
     final set = await _engine(rt).generate(_notes);
-    expect(set.flashcards.map((c) => c.front), ['Calamba', 'Berlin', 'Bagumbayan']);
-    expect(set.flashcards.first.back, 'In which town was Rizal born?');
+    expect(set.flashcards.map((c) => c.back), ['Calamba', 'Berlin', 'Bagumbayan']);
+    expect(set.flashcards.first.front, 'In which town was Rizal born?');
     final q = set.questions.first;
     expect(q.choices.toSet(), {'Calamba', 'Manila', 'Cebu', 'Davao'});
     expect(q.choices[q.answerIndex], 'Calamba');
@@ -94,7 +94,7 @@ void main() {
     final set = await _engine(rt).generate(_notes);
     expect(set.questions.map((q) => q.prompt),
         ['In which city did Rizal write Noli Me Tangere?', 'Where was Rizal executed?']);
-    expect(set.flashcards.map((c) => c.front), isNot(contains('In which town was Rizal born?')));
+    expect(set.flashcards.map((c) => c.back), isNot(contains('In which town was Rizal born?')));
   });
 
   test('when the fact check fails every answer and the notes have nothing else, generation fails', () async {
@@ -148,9 +148,9 @@ void main() {
         '▪ State Hackers - Employees of governments who attack other countries for political aims.';
     final rt = FakeLlmRuntime(['x', 'x', 'x']); // questions fail 3 times
     final set = await _engine(rt, maxChunks: 1).generate(notes);
-    expect(set.flashcards.map((c) => c.back),
+    expect(set.flashcards.map((c) => c.front),
         ['Hacktivists', 'Script Kiddies', 'Vulnerability Brokers', 'Cyber Criminals', 'State Hackers']);
-    expect(set.flashcards.first.front, 'Grey hat hackers who rally and protest against political ideas.');
+    expect(set.flashcards.first.back, 'Grey hat hackers who rally and protest against political ideas.');
     final q = set.questions.first;
     expect(q.prompt, contains('Grey hat hackers who rally'));
     expect(q.choices[q.answerIndex], 'Hacktivists');
@@ -196,7 +196,7 @@ void main() {
     ]);
     final rt = FakeLlmRuntime([qa, 'x', 'x', 'x']);
     final set = await _engine(rt).generate(_notes);
-    expect(set.flashcards.map((c) => c.back), [
+    expect(set.flashcards.map((c) => c.front), [
       'In what year was Rizal born in Calamba?',
       'In which city did Rizal write Noli Me Tangere?',
     ]);
@@ -212,7 +212,7 @@ void main() {
     ]);
     final rt = FakeLlmRuntime([first, again, _goodWrong]);
     final set = await _engine(rt).generate(_notes);
-    expect(set.flashcards.map((c) => c.front), ['Calamba', 'Berlin', 'Bagumbayan']);
+    expect(set.flashcards.map((c) => c.back), ['Calamba', 'Berlin', 'Bagumbayan']);
     expect(rt.prompts[1], contains('1. Rizal was executed at Bagumbayan in 1896.'));
     expect(rt.prompts[1], isNot(contains('Calamba')));
   });
@@ -223,7 +223,7 @@ void main() {
       ['Where was Rizal executed?', 'Paris'], // made up
     ]);
     final set = await _engine(FakeLlmRuntime([qa, 'x', 'x', 'x'])).generate(_notes);
-    expect(set.flashcards.map((c) => c.front), ['Calamba']);
+    expect(set.flashcards.map((c) => c.back), ['Calamba']);
   });
 
   test('vague topic labels and placeholders are dropped', () async {
@@ -233,7 +233,7 @@ void main() {
       ['In which town was Rizal born?', 'Calamba'],
     ]);
     final set = await _engine(FakeLlmRuntime([qa, 'x', 'x', 'x'])).generate(_notes);
-    expect(set.flashcards.map((c) => c.back), ['In which town was Rizal born?']);
+    expect(set.flashcards.map((c) => c.front), ['In which town was Rizal born?']);
   });
 
   test('retries malformed output, then fails after 3 bad attempts', () async {
@@ -374,7 +374,7 @@ void main() {
       ['What are the three key principles that contribute to society?', '1. Contribute to society and to human well-being 2. Avoid harm']
     ]);
     final set = await _engine(FakeLlmRuntime([qa]), maxChunks: 1).generate(notes);
-    expect(set.flashcards.single.front,
+    expect(set.flashcards.single.back,
         '1. Contribute to society and to human well-being\n2. Avoid harm\n3. Be honest and trustworthy');
     expect(set.questions, isEmpty); // a list is for the card, not multiple choice
   });
@@ -397,9 +397,9 @@ void main() {
     ]);
     final set = await _engine(FakeLlmRuntime([qa]), maxChunks: 1).generate(notes);
     // the list is one card under its own title; the model's vague card is not kept beside it
-    expect(set.flashcards.where((c) => c.back.contains('main principles')), isEmpty);
-    final card = set.flashcards.firstWhere((c) => c.back == 'What are the General Ethical Principles?');
-    expect(card.front,
+    expect(set.flashcards.where((c) => c.front.contains('main principles')), isEmpty);
+    final card = set.flashcards.firstWhere((c) => c.front == 'What are the General Ethical Principles?');
+    expect(card.back,
         '1. Contribute to society and to human well-being\n2. Avoid harm\n3. Be honest and trustworthy\n4. Respect privacy');
   });
 
@@ -421,9 +421,9 @@ void main() {
       ['How many principles does the IEEE Code of Ethics comprise?', '10 principles'],
     ]);
     final set = await _engine(FakeLlmRuntime([qa, qa, qa, 'x']), maxChunks: 1).generate(notes);
-    final backs = set.flashcards.map((c) => c.back).toList();
-    expect(backs.any((f) => f.contains('first principle')), isFalse);
-    expect(backs, contains('How many principles does the IEEE Code of Ethics comprise?'));
+    final fronts = set.flashcards.map((c) => c.front).toList();
+    expect(fronts.any((f) => f.contains('first principle')), isFalse);
+    expect(fronts, contains('How many principles does the IEEE Code of Ethics comprise?'));
   });
 
   test('titled lists give "which belongs under" questions with points from other lists as wrong choices', () async {
@@ -431,7 +431,7 @@ void main() {
         'Professional Leadership Principles\n- Manage personnel and resources well\n- Support policies that reflect the Code\n- Create opportunities for members to grow\n'
         'Grades of Membership\n- Associate member grade\n- Senior member grade\n- Honorary member grade\n';
     final set = await _engine(FakeLlmRuntime(['x', 'x', 'x']), maxChunks: 1).generate(notes);
-    expect(set.flashcards.map((c) => c.back),
+    expect(set.flashcards.map((c) => c.front),
         containsAll([
           'What are the General Ethical Principles?',
           'What are the Professional Leadership Principles?',
@@ -455,7 +455,7 @@ void main() {
     test('a card is kept when the model reads the same answer out of the notes', () async {
       final rt = FakeLlmRuntime([qa, '{"answer":"Calamba"}', 'x']);
       final set = await reading(rt).generate(_notes);
-      expect(set.flashcards.where((c) => c.front == 'Calamba'), hasLength(1));
+      expect(set.flashcards.where((c) => c.back == 'Calamba'), hasLength(1));
       expect(rt.prompts.where((p) => p.contains('PASSAGE:')), hasLength(1));
     });
 
@@ -474,7 +474,7 @@ void main() {
     test('with no time left the cheap checks decide and the model is not asked', () async {
       final rt = FakeLlmRuntime([qa, 'x']);
       final set = await reading(rt, budget: Duration.zero).generate(_notes);
-      expect(set.flashcards.where((c) => c.front == 'Calamba'), hasLength(1));
+      expect(set.flashcards.where((c) => c.back == 'Calamba'), hasLength(1));
       expect(rt.prompts.where((p) => p.contains('PASSAGE:')), isEmpty);
     });
 
