@@ -8,6 +8,7 @@ class StudySets extends Table {
   TextColumn get sourceType => text().withDefault(const Constant('text'))(); // image | pdf | docx | text
   TextColumn get sourceText => text().withDefault(const Constant(''))();
   TextColumn get sourcePaths => text().withDefault(const Constant('[]'))(); // JSON list
+  TextColumn get summary => text().withDefault(const Constant(''))(); // JSON lesson, '' = none yet
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -110,18 +111,34 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.createTable(readers);
-            await m.createTable(stories);
-            await m.createTable(readingAttempts);
+          // The reading tables, the words-a-minute column, the saved words and the
+          // lesson column were added by different people, some at the same version
+          // number, so a database of any age has some of them and not others.
+          // Each step checks what is already there.
+          Future<bool> hasTable(String name) async => (await customSelect(
+                  "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+                  variables: [Variable.withString(name)])
+              .get())
+              .isNotEmpty;
+          Future<bool> hasColumn(String table, String column) async =>
+              (await customSelect('PRAGMA table_info($table)').get())
+                  .any((r) => r.read<String>('name') == column);
+
+          if (!await hasTable('readers')) await m.createTable(readers);
+          if (!await hasTable('stories')) await m.createTable(stories);
+          if (!await hasTable('reading_attempts')) await m.createTable(readingAttempts);
+          if (!await hasColumn('reading_attempts', 'wpm')) {
+            await m.addColumn(readingAttempts, readingAttempts.wpm);
           }
-          if (from == 2) await m.addColumn(readingAttempts, readingAttempts.wpm); // v1 just made the table with it
-          if (from < 3) await m.createTable(savedWords);
+          if (!await hasTable('saved_words')) await m.createTable(savedWords);
+          if (!await hasColumn('study_sets', 'summary')) {
+            await m.addColumn(studySets, studySets.summary);
+          }
         },
         beforeOpen: (_) => customStatement('PRAGMA foreign_keys = ON'),
       );
