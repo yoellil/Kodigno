@@ -226,18 +226,27 @@ class _SourceTile extends StatelessWidget {
 }
 
 /// Wires the body to the controller and runs the generate -> detail flow.
-class AddSourceScreen extends StatelessWidget {
+class AddSourceScreen extends StatefulWidget {
   const AddSourceScreen({super.key, required this.repo, required this.reader});
   final StudyRepository repo;
   final SourceReader reader;
 
   @override
+  State<AddSourceScreen> createState() => _AddSourceScreenState();
+}
+
+class _AddSourceScreenState extends State<AddSourceScreen> {
+  int _round = 0; // a new body per finished set, so the old file and text are cleared
+
+  @override
   Widget build(BuildContext context) {
     final c = context.watch<AppController>();
+    final repo = widget.repo;
     return Column(children: [
       Expanded(
         child: AddSourceBody(
-          reader: reader,
+          key: ValueKey(_round),
+          reader: widget.reader,
           generating: c.generating,
           onGenerate: (text, type, path) async {
             final nav = Navigator.of(context);
@@ -251,6 +260,7 @@ class AddSourceScreen extends StatelessWidget {
             );
             nav.pop(); // generating screen
             if (id != null) {
+              if (mounted) setState(() => _round++);
               nav.push(MaterialPageRoute(
                   builder: (_) => SetDetailScreen(repo: repo, setId: id)));
             }

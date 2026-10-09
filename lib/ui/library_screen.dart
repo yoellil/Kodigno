@@ -397,7 +397,7 @@ class _UpNextRow extends StatelessWidget {
       );
 }
 
-/// Dark card: this week's count, streak, sets, and a create button.
+/// Dark card: this week's count, sets, and a create button.
 class _StatsCard extends StatelessWidget {
   const _StatsCard({required this.stats, required this.onCreate});
   final LibraryStats stats;
@@ -425,9 +425,6 @@ class _StatsCard extends StatelessWidget {
         CountUp(value: stats.answeredThisWeek, style: display(64, color: fg)),
         const SizedBox(height: 16),
         Row(children: [
-          _Stat(icon: _Flame(active: stats.streakDays > 0), label: 'Streak',
-              value: '${stats.streakDays} ${stats.streakDays == 1 ? 'day' : 'days'}'),
-          const SizedBox(width: 10),
           _Stat(
               icon: Icon(Icons.collections_bookmark_outlined, size: 18, color: muted),
               label: 'Sets',
@@ -530,16 +527,3 @@ class _Skeleton extends StatelessWidget {
   }
 }
 
-class _Flame extends StatelessWidget {
-  const _Flame({required this.active});
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final icon = Icon(Icons.local_fire_department,
-        size: 18, color: active ? const Color(0xFFFF6A2B) : Colors.white54);
-    if (!active || reduceMotion(context)) return icon;
-    return icon.animate().scale(
-        begin: const Offset(0.4, 0.4), duration: 700.ms, curve: Curves.elasticOut);
-  }
-}

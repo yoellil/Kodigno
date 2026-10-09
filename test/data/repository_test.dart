@@ -227,7 +227,6 @@ void main() {
     expect(lib.lastPercent[b], 25);
     expect(lib.stats.sets, 2);
     expect(lib.stats.answeredThisWeek, 9); // 5 + 4
-    expect(lib.stats.streakDays, 2);
   });
 
   test('watchLibrary emits current data', () async {

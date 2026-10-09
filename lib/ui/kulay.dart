@@ -434,7 +434,7 @@ class _Landing extends StatelessWidget {
               SizedBox(
                 width: 380,
                 child: Text(
-                  'Stories at your reading color, written by the AI on this computer. No internet needed.',
+                  'Stories at your reading color, written by AI. It works without internet too.',
                   style: body(16, color: kSoft),
                 ),
               ),
@@ -622,12 +622,12 @@ class _BackPill extends StatelessWidget {
           customBorder: const StadiumBorder(),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 22, 12),
+            padding: const EdgeInsets.fromLTRB(22, 12, 16, 12),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.arrow_back_rounded, size: 18, color: Colors.white),
-              const SizedBox(width: 8),
-              Text('Back to Kodigno',
+              Text('Go to Kodigno',
                   style: body(14, weight: FontWeight.w700, color: Colors.white)),
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
             ]),
           ),
         ),

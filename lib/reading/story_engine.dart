@@ -203,6 +203,9 @@ class StoryEngine {
   /// Drafts written before giving up (the caller then falls back to a saved story).
   int maxDrafts;
   String modelName;
+
+  /// Asked when a story is logged, so the model that really answered is named.
+  String Function()? modelOf;
   final math.Random _rng;
   final line = CallLine();
   final _wordCache = <String, ({String meaning, String? synonym})>{};
@@ -504,7 +507,7 @@ class StoryEngine {
           'rewritten': qs.rewritten,
           'dropped': qs.dropped,
           'seconds': watch.elapsed.inSeconds,
-          'model': modelName,
+          'model': modelOf?.call() ?? modelName,
         });
       }
       if (round == 1) step(5, 'Only ${qs.questions.length} good questions. Writing a new story.');
@@ -549,7 +552,7 @@ class StoryEngine {
       'rewritten': qs.rewritten,
       'dropped': qs.dropped,
       'seconds': watch.elapsed.inSeconds,
-      'model': modelName,
+      'model': modelOf?.call() ?? modelName,
     });
   }
 

@@ -12,10 +12,10 @@ void main() {
     await tester.pump(const Duration(seconds: 3)); // intro
   }
 
-  testWidgets('clicking the brain blooms color, then opens Kodigno once', (tester) async {
+  testWidgets('clicking the brain blooms color, then opens Kulay once', (tester) async {
     var opened = 0;
     await pumpHome(tester, onOpen: () => opened++);
-    expect(find.text('Kodigno'), findsOneWidget);
+    expect(find.text('Kulay'), findsOneWidget);
 
     await tester.tapAt(const Offset(640, 340));
     await tester.tapAt(const Offset(600, 360)); // second click is ignored

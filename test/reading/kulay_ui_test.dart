@@ -48,7 +48,7 @@ void main() {
     var back = 0;
     await pumpKulay(t, onBack: () => back++);
     expect(find.text('Kulay'), findsOneWidget);
-    await t.tap(find.text('Back to Kodigno'));
+    await t.tap(find.text('Go to Kodigno'));
     expect(back, 1);
     expect(t.takeException(), isNull);
   });

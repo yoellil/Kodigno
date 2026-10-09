@@ -5,12 +5,10 @@ import 'package:drift/drift.dart';
 import '../domain/models.dart';
 import '../domain/summary.dart';
 import 'database.dart';
-import 'stats.dart';
 
 class LibraryStats {
-  const LibraryStats(
-      {required this.sets, required this.answeredThisWeek, required this.streakDays});
-  final int sets, answeredThisWeek, streakDays;
+  const LibraryStats({required this.sets, required this.answeredThisWeek});
+  final int sets, answeredThisWeek;
 }
 
 class LibraryData {
@@ -79,7 +77,6 @@ class StudyRepository {
     for (final a in attempts) {
       if (a.total > 0) last[a.studySetId] = (a.score * 100 / a.total).round();
     }
-    final answers = await db.select(db.reviewLog).get(); // practice counts toward the streak too
     final weekAgo = now.subtract(const Duration(days: 7));
     final answered = attempts
         .where((a) => a.takenAt.isAfter(weekAgo))
@@ -90,7 +87,6 @@ class StudyRepository {
       LibraryStats(
         sets: sets.length,
         answeredThisWeek: answered,
-        streakDays: computeStreak([...attempts.map((a) => a.takenAt), ...answers.map((a) => a.at)], now),
       ),
     );
   }

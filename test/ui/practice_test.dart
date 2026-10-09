@@ -211,17 +211,6 @@ void main() {
       expect(find.text('practice complete'), findsNothing);
     });
 
-    testWidgets('the streak counts today after a session', (t) async {
-      final e = await _env(t);
-      await _save(t, e, 'Module 3', _oneCard);
-      await _show(t, PracticeScreen(repo: e.repo, reviews: e.reviews));
-      await t.tap(find.text('Show answer'));
-      await t.pump(const Duration(milliseconds: 500));
-      await t.tap(find.text('Got it'));
-      await settle(t);
-      expect(find.text('1 day'), findsOneWidget);
-    });
-
     testWidgets('a card from a PDF shows where its answer comes from', (t) async {
       final e = await _env(t);
       await _save(t, e, 'Module 3', const GeneratedSet([], [

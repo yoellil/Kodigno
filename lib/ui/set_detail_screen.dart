@@ -85,7 +85,7 @@ class _SetDetailScreenState extends State<SetDetailScreen> {
                     const SizedBox(width: 14),
                     Expanded(
                       child: _Tile(Icons.style_outlined, K.pink, 'Flashcards',
-                          d.flashcards.isEmpty ? 'Add your own' : '${d.flashcards.length} cards',
+                          d.flashcards.isEmpty ? 'Add your own' : '${d.flashcards.length} ${d.flashcards.length == 1 ? 'card' : 'cards'}',
                           onTap: () => push(FlashcardsScreen(repo: repo, setId: setId)))
                           .enter(context, index: 3),
                     ),
@@ -94,7 +94,7 @@ class _SetDetailScreenState extends State<SetDetailScreen> {
                   Row(children: [
                     Expanded(
                       child: _Tile(Icons.quiz_outlined, K.lavender, 'Quiz',
-                          '${d.questions.length} questions',
+                          '${d.questions.length} ${d.questions.length == 1 ? 'question' : 'questions'}',
                           onTap: hasQuiz ? () => push(QuizScreen(repo: repo, setId: setId)) : null)
                           .enter(context, index: 4),
                     ),

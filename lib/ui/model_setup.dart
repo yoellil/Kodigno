@@ -21,7 +21,9 @@ class ModelSetupPanel extends StatelessWidget {
       Text(heading, style: display(30)),
       const SizedBox(height: 12),
       Text(
-        'Kodigno downloads its AI model once. After that it works fully offline and your notes never leave this computer.',
+        c.groqKey.isEmpty
+            ? 'Kodigno downloads its AI model once. After that it works fully offline and your notes never leave this computer.'
+            : 'This model runs on this computer. It answers when there is no internet; online, Groq answers instead.',
         style: body(15, color: K.muted),
       ),
       const SizedBox(height: 20),
@@ -118,8 +120,59 @@ class SettingsScreen extends StatelessWidget {
           onSelectionChanged: (s) => c.setThemeMode(s.first),
         ),
         const SizedBox(height: 32),
+        const _GroqPanel(),
+        const SizedBox(height: 32),
         const ModelSetupPanel(heading: 'AI model'),
       ],
     );
+  }
+}
+
+/// The Groq key: with it, Groq answers while online and the local model takes
+/// over when the connection is gone.
+class _GroqPanel extends StatefulWidget {
+  const _GroqPanel();
+  @override
+  State<_GroqPanel> createState() => _GroqPanelState();
+}
+
+class _GroqPanelState extends State<_GroqPanel> {
+  late final _key = TextEditingController(text: context.read<AppController>().groqKey);
+
+  @override
+  void dispose() {
+    _key.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.watch<AppController>();
+    final on = c.groqKey.isNotEmpty;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('Online AI (Groq)', style: display(30)),
+      const SizedBox(height: 12),
+      Text(
+        'With a Groq key, Groq answers while this computer is online and the local model takes over when it is not. '
+        'While online, your notes and questions are sent to Groq.',
+        style: body(15, color: K.muted),
+      ),
+      const SizedBox(height: 16),
+      Row(children: [
+        Expanded(
+          child: TextField(
+            controller: _key,
+            obscureText: true,
+            decoration: const InputDecoration(hintText: 'Groq API key (starts with gsk_)'),
+            onSubmitted: c.setGroqKey,
+          ),
+        ),
+        const SizedBox(width: 12),
+        FilledButton(onPressed: () => c.setGroqKey(_key.text), child: const Text('Save')),
+      ]),
+      const SizedBox(height: 8),
+      Text(on ? 'Online AI is on.' : 'Online AI is off. Everything stays on this computer.',
+          style: body(13, weight: FontWeight.w700)),
+    ]);
   }
 }
