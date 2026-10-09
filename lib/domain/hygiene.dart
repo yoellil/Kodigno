@@ -107,11 +107,14 @@ String _fixSquashedLine(String line) {
       .replaceAll(RegExp(r' {2,}'), ' ');
 }
 
-/// [answer] without a lead-in that only echoes the question's verb: for
-/// "What does the Code express?", "It expresses the conscience of the
-/// profession" becomes "The conscience of the profession". In a quiz that
-/// echo would mark the right choice.
+/// [answer] without a lead-in that only echoes the question: for "What does
+/// the Code express?", "It expresses the conscience of the profession" becomes
+/// "The conscience of the profession", and for "What is the CVE database?",
+/// "The CVE database is an example of a national database" becomes "An example
+/// of a national database". In a quiz that echo would mark the right choice.
 String withoutQuestionEcho(String answer, String question) {
+  final subject = _withoutEchoedSubject(answer, question);
+  if (subject != null) return subject;
   final m = RegExp(r'^(?:it|they|this|that|these|those)\s+([a-z]+)\s+(.+)$', caseSensitive: false)
       .firstMatch(answer.trim());
   if (m == null) return answer;
@@ -122,5 +125,30 @@ String withoutQuestionEcho(String answer, String question) {
       rest.split(RegExp(r'\s+')).length < 2) {
     return answer;
   }
+  return rest[0].toUpperCase() + rest.substring(1);
+}
+
+/// [answer] without its first words when they only name the question's subject
+/// (two or more words of the question that are not "the", "and"..., then at
+/// most its verb), or null.
+String? _withoutEchoedSubject(String answer, String question) {
+  final words = answer.trim().split(RegExp(r'\s+'));
+  final q = question.toLowerCase();
+  bool asked(String w) {
+    final t = w.toLowerCase().replaceAll(RegExp(r'[^a-z0-9-]'), '');
+    return t.isNotEmpty && RegExp(r'\b' '${RegExp.escape(t)}' r'\b').hasMatch(q);
+  }
+
+  var n = 0;
+  while (n < words.length && asked(words[n])) {
+    n++;
+  }
+  const small = {'the', 'and', 'are', 'was', 'were', 'for', 'with', 'from', 'that'};
+  if (words.take(n).where((w) => w.length >= 3 && !small.contains(w.toLowerCase())).length < 2) return null;
+  // Then the verb: "is", or the question's own ("enables" for "What does it enable?").
+  final verb = n < words.length ? words[n].toLowerCase().replaceFirst(RegExp(r'(?:es|s)$'), '') : '';
+  if (RegExp(r'^(?:i|are|was|were|ha|have)$').hasMatch(verb) || (verb.length >= 4 && q.contains(verb))) n++;
+  if (words.length - n < 3) return null;
+  final rest = words.skip(n).join(' ');
   return rest[0].toUpperCase() + rest.substring(1);
 }

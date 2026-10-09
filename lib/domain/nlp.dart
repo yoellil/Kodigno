@@ -210,6 +210,29 @@ List<String> condense(
 }) {
   final total = items.fold<int>(0, (n, s) => n + s.length + 1);
   if (total <= maxChars) return items;
+  final score = centrality(items, keyTerms: keyTerms, idf: idf);
+  final n = items.length;
+  final order = List.generate(n, (i) => i)..sort((a, b) => score[b].compareTo(score[a]));
+  final picked = <int>[];
+  var used = 0;
+  for (final i in order) {
+    if (used + items[i].length + 1 > maxChars) {
+      // Leftover room is not worth filling with a line that ranks lower.
+      if (picked.length >= 2) break;
+      continue;
+    }
+    picked.add(i);
+    used += items[i].length + 1;
+  }
+  if (picked.isEmpty) picked.add(order.first);
+  picked.sort();
+  return [for (final i in picked) items[i]];
+}
+
+/// How central each of [items] is, about 0 to 1.25 (TextRank over TF-IDF
+/// vectors, plus a small lift for items that carry one of [keyTerms]).
+List<double> centrality(List<String> items, {List<String> keyTerms = const [], Map<String, double>? idf}) {
+  if (items.isEmpty) return const [];
   final idfMap = idf ?? const <String, double>{};
   final vectors = [for (final it in items) _tfidf(it, idfMap)];
   final n = items.length;
@@ -235,26 +258,33 @@ List<String> condense(
 
   final best = rank.reduce(max);
   final lowered = [for (final it in items) it.toLowerCase()];
-  final score = [
+  return [
     for (var i = 0; i < n; i++)
       (best == 0 ? 0 : rank[i] / best) +
           0.25 * min(2, keyTerms.where((t) => lowered[i].contains(t)).length) / 2,
   ];
-  final order = List.generate(n, (i) => i)..sort((a, b) => score[b].compareTo(score[a]));
-  final picked = <int>[];
-  var used = 0;
-  for (final i in order) {
-    if (used + items[i].length + 1 > maxChars) {
-      // Leftover room is not worth filling with a line that ranks lower.
-      if (picked.length >= 2) break;
-      continue;
-    }
-    picked.add(i);
-    used += items[i].length + 1;
-  }
-  if (picked.isEmpty) picked.add(order.first);
-  picked.sort();
-  return [for (final i in picked) items[i]];
+}
+
+/// True if [given] (the model's own answer) says what [key] says: it has every
+/// number of the key, and one holds the other or it has at least half of the
+/// key's meaningful words. "His mother" is not "Leon Monroy".
+bool sameAnswer(String given, String key) {
+  String norm(String s) => s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim();
+  final g = norm(given), k = norm(key);
+  if (g.isEmpty || k.isEmpty) return false;
+  if (!RegExp(r'\d+').allMatches(k).every((n) => RegExp('\\b${n[0]}\\b').hasMatch(g))) return false;
+  final mine = terms(given).toSet(), keys = terms(key).toSet();
+  if (g == k || ((' $g '.contains(' $k ') || ' $k '.contains(' $g ')) && mine.isNotEmpty)) return true;
+  return keys.isNotEmpty && mine.intersection(keys).length * 2 >= keys.length;
+}
+
+/// The [k] of [items] most alike [query] in vocabulary (TF-IDF cosine), best
+/// first. Only items that share something with it. The passages a fact check reads.
+List<String> retrieve(String query, List<String> items, Map<String, double> idf, {int k = 4}) {
+  final q = _tfidf(query, idf);
+  final scored = [for (final it in items) (it, _cosine(q, _tfidf(it, idf)))]
+    ..sort((a, b) => b.$2.compareTo(a.$2));
+  return [for (final (it, s) in scored.take(k)) if (s > 0) it];
 }
 
 final _negation = RegExp(

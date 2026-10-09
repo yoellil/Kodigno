@@ -121,7 +121,8 @@ bool isVague(String s) =>
             caseSensitive: false)
         .hasMatch(s) ||
     // A question that points at something the student cannot see.
-    RegExp(r'\b(?:this|these|the)\s+(?:text|passage|document|slide|lecture|section|chapter|reading|notes)\b|\b(?:the following|the above|mentioned above|as described|in the notes)\b',
+    RegExp(r'\b(?:this|these|the)\s+(?:text|passage|document|slide|lecture|section|chapter|reading|notes)\b|\b(?:the following|the above|mentioned above|as described|in the notes)\b|'
+            r'\b(?:facts?|statements?)\s+\d+\b|\b(?:in|from|according to) the (?:given )?fact\b',
             caseSensitive: false)
         .hasMatch(s);
 
@@ -135,35 +136,7 @@ bool answerInNotes(String answer, String source) {
   return w.isNotEmpty && isGrounded(a, source, minRatio: 0.6);
 }
 
-/// Pass 1: pull the key facts out of a section of notes.
-String buildFactsPrompt(String notes, {required int facts}) => '''
-You are a study assistant. Read the notes below and list up to $facts key facts a student should remember.
-Rules:
-- Each fact is one complete sentence that states a specific name, date, number, definition or reason from the notes.
-- Use only the notes. Never invent facts.
-- Skip headings, page footers, course admin and vague statements.
-- Skip references, citations, bibliography entries, links and author lists.
-- Keep the exact names, terms and numbers of the notes. Never combine two separate things (a date or event, and a rule) into one fact.
-Reply with JSON only: an object with one key "facts", a list of the fact sentences.
-
-NOTES:
-$notes
-''';
-
-Map<String, Object?> factsSchema(int facts) => {
-      'type': 'object',
-      'properties': {
-        'facts': {
-          'type': 'array',
-          'minItems': 1,
-          'maxItems': facts,
-          'items': {'type': 'string', 'minLength': 25, 'maxLength': 400},
-        },
-      },
-      'required': ['facts'],
-    };
-
-/// Pass 2: one study question and short answer per fact.
+/// One study question and short answer per fact.
 String buildQaPrompt(List<String> facts) => '''
 For each numbered fact below, write one study question that the fact answers, and its short answer (1 to 8 words: a name, date, number or term taken from the fact). If the question asks for several things ("the three principles"), the answer lists every one, numbered like "1. ... 2. ... 3. ...", each in a few words.
 Rules:
@@ -230,7 +203,7 @@ String? unleak(String question, String answer) {
   return q;
 }
 
-/// Pass 3: believable wrong answers for each question, for quiz choices.
+/// Believable wrong answers for each question, for quiz choices.
 String buildWrongPrompt(List<QaItem> items) => '''
 For each numbered question below, write 3 wrong answers for a multiple-choice quiz.
 Rules:
@@ -268,6 +241,28 @@ Map<String, Object?> wrongSchema(int items) => {
         },
       },
       'required': ['items'],
+    };
+
+/// Fact check: [question] answered again from the notes [passages] most like
+/// it, with no choices to lean on. A question whose answer comes back
+/// different, or "none", is not kept.
+String buildCheckPrompt(String question, List<String> passages) => '''
+Answer the question using only the notes below. Reply with the shortest answer, copied word for word from the notes. If the notes do not answer it, reply "none".
+
+NOTES:
+${passages.join('\n')}
+
+QUESTION: $question
+
+Reply with JSON only: an object with one key "answer".
+''';
+
+Map<String, Object?> checkSchema() => {
+      'type': 'object',
+      'properties': {
+        'answer': {'type': 'string', 'minLength': 1, 'maxLength': 200},
+      },
+      'required': ['answer'],
     };
 
 /// The fact in [facts] that shares the most longer words with [text]

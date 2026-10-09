@@ -12,12 +12,15 @@ final _sentenceEnd = RegExp(r'[.!?:]$');
 
 /// The notes' lines joined back into paragraphs. A bullet starts a new one, and
 /// so does a capital letter after a line that ended a sentence or was short
-/// (a slide title). Other lines are a sentence wrapped onto the next line.
-/// [bullet] says whether the paragraph began with a bullet.
-List<({String text, bool bullet})> _paragraphs(String text) {
-  final out = <({String text, bool bullet})>[];
+/// (a slide title), unless the PDF reader left a space at the end of the line
+/// above, which it does when a line wraps ("Travels in the Philippines by " /
+/// "Dr. Feodor Jagor"). Other lines are a sentence wrapped onto the next line.
+/// [bullet] says whether the paragraph began with a bullet, [newPage] whether
+/// an empty line (a new page) came before it.
+List<({String text, bool bullet, bool newPage})> _paragraphs(String text) {
+  final out = <({String text, bool bullet, bool newPage})>[];
   var cur = '';
-  var curBullet = false;
+  var curBullet = false, curNewPage = false, newPage = false, wraps = false;
   var last = '';
   for (final raw in text.split('\n')) {
     final l = raw.trim();
@@ -25,19 +28,27 @@ List<({String text, bool bullet})> _paragraphs(String text) {
     final starts = l.isEmpty ||
         isBullet ||
         _yearLine.hasMatch(l) ||
-        (_capital.hasMatch(l) && ((_sentenceEnd.hasMatch(last) && !_abbrevEnd.hasMatch(last)) || last.split(' ').length <= 6));
+        (!wraps &&
+            _capital.hasMatch(l) &&
+            ((_sentenceEnd.hasMatch(last) && !_abbrevEnd.hasMatch(last)) || last.split(' ').length <= 6));
     if (starts && cur.isNotEmpty) {
-      out.add((text: cur, bullet: curBullet));
+      out.add((text: cur, bullet: curBullet, newPage: curNewPage));
       cur = '';
     }
+    if (l.isEmpty) newPage = true;
     final body = l.replaceFirst(_bullet, '');
     if (body.isNotEmpty) {
-      if (cur.isEmpty) curBullet = isBullet;
+      if (cur.isEmpty) {
+        curBullet = isBullet;
+        curNewPage = newPage;
+        newPage = false;
+      }
       cur = cur.isEmpty ? body : '$cur $body';
     }
+    wraps = raw.endsWith(' ');
     last = l;
   }
-  if (cur.isNotEmpty) out.add((text: cur, bullet: curBullet));
+  if (cur.isNotEmpty) out.add((text: cur, bullet: curBullet, newPage: curNewPage));
   return out;
 }
 
@@ -50,7 +61,7 @@ final _patterns = [
 
 /// Words of statements and headings, never part of a term.
 const _notTerms = {
-  'there', 'this', 'these', 'those', 'it', 'they', 'each', 'many', 'more', 'most',
+  'there', 'this', 'these', 'those', 'it', 'they', 'his', 'her', 'each', 'many', 'more', 'most',
   'some', 'such', 'other', 'another', 'we', 'you', 'he', 'she', 'our', 'their', 'its',
   'chapter', 'section', 'module', 'lesson', 'part', 'figure', 'table', 'slide', 'page',
   'click', 'note',
@@ -99,7 +110,8 @@ List<Definition> extractDefinitions(String notes, {bool headingCards = true}) {
     // Bullets that define something themselves are left to their own card.
     if (d == null && headingCards && !p.bullet && _isHeading(p.text)) {
       final bullets = <String>[];
-      for (var j = i + 1; j < paras.length && paras[j].bullet; j++) {
+      // Only the bullets on the heading's own page.
+      for (var j = i + 1; j < paras.length && paras[j].bullet && !paras[j].newPage; j++) {
         if (fromPatterns(paras[j].text) != null) break; // a section title, not a term
         bullets.add(paras[j].text);
       }

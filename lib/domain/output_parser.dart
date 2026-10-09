@@ -19,17 +19,7 @@ final _placeholder = RegExp(r'<[^<>]{2,}>');
 
 String _text(Object? v) => v is String ? v.replaceAll(_placeholder, '').trim() : '';
 
-/// Key facts from the first pass. Throws [FormatException] if none are usable.
-List<String> parseFacts(String raw) {
-  final facts = [
-    for (final f in (_jsonObject(raw)['facts'] as List? ?? const []))
-      if (_text(f).isNotEmpty) _text(f),
-  ];
-  if (facts.isEmpty) throw const FormatException('no facts');
-  return facts;
-}
-
-/// Question/answer pairs from the second pass. Throws [FormatException] if none are usable.
+/// Question/answer pairs, one per fact. Throws [FormatException] if none are usable.
 List<QaItem> parseQa(String raw) {
   final items = <QaItem>[];
   for (final i in (_jsonObject(raw)['items'] as List? ?? const [])) {
@@ -42,7 +32,15 @@ List<QaItem> parseQa(String raw) {
   return items;
 }
 
-/// Wrong answers from the third pass: one list per question, in order (empty
+/// The fact check's own answer, or null for "none".
+/// Throws [FormatException] if there is no answer.
+String? parseCheck(String raw) {
+  final a = _text(_jsonObject(raw)['answer']);
+  if (a.isEmpty) throw const FormatException('no answer');
+  return RegExp(r'^none\.?$', caseSensitive: false).hasMatch(a) ? null : a;
+}
+
+/// Wrong answers for quiz choices: one list per question, in order (empty
 /// where the model gave none). Throws [FormatException] if there are no items.
 List<List<String>> parseWrong(String raw) {
   final items = _jsonObject(raw)['items'] as List? ?? const [];
