@@ -42,11 +42,6 @@ class ModelSetupPanel extends StatelessWidget {
       if (tooBig)
         Text('Larger than recommended for this computer; it may be slow or run out of memory.',
             style: body(13, color: Colors.orange.shade900)),
-      if (tier.id == 'low')
-        Text(
-            'Basic is small and fast, but it can write wrong or odd questions. '
-            'Pick Standard or High quality for better results if your computer can run it.',
-            style: body(13, color: K.muted)),
       if (c.storageTooLow)
         Text('Not enough free disk space for this model.',
             style: body(13, color: Colors.red.shade700)),

@@ -61,7 +61,7 @@ Future<void> main() async {
     repo: ReadingRepository(db),
     engine: StoryEngine(controller.runtime, book: WordBook()),
     prefs: prefs,
-    tierInfo: () => (basic: controller.tier?.id == 'low', model: controller.tier?.model ?? 'the local AI'),
+    modelName: () => controller.tier?.model ?? 'the local AI',
   );
   unawaited(reading.open(starters: await rootBundle.loadString('assets/kulay/starter_stories.json')));
 

@@ -200,7 +200,7 @@ class StoryEngine {
   /// The model server. Asked for on every call, so a tier change is picked up.
   final Future<LlmRuntime> Function() runtime;
 
-  /// 4 drafts on Standard and High; 3 on Basic, which then falls back to a saved story.
+  /// Drafts written before giving up (the caller then falls back to a saved story).
   int maxDrafts;
   String modelName;
   final math.Random _rng;

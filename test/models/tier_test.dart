@@ -36,7 +36,9 @@ void main() {
 
   test('bundled tier config has real checksums', () {
     final real = TierTable.fromJson(File('assets/model_tiers.json').readAsStringSync());
-    expect(real.tiers.map((t) => t.id), ['low', 'standard', 'high']);
+    expect(real.tiers.map((t) => t.id), ['standard', 'high']);
+    expect(real.pick(2048).id, 'standard'); // Standard is the default whatever the RAM
+    expect(real.pick(32000).id, 'standard');
     for (final t in real.tiers) {
       expect(RegExp(r'^[0-9a-f]{64}$').hasMatch(t.sha256), isTrue, reason: t.id);
     }
