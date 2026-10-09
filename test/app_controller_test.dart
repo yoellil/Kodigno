@@ -7,11 +7,13 @@ import 'package:kodigno/app_controller.dart';
 import 'package:kodigno/data/database.dart';
 import 'package:kodigno/data/repository.dart';
 import 'package:kodigno/domain/models.dart';
+import 'package:kodigno/domain/source_ref.dart';
 import 'package:kodigno/domain/summary.dart';
 import 'package:kodigno/models/device_profiler.dart';
 import 'package:kodigno/models/model_downloader.dart';
 import 'package:kodigno/models/model_manager.dart';
 import 'package:kodigno/models/tier.dart';
+import 'package:kodigno/study/teach_judge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _json = '''
@@ -38,10 +40,21 @@ class _OkDownloader extends ModelDownloader {
 }
 
 class _Engine implements AiEngine {
-  _Engine(this.behavior, [this.summary, this.onGenerate]);
+  _Engine(this.behavior, [this.summary, this.onGenerate, this.conceptsFn, this.judgeFn]);
   final Future<GeneratedSet> Function(void Function(double)? onProgress) behavior;
   final Future<LessonSummary> Function(void Function(double)? onProgress)? summary;
   final void Function(String notes, String? verifyIn)? onGenerate;
+  final Future<List<String>> Function(String slideText, String? topic)? conceptsFn;
+  final Future<TeachBackJudgement> Function(List<String> concepts, String answer)? judgeFn;
+
+  @override
+  Future<List<String>> topicConcepts(String slideText, {String? topic}) =>
+      conceptsFn?.call(slideText, topic) ?? Future.value(const []);
+
+  @override
+  Future<TeachBackJudgement> judgeExplanation(
+          {required List<String> concepts, required String answer, required String slideText}) =>
+      judgeFn?.call(concepts, answer) ?? Future<TeachBackJudgement>.error(GenerationFailed());
   @override
   Future<GeneratedSet> generate(String notes,
           {String? verifyIn, void Function(double)? onProgress}) {
@@ -71,6 +84,8 @@ Future<AppController> _make({
   required Future<GeneratedSet> Function(void Function(double)? p) engine,
   Future<LessonSummary> Function(void Function(double)? p)? summary,
   void Function(String notes, String? verifyIn)? onGenerate,
+  Future<List<String>> Function(String slideText, String? topic)? concepts,
+  Future<TeachBackJudgement> Function(List<String> concepts, String answer)? judge,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final dir = await Directory.systemTemp.createTemp('ac');
@@ -82,7 +97,7 @@ Future<AppController> _make({
     profiler: _Profiler(ram, free),
     models: ModelManager(dir, _OkDownloader()),
     repo: StudyRepository(db),
-    engineFactory: (_, _) => _Engine(engine, summary, onGenerate),
+    engineFactory: (_, _) => _Engine(engine, summary, onGenerate, concepts, judge),
     prefs: await SharedPreferences.getInstance(),
   );
 }
@@ -270,5 +285,137 @@ void main() {
     final id = await c.generate(title: 'Bio', notes: 'cell text');
     expect(seen, [_lesson.toStudyText(), 'cell text']);
     expect((await c.repo.getSet(id!)).summary, isNotNull); // the lesson is kept
+  });
+
+  test('a PDF\'s pages are kept: the lesson, the cards and the questions each point at a page', () async {
+    final c = await _make(ram: 2000, engine: (_) async => _set);
+    await c.init();
+    await c.downloadModel();
+    final notes = '${pageMarker(2)}\nThe cell is where life begins. Cells are the units of life.\n\n'
+        '${pageMarker(6)}\nA question about b and the f card of the set.';
+    final id = await c.generate(title: 'Bio', notes: notes, sourceType: 'pdf', sourcePaths: ['a.pdf']);
+    final d = await c.repo.getSet(id!);
+    expect(d.set.sourceText, notes); // the markers stay, so the pages can be found again
+    final lessonRef = d.summary!.sourceOf('Cells are the units of life.')!;
+    expect(lessonRef.pages, contains(2));
+    expect(lessonRef.kind, isNot(SourceKind.unmatched));
+    expect(SourceRef.decode(d.flashcards.single.source), isNotNull);
+    expect(SourceRef.decode(d.questions.single.source), isNotNull);
+  });
+
+  test('notes without pages (a Word file, plain text) get no sources, and nothing breaks', () async {
+    final c = await _make(ram: 2000, engine: (_) async => _set);
+    await c.init();
+    await c.downloadModel();
+    final id = await c.generate(title: 'Bio', notes: 'cell text');
+    final d = await c.repo.getSet(id!);
+    expect(d.summary!.sources, isEmpty);
+    expect(d.flashcards.single.source, '');
+    expect(d.questions.single.source, '');
+  });
+
+  test('a lesson written again later also gets its sources', () async {
+    final c = await _make(ram: 2000, engine: (_) async => _set);
+    await c.init();
+    await c.downloadModel();
+    final lesson = await c.summarize('${pageMarker(4)}\nCells are the units of life, and they divide.');
+    expect(lesson.sourceOf('Cells are the units of life.')!.pages, [4]);
+  });
+
+  group('Teach-Back model', () {
+    const verdicts = TeachBackJudgement([ConceptVerdict(Verdict.yes, 'a quote of four words')], []);
+
+    test('is not available until the model is installed', () async {
+      final c = await _make(ram: 2000, engine: (_) async => _set, concepts: (_, _) async => ['One idea here is stated.', 'Another idea here is stated.']);
+      await c.init();
+      expect(c.available, isFalse);
+      expect(await c.concepts('slides'), isEmpty); // not asked at all
+      expect(await c.judge(concepts: const ['x'], answer: 'a', slideText: 's'), isNull);
+      await c.downloadModel();
+      expect(c.available, isTrue);
+    });
+
+    test('the smallest model writes the ideas but is not asked to judge; a bigger one does both', () async {
+      final low = await _make(ram: 2000, engine: (_) async => _set);
+      await low.init();
+      await low.downloadModel();
+      expect(low.tier!.id, 'low');
+      expect(low.available, isTrue);
+      expect(low.canJudge, isFalse);
+
+      final big = await _make(ram: 9000, engine: (_) async => _set);
+      await big.init();
+      await big.downloadModel();
+      expect(big.tier!.id, 'standard');
+      expect(big.canJudge, isTrue);
+    });
+
+    test('concepts and the judgement come from the engine, with the topic and the answer passed on', () async {
+      String? topic, answer;
+      final c = await _make(
+        ram: 9000,
+        engine: (_) async => _set,
+        concepts: (slides, t) async {
+          topic = t;
+          return ['A patent protects an invention for years.', 'A patent lets its owner stop others.'];
+        },
+        judge: (concepts, a) async {
+          answer = a;
+          return verdicts;
+        },
+      );
+      await c.init();
+      await c.downloadModel();
+      expect(await c.concepts('slides', topic: 'Patents'), hasLength(2));
+      expect(topic, 'Patents');
+      final j = await c.judge(concepts: const ['x'], answer: 'my words', slideText: 's');
+      expect(j!.concepts.single.verdict, Verdict.yes);
+      expect(answer, 'my words');
+    });
+
+    test('a model that fails gives no ideas and no judgement, and nothing is thrown', () async {
+      final c = await _make(
+        ram: 9000,
+        engine: (_) async => _set,
+        concepts: (_, _) async => throw StateError('boom'),
+        judge: (_, _) async => throw GenerationFailed(),
+      );
+      await c.init();
+      await c.downloadModel();
+      expect(await c.concepts('slides'), isEmpty);
+      expect(await c.judge(concepts: const ['x'], answer: 'a', slideText: 's'), isNull);
+    });
+
+    test('a model that cannot run is let go, and the next ask starts a fresh one', () async {
+      var made = 0;
+      var first = true;
+      final dir = await Directory.systemTemp.createTemp('ac2');
+      addTearDown(() => dir.delete(recursive: true));
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      SharedPreferences.setMockInitialValues({});
+      final c = AppController(
+        tiers: TierTable.fromJson(_json),
+        profiler: _Profiler(9000),
+        models: ModelManager(dir, _OkDownloader()),
+        repo: StudyRepository(db),
+        engineFactory: (_, _) {
+          made++;
+          return _Engine((_) async => _set, null, null, (_, _) async {
+            if (first) {
+              first = false;
+              throw ModelUnavailableException('out of memory');
+            }
+            return ['A patent protects an invention for years.', 'A patent lets its owner stop others.'];
+          });
+        },
+        prefs: await SharedPreferences.getInstance(),
+      );
+      await c.init();
+      await c.downloadModel();
+      expect(await c.concepts('slides'), isEmpty);
+      expect(await c.concepts('slides'), hasLength(2));
+      expect(made, 2);
+    });
   });
 }

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../data/repository.dart';
+import '../data/review_repository.dart';
 import 'anim.dart';
 import 'chat_screen.dart';
 import 'flashcards_screen.dart';
 import 'motion.dart';
+import 'practice_screen.dart';
 import 'quiz_screen.dart';
 import 'summary_screen.dart';
+import 'teach_back_screen.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -74,10 +77,21 @@ class SetDetailScreen extends StatelessWidget {
                           .enter(context, index: 5),
                     ),
                   ]),
+                  const SizedBox(height: 14),
+                  Row(children: [
+                    Expanded(
+                      child: _Tile(Icons.record_voice_over_outlined, K.pink, 'Teach back', 'Explain a topic',
+                          onTap: d.set.sourceText.trim().isEmpty
+                              ? null
+                              : () => push(TeachBackTopicsScreen(repo: repo, setId: setId, model: teachModelOf(context))))
+                          .enter(context, index: 6),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(child: SizedBox.shrink()),
+                  ]),
                   const SizedBox(height: 26),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: PillButton(
+                  Wrap(spacing: 12, runSpacing: 12, children: [
+                    PillButton(
                       label: 'Start studying',
                       icon: Icons.bolt,
                       onPressed: hasQuiz
@@ -86,7 +100,16 @@ class SetDetailScreen extends StatelessWidget {
                               ? () => push(FlashcardsScreen(repo: repo, setId: setId))
                               : null,
                     ),
-                  ).enter(context, index: 6),
+                    PillButton(
+                      label: 'Practice this set',
+                      icon: Icons.timer_outlined,
+                      dark: true,
+                      onPressed: hasQuiz || d.flashcards.isNotEmpty
+                          ? () => push(PracticeScreen(
+                              repo: repo, reviews: ReviewRepository(repo.db), minutes: 5, setId: setId))
+                          : null,
+                    ),
+                  ]).enter(context, index: 7),
                 ]),
               ),
             );

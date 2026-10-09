@@ -57,11 +57,12 @@ class StudyRepository {
               choices: jsonEncode(q.choices),
               answerIndex: q.answerIndex,
               explanation: Value(q.explanation),
+              source: Value(q.source?.encode() ?? ''),
             ));
       }
       for (final c in set.flashcards) {
         await db.into(db.flashcardRows).insert(FlashcardRowsCompanion.insert(
-            studySetId: id, front: c.front, back: c.back));
+            studySetId: id, front: c.front, back: c.back, source: Value(c.source?.encode() ?? '')));
       }
       return id;
     });
@@ -78,6 +79,7 @@ class StudyRepository {
     for (final a in attempts) {
       if (a.total > 0) last[a.studySetId] = (a.score * 100 / a.total).round();
     }
+    final answers = await db.select(db.reviewLog).get(); // practice counts toward the streak too
     final weekAgo = now.subtract(const Duration(days: 7));
     final answered = attempts
         .where((a) => a.takenAt.isAfter(weekAgo))
@@ -88,7 +90,7 @@ class StudyRepository {
       LibraryStats(
         sets: sets.length,
         answeredThisWeek: answered,
-        streakDays: computeStreak(attempts.map((a) => a.takenAt), now),
+        streakDays: computeStreak([...attempts.map((a) => a.takenAt), ...answers.map((a) => a.at)], now),
       ),
     );
   }

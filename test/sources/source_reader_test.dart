@@ -46,7 +46,7 @@ void main() {
   });
 
   test('image goes to OCR, pdf to extractor', () async {
-    expect(await reader.read('C:/x/NOTE.PNG'), 'ocr text');
+    expect(await reader.read('C:/x/NOTE.PNG'), '--- Page 1 ---\nocr text'); // the photo is page 1
     expect(ocr.calls, ['C:/x/NOTE.PNG']);
     expect(await reader.read('a.pdf'), 'pdf text');
   });

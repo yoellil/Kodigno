@@ -1,3 +1,6 @@
+import 'nlp.dart';
+import 'topics.dart';
+
 /// A term and its definition, taken word for word from the notes.
 typedef Definition = ({String term, String definition});
 
@@ -316,6 +319,56 @@ String shortenDefinition(String s, {int max = 130, bool early = false}) {
     head = head.replaceFirst(loose, '');
   }
   return '$head…';
+}
+
+final _url = RegExp(r'https?:|www\.|\.(?:com|org|net|edu|gov|ph|io)\b', caseSensitive: false);
+final _seam = RegExp(r'[a-z](?=[A-Z])');
+final _listNumber = RegExp(r'\b\d+\.\s+[A-Z]');
+
+/// Verbs a tip or instruction starts with ("Ask for feedback", "Try active
+/// listening"): a heading telling the student what to do, not a term.
+const _tipVerbs = {
+  'ask', 'learn', 'try', 'enroll', 'develop', 'deal', 'join', 'follow', 'consider', 'remember',
+  'avoid', 'ensure', 'keep', 'provide', 'listen', 'practice', 'check', 'choose', 'your',
+};
+
+/// [defs] without the lines that are not really terms, for quiz questions and
+/// term cards: course headings ("Intended Learning Outcomes"), tips ("Ask for
+/// feedback"), website names, fragments ("Here", "Law", "Your choices"), list
+/// numbers and sentences. A slide title stays a term only if its own bullet is
+/// about it ("Patents" followed by "A patent permits...", not "Current
+/// Intellectual Property Issues" followed by a bullet about plagiarism). A heading
+/// the PDF ran together is put right. [text] is the notes the terms came from.
+List<Definition> usableTerms(List<Definition> defs, {String text = ''}) {
+  final vocab = {
+    for (final m in RegExp(r'[A-Za-z]{3,}').allMatches(text)) m[0]!.toLowerCase(),
+  };
+  final headings = pageHeadingKeys(text);
+  final seen = <String>{};
+  final out = <Definition>[];
+  for (final d in defs) {
+    var term = d.term.trim();
+    if (_url.hasMatch(term)) continue;
+    if (_seam.allMatches(term).length >= 2 || RegExp(r'[A-Za-z]\(').hasMatch(term)) {
+      term = tidyHeading(term, vocab: vocab);
+    }
+    if (term.contains(':') || _listNumber.hasMatch(term) || RegExp(r'\s\d{4}$').hasMatch(term)) continue;
+    if (isCourseHeading(term)) continue;
+    final words = term.split(RegExp(r'\s+'));
+    if (words.length >= 2 && _tipVerbs.contains(words.first.toLowerCase())) continue;
+    if (words.first.toLowerCase() == 'your') continue;
+    final isAcronym = words.length == 1 && term == term.toUpperCase() && term.length >= 2;
+    if (words.length == 1 && term.length < 5 && !isAcronym) continue;
+    final key = headingKey(term);
+    // A slide title, or the end of one that wrapped onto two lines.
+    final isTitle = key.length >= 5 && headings.any((h) => h == key || h.endsWith(key));
+    if (isTitle && terms(term).toSet().intersection(terms(d.definition).toSet()).isEmpty) {
+      continue; // a slide title that its bullet does not describe
+    }
+    if (!seen.add(term.toLowerCase())) continue;
+    out.add((term: term, definition: d.definition));
+  }
+  return out;
 }
 
 /// [text] with [term], its long form and its short form in brackets

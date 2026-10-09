@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kodigno/ai/llama_server_runtime.dart';
 import 'package:kodigno/ai/llm_ai_engine.dart';
+import 'package:kodigno/domain/source_ref.dart';
 import 'package:kodigno/models/tier.dart';
 import 'package:kodigno/sources/pdf_text.dart';
 
@@ -74,6 +75,22 @@ void main() {
     print('summarized in ${clock.elapsed.inSeconds}s');
     // ignore: avoid_print
     print(lesson.toText());
+    // Where each piece of the lesson comes from, when the notes have page markers.
+    final pages = parsePages(notes);
+    if (pages.isNotEmpty) {
+      final traced = lesson.withSources(SourceLocator(pages));
+      final by = <String, int>{};
+      for (final r in traced.sources.values) {
+        by[r.kind.name] = (by[r.kind.name] ?? 0) + 1;
+      }
+      // ignore: avoid_print
+      print('\nsources over ${pages.length} pages: $by');
+      for (final e in traced.sources.entries.where((e) => e.value.kind == SourceKind.unmatched)) {
+        final text = e.key.replaceAll('\n', ' ');
+        // ignore: avoid_print
+        print('  FLAGGED (closest page ${e.value.pages}): ${text.substring(0, text.length.clamp(0, 120))}');
+      }
+    }
     expect(lesson.sections, isNotEmpty);
   },
       skip: (model == null || server == null) ? 'set MODEL_PATH and LLAMA_SERVER' : false,

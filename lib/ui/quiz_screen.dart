@@ -4,22 +4,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../data/repository.dart';
+import '../data/review_repository.dart';
 import '../domain/models.dart';
+import '../domain/source_ref.dart';
 import '../quiz/quiz_session.dart';
+import '../study/diagnosis.dart';
 import 'anim.dart';
+import 'diagnosis_line.dart';
 import 'motion.dart';
+import 'slide_tag.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
 typedef QuizFinished = void Function(
     int score, int total, int seconds, List<Map<String, Object>> results);
 
+int _never(int questionIndex, int chosen) => 0;
+
 class QuizBody extends StatefulWidget {
   const QuizBody(
-      {super.key, required this.title, required this.questions, required this.onFinished});
+      {super.key,
+      required this.title,
+      required this.questions,
+      required this.onFinished,
+      this.earlierPicks = _never});
   final String title;
   final List<QuizQuestion> questions;
   final QuizFinished onFinished;
+
+  /// How many times [chosen] was picked, wrongly, for question [questionIndex] in
+  /// quizzes and practice before this one.
+  final int Function(int questionIndex, int chosen) earlierPicks;
 
   @override
   State<QuizBody> createState() => _QuizBodyState();
@@ -58,6 +73,7 @@ class _QuizBodyState extends State<QuizBody> {
         results: _session.results,
         score: _session.score,
         onRetry: _restart,
+        earlierPicks: widget.earlierPicks,
       );
     }
     final total = widget.questions.length;
@@ -200,20 +216,40 @@ class ResultsView extends StatelessWidget {
       required this.questions,
       required this.results,
       required this.score,
-      required this.onRetry});
+      required this.onRetry,
+      this.earlierPicks = _never});
   final List<QuizQuestion> questions;
   final List<Map<String, Object>> results;
   final int score;
   final VoidCallback onRetry;
+  final int Function(int questionIndex, int chosen) earlierPicks;
+
+  /// Where the pick for question [i] came from, if the pages can say.
+  Diagnosis? _diagnosis(int i, PageIndex? pages) {
+    final chosen = results[i]['chosen'];
+    if (pages == null || chosen is! int) return null;
+    final q = questions[i];
+    return diagnose(
+      choices: q.choices,
+      answerIndex: q.answerIndex,
+      chosen: chosen,
+      pages: pages,
+      questionSource: q.source,
+      earlierPicks: earlierPicks(i, chosen),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final total = questions.length;
     final pct = total == 0 ? 0 : (score * 100 / total).round();
-    final missed = [
+    final missedAt = [
       for (var i = 0; i < total; i++)
-        if (results[i]['correct'] == false) questions[i]
+        if (results[i]['correct'] == false) i
     ];
+    final missed = [for (final i in missedAt) questions[i]];
+    final pages = SourceScope.maybeOf(context)?.pages;
+    final index = pages == null || pages.isEmpty ? null : PageIndex(pages);
     return Stack(children: [
       Center(
         child: ConstrainedBox(
@@ -247,6 +283,9 @@ class ResultsView extends StatelessWidget {
                     Text('Answer: ${missed[i].choices[missed[i].answerIndex]}', style: body(14)),
                     if (missed[i].explanation.isNotEmpty)
                       Text(missed[i].explanation, style: body(13, color: K.muted)),
+                    if (missed[i].source != null)
+                      Padding(padding: const EdgeInsets.only(top: 8), child: SlideTag(missed[i].source!)),
+                    DiagnosisLine(_diagnosis(missedAt[i], index)),
                   ]),
                 ).enter(context, index: 5 + i),
             ],
@@ -292,13 +331,17 @@ class QuizScreen extends StatelessWidget {
   final StudyRepository repo;
   final int setId;
 
+  Future<(StudySetDetail, Map<int, Map<int, int>>)> _load() async =>
+      (await repo.getSet(setId), await ReviewRepository(repo.db).wrongPickCounts(setId: setId));
+
   @override
   Widget build(BuildContext context) => PanelPage(
         child: FutureBuilder(
-          future: repo.getSet(setId),
+          future: _load(),
           builder: (context, snap) {
             if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-            final d = snap.data!;
+            final d = snap.data!.$1;
+            final picked = snap.data!.$2;
             final questions = [
               for (final r in d.questions)
                 QuizQuestion(
@@ -306,20 +349,30 @@ class QuizScreen extends StatelessWidget {
                   choices: List<String>.from(jsonDecode(r.choices) as List),
                   answerIndex: r.answerIndex,
                   explanation: r.explanation,
+                  source: SourceRef.decode(r.source),
                 )
             ];
             if (questions.isEmpty) {
               return const Center(child: Text('This set has no quiz questions.'));
             }
-            return QuizBody(
-              title: d.set.title,
-              questions: questions,
-              onFinished: (score, total, seconds, results) => repo.saveAttempt(
-                  setId: setId,
-                  score: score,
-                  total: total,
-                  durationSeconds: seconds,
-                  results: results),
+            return SourceScope.forSet(
+              d.set,
+              child: QuizBody(
+                title: d.set.title,
+                questions: questions,
+                earlierPicks: (qi, chosen) => picked[d.questions[qi].id]?[chosen] ?? 0,
+                onFinished: (score, total, seconds, results) async {
+                  await repo.saveAttempt(
+                      setId: setId,
+                      score: score,
+                      total: total,
+                      durationSeconds: seconds,
+                      results: results);
+                  // Each answer also goes in the practice history, with its question's id.
+                  await ReviewRepository(repo.db).recordQuiz(
+                      setId: setId, answers: quizAnswersFrom(results, [for (final q in d.questions) q.id]));
+                },
+              ),
             );
           },
         ),

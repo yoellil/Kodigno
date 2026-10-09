@@ -1,6 +1,7 @@
 import 'dart:math' show max;
 
 import 'nlp.dart';
+import 'source_ref.dart' show PageText;
 
 /// The pages of one topic, ready to be explained in one go.
 class SlideGroup {
@@ -116,6 +117,68 @@ final _aims = RegExp(
 
 /// Headings of the pages at the end that only list sources.
 final _sources = RegExp(r'^(?:references?|bibliography|sources?|credits?)$', caseSensitive: false);
+
+/// True for a heading about the course and not the subject: "Intended Learning
+/// Outcomes", "Module 3", "References".
+bool isCourseHeading(String heading) {
+  final h = heading.trim();
+  return _navigation.hasMatch(h) || _aims.hasMatch(h) || _sources.hasMatch(h);
+}
+
+/// What two headings are compared by: their letters and digits, lower case.
+String headingKey(String heading) => _key(heading);
+
+/// The headings of the pages of [notes] (pages are an empty line apart), tidied,
+/// as [headingKey]s. Notes with no headings give none.
+Set<String> pageHeadingKeys(String notes) {
+  final raw = <_Page>[];
+  for (final r in notes.replaceAll('\r', '').split(RegExp(r'\n[ \t]*\n'))) {
+    final lines = [
+      for (final l in r.split('\n'))
+        if (l.trim().isNotEmpty) _Line(l.trim(), l.endsWith(' ')),
+    ];
+    if (lines.isNotEmpty) raw.add(_splitPage(lines));
+  }
+  final vocab = {
+    for (final p in raw)
+      for (final l in [...p.lines.map((l) => l.text), ?p.heading])
+        for (final m in RegExp(r'[A-Za-z]{3,}').allMatches(l)) m[0]!.toLowerCase(),
+  };
+  return {
+    for (final p in raw)
+      if (p.heading != null) _key(tidyHeading(p.heading!, vocab: vocab)),
+  };
+}
+
+/// The heading each page falls under, by page number, as [headingKey]s: the
+/// page's own heading, or the one before it if it has none (a slide that carries
+/// on the last one). Pages before the first heading are left out.
+Map<int, String> headingKeyByPage(List<PageText> pages) {
+  final raw = <(int, _Page)>[];
+  for (final p in pages) {
+    final lines = [
+      for (final l in p.text.split('\n'))
+        if (l.trim().isNotEmpty) _Line(l.trim(), l.endsWith(' ')),
+    ];
+    if (lines.isNotEmpty) raw.add((p.number, _splitPage(lines)));
+  }
+  final vocab = {
+    for (final (_, p) in raw)
+      for (final l in [...p.lines.map((l) => l.text), ?p.heading])
+        for (final m in RegExp(r'[A-Za-z]{3,}').allMatches(l)) m[0]!.toLowerCase(),
+  };
+  final out = <int, String>{};
+  String? current;
+  for (final (number, p) in raw) {
+    if (p.heading != null) {
+      final h = tidyHeading(p.heading!, vocab: vocab);
+      // A page about the course ("Intended Learning Outcomes") starts no topic.
+      current = isCourseHeading(h) ? null : _key(h);
+    }
+    if (current != null) out[number] = current;
+  }
+  return out;
+}
 
 class _Line {
   _Line(this.text, this.wrapped);
