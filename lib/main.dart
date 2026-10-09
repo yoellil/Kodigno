@@ -11,6 +11,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'ai/groq_runtime.dart';
 import 'ai/llama_server_runtime.dart';
 import 'ai/llm_ai_engine.dart';
 import 'app_controller.dart';
@@ -45,22 +46,30 @@ Future<void> main() async {
   final tiers = TierTable.fromJson(await rootBundle.loadString('assets/model_tiers.json'));
   final db = AppDatabase(driftDatabase(name: 'kodigno'));
   final repo = StudyRepository(db);
+  final prefs = await SharedPreferences.getInstance();
 
+  OnlineFirstRuntime? online; // the running one, to name the model that answered
   final controller = AppController(
     tiers: tiers,
     profiler: WindowsDeviceProfiler(modelsDir),
     models: ModelManager(modelsDir, ModelDownloader()),
     repo: repo,
-    engineFactory: (tier, file) =>
-        LlmAiEngine(LlamaServerRuntime.bundled(file.path), tier, readBack: true),
-    prefs: await SharedPreferences.getInstance(),
+    engineFactory: (tier, file) => LlmAiEngine(
+        online = OnlineFirstRuntime(
+          local: LlamaServerRuntime.bundled(file.path),
+          localName: tier.model,
+          apiKey: () => prefs.getString('groq_key'),
+        ),
+        tier,
+        readBack: true),
+    prefs: prefs,
   );
   await controller.init();
 
-  final prefs = await SharedPreferences.getInstance();
   final reading = ReadingController(
     repo: ReadingRepository(db),
-    engine: StoryEngine(controller.runtime, book: WordBook()),
+    engine: StoryEngine(controller.runtime, book: WordBook())
+      ..modelOf = () => online?.lastModel ?? controller.tier?.model ?? 'the local AI',
     prefs: prefs,
     modelName: () => controller.tier?.model ?? 'the local AI',
   );
@@ -142,7 +151,7 @@ class _KodignoAppState extends State<KodignoApp> with WidgetsBindingObserver {
   }
 
   Widget _page(bool ready) => switch (_stage) {
-        _Stage.home => HomeScreen(onOpen: () => _go(_Stage.kodignoLoading)),
+        _Stage.home => HomeScreen(onOpen: () => _go(_Stage.kulayLoading)),
         _Stage.kodignoLoading => LoadingScreen(
             art: LoaderArt.folder,
             label: 'Opening Kodigno',
@@ -165,7 +174,7 @@ class _KodignoAppState extends State<KodignoApp> with WidgetsBindingObserver {
             label: 'Opening Kulay',
             onDone: () => _go(_Stage.kulay),
           ),
-        _Stage.kulay => KulayScreen(onBack: () => _go(_Stage.kodigno)),
+        _Stage.kulay => KulayScreen(onBack: () => _go(_Stage.kodignoLoading)),
       };
 }
 

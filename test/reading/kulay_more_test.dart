@@ -486,7 +486,7 @@ void main() {
       K.dark = true;
       addTearDown(() => K.dark = false);
       await pumpKulay(t);
-      final theme = Theme.of(t.element(find.text('Back to Kodigno')));
+      final theme = Theme.of(t.element(find.text('Go to Kodigno')));
       expect(theme.brightness, Brightness.light);
       expect(theme.colorScheme.primary, const Color(0xFF2E2378));
     });

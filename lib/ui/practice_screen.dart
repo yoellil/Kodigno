@@ -49,7 +49,6 @@ class _PracticeScreenState extends State<PracticeScreen> {
   final _indexes = <int, PageIndex?>{}; // the pages of each set, to place a wrong choice
   int _earlier = 0; // times the choice just picked was picked, wrongly, before
   bool _choosing = false;
-  int _streak = 0;
   List<Confusion> _patterns = const []; // pairs mixed up again in this session
   int _round = 0; // how many sessions have been run, to tell a fresh one from the last
 
@@ -96,13 +95,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     }
   }
 
-  Future<void> _loadStreak() async {
-    try {
-      final lib = await widget.repo.libraryData();
-      if (mounted) setState(() => _streak = lib.stats.streakDays);
-    } catch (_) {
-      // the streak is a nicety: the finish screen is fine without it
-    }
+  Future<void> _loadPatterns() async {
     try {
       final s = _session;
       final missed = {
@@ -179,7 +172,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     if (s == null) return;
     s.next();
     setState(() => _revealed = false);
-    if (s.isDone) _loadStreak();
+    if (s.isDone) _loadPatterns();
   }
 
   Future<void> _acknowledge() async {
@@ -238,7 +231,6 @@ class _PracticeScreenState extends State<PracticeScreen> {
       builder: (context, _) => s.isDone
           ? _Finish(
               session: s,
-              streak: _streak,
               patterns: _patterns,
               tagFor: _tagFor,
               onMore: _load,
@@ -543,12 +535,10 @@ class _Choice extends StatelessWidget {
 class _Finish extends StatelessWidget {
   const _Finish(
       {required this.session,
-      required this.streak,
       required this.patterns,
       required this.tagFor,
       required this.onMore});
   final PracticeSession session;
-  final int streak;
   final List<Confusion> patterns;
   final Widget Function(PracticeItem) tagFor;
   final VoidCallback onMore;
@@ -566,8 +556,6 @@ class _Finish extends StatelessWidget {
           .enter(context, index: 2),
       const SizedBox(height: 18),
       Wrap(spacing: 12, runSpacing: 12, children: [
-        _Stat(icon: Icons.local_fire_department_outlined, label: 'Streak',
-            value: '$streak ${streak == 1 ? 'day' : 'days'}'),
         _Stat(
             icon: Icons.event_repeat,
             label: 'Back tomorrow',

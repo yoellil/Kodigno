@@ -269,13 +269,5 @@ void main() {
       final start = await reviews.startSession(size: 5, setId: other, now: DateTime(2026, 10, 13, 9));
       expect(start.items.where((i) => i.kind == ItemKind.contrast), isEmpty);
     });
-
-    test('the contrast card counts as a day of practice for the streak', () async {
-      await wrong(0, 0, DateTime(2026, 10, 12, 9));
-      await wrong(1, 1, DateTime(2026, 10, 12, 9));
-      final start = await reviews.startSession(size: 5, now: DateTime(2026, 10, 13, 9));
-      await reviews.recordPractice(start.items.first, true, null, now: DateTime(2026, 10, 13, 9));
-      expect((await repo.libraryData(now: DateTime(2026, 10, 13, 20))).stats.streakDays, 2);
-    });
   });
 }

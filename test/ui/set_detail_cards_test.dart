@@ -40,7 +40,27 @@ void main() {
 
     await t.tap(find.byIcon(Icons.close).last); // the flashcards page's own close, back to the set
     await _settle(t);
-    expect(find.text('1 cards'), findsOneWidget);
+    expect(find.text('1 card'), findsOneWidget);
     expect(find.text('Add your own'), findsNothing);
+  });
+
+  testWidgets('counts read "1 question" and "2 cards", not "1 questions"', (t) async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = StudyRepository(db);
+    final id = (await t.runAsync(() => repo.saveSet(
+        'Bio',
+        const GeneratedSet(
+          [QuizQuestion(prompt: 'Q?', choices: ['a', 'b'], answerIndex: 0)],
+          [Flashcard(front: 'a', back: 'b'), Flashcard(front: 'c', back: 'd')],
+        ),
+        sourceText: 'x')))!;
+    t.view.devicePixelRatio = 1.0;
+    t.view.physicalSize = const Size(1000, 1200);
+    addTearDown(t.view.reset);
+    await t.pumpWidget(MaterialApp(theme: kTheme(), home: SetDetailScreen(repo: repo, setId: id)));
+    await _settle(t);
+    expect(find.text('1 question'), findsOneWidget);
+    expect(find.text('2 cards'), findsOneWidget);
   });
 }

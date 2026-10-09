@@ -125,6 +125,24 @@ void main() {
     expect(c.modelReady, isFalse);
   });
 
+  test('init removes model files of tiers no longer offered, once the current model is installed', () async {
+    final c = await _make(ram: 2000, engine: (_) async => _set);
+    await c.init();
+    await c.downloadModel();
+    final old = File('${c.models.dir.path}/gone.gguf')..writeAsStringSync('x');
+    await c.init();
+    expect(old.existsSync(), isFalse);
+    expect(c.modelReady, isTrue);
+  });
+
+  test('init keeps an old model file while the current model is not installed', () async {
+    final c = await _make(ram: 2000, engine: (_) async => _set);
+    final old = File('${c.models.dir.path}/gone.gguf')..writeAsStringSync('x');
+    await c.init();
+    expect(c.modelReady, isFalse);
+    expect(old.existsSync(), isTrue);
+  });
+
   test('chosen tier is remembered', () async {
     final c = await _make(ram: 2000, engine: (_) async => _set);
     await c.init();

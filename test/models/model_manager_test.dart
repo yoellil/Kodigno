@@ -36,4 +36,18 @@ void main() {
     await ok.install(_tier).drain();
     expect(await ok.isInstalled(_tier), isTrue);
   });
+
+  test('removeUnused deletes files of a tier that is gone, and keeps the current one', () async {
+    final dir = await Directory.systemTemp.createTemp('mm');
+    addTearDown(() => dir.delete(recursive: true));
+    final m = ModelManager(dir, _FakeDownloader());
+    await m.install(_tier).drain();
+    for (final n in ['old.gguf', 'old.gguf.ok', 'old.gguf.part', 'notes.txt']) {
+      File('${dir.path}/$n').writeAsStringSync('x');
+    }
+    await m.removeUnused([_tier]);
+    final left = [for (final e in dir.listSync()) e.uri.pathSegments.last]..sort();
+    expect(left, ['notes.txt', 'tiny.gguf', 'tiny.gguf.ok']);
+    expect(await m.isInstalled(_tier), isTrue);
+  });
 }

@@ -69,6 +69,14 @@ class AppController extends ChangeNotifier implements TeachBackModel {
     final saved = prefs.getString('tier');
     tier = tiers.tiers.where((t) => t.id == saved).firstOrNull ?? tiers.pick(_device!.ramMb);
     modelReady = await models.isInstalled(tier!);
+    if (modelReady) {
+      // Only once the current model is in place, so nobody is left with none.
+      try {
+        await models.removeUnused(tiers.tiers);
+      } catch (_) {
+        // the old files just stay until the next start
+      }
+    }
     themeMode = ThemeMode.values.asNameMap()[prefs.getString('theme')] ?? ThemeMode.system;
     notifyListeners();
   }
@@ -76,6 +84,20 @@ class AppController extends ChangeNotifier implements TeachBackModel {
   Future<void> setThemeMode(ThemeMode m) async {
     themeMode = m;
     await prefs.setString('theme', m.name);
+    notifyListeners();
+  }
+
+  /// The Groq API key; while it is set and there is a connection, Groq answers
+  /// and the local model is the offline fallback.
+  String get groqKey => prefs.getString('groq_key') ?? '';
+
+  Future<void> setGroqKey(String key) async {
+    key = key.trim();
+    if (key.isEmpty) {
+      await prefs.remove('groq_key');
+    } else {
+      await prefs.setString('groq_key', key);
+    }
     notifyListeners();
   }
 

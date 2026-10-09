@@ -383,8 +383,4 @@ class ReviewRepository {
       );
     }
   }
-
-  /// When each answer was given, for the streak.
-  Future<List<DateTime>> answerTimes() async =>
-      [for (final e in await db.select(db.reviewLog).get()) e.at];
 }

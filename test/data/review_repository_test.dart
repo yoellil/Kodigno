@@ -138,40 +138,6 @@ void main() {
     expect((await db.select(db.reviewLog).get()).single.studySetId, keep);
   });
 
-  group('streak', () {
-    test('a day with practice and no quiz still counts', () async {
-      final id = await repo.saveSet('One', set);
-      final card = (await repo.getSet(id)).flashcards.first;
-      for (final day in [10, 11, 12]) {
-        await reviews.record(
-            kind: ItemKind.card, itemId: card.id, setId: id, correct: true, mode: 'practice', now: DateTime(2026, 10, day, 8));
-      }
-      final lib = await repo.libraryData(now: DateTime(2026, 10, 12, 20));
-      expect(lib.stats.streakDays, 3);
-    });
-
-    test('practice and quizzes on different days join up into one streak', () async {
-      final id = await repo.saveSet('One', set);
-      final card = (await repo.getSet(id)).flashcards.first;
-      await repo.saveAttempt(setId: id, score: 1, total: 2, durationSeconds: 5, results: const [], takenAt: DateTime(2026, 10, 11, 10));
-      await reviews.record(kind: ItemKind.card, itemId: card.id, setId: id, correct: true, mode: 'practice', now: DateTime(2026, 10, 12, 8));
-      expect((await repo.libraryData(now: DateTime(2026, 10, 12, 20))).stats.streakDays, 2);
-    });
-
-    test('no practice and no quizzes is no streak', () async {
-      await repo.saveSet('One', set);
-      expect((await repo.libraryData(now: monday)).stats.streakDays, 0);
-    });
-  });
-
-  test('answerTimes lists when each answer was given', () async {
-    final id = await repo.saveSet('One', set);
-    await reviews.record(kind: ItemKind.card, itemId: 1, setId: id, correct: true, mode: 'practice', now: monday);
-    final times = await reviews.answerTimes();
-    expect(times, hasLength(1));
-    expect(times.single.isAtSameMomentAs(monday), isTrue);
-  });
-
   test('quizAnswersFrom ties each result to its question, and leaves out one that was not answered', () {
     final answers = quizAnswersFrom([
       {'q': 0, 'chosen': 1, 'correct': false},

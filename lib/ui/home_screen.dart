@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final caption = Column(mainAxisSize: MainAxisSize.min, children: [
-      Text('Kodigno', style: display(34, color: K.ink)),
+      Text('Kulay', style: display(34, color: K.ink)),
       const SizedBox(height: 8),
       Text('Click the brain to begin.', style: body(14, color: const Color(0xFF8A8290))),
     ]);
