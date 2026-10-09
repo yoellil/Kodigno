@@ -245,4 +245,146 @@ void main() {
     expect(reply, 'Because of the cell.');
     expect(rt.prompts.single, 'Why?');
   });
+
+  test('reference lists and citations in the notes are never used', () async {
+    const notes = 'Rizal was born in Calamba in 1861. '
+        'He wrote the novel Noli Me Tangere in Berlin in 1887. '
+        'He was executed at Bagumbayan in 1896.\n'
+        'References\n'
+        'Guerrero, L. (1963). The first Filipino. Journal of History, 4(2), 10-20.\n'
+        'Retrieved from https://example.com/rizal';
+    final rt = FakeLlmRuntime([..._ok]);
+    await _engine(rt).generate(notes);
+    expect(rt.prompts.first, isNot(contains('Guerrero')));
+    expect(rt.prompts.first, isNot(contains('example.com')));
+  });
+
+  test('citation-like facts and answers from the model are dropped', () async {
+    final facts = _facts([
+      'Rizal was born in Calamba in 1861.',
+      'Guerrero, L. (1963). The first Filipino. Journal of History, 4(2), 10-20.',
+    ]);
+    final qa = _qa([
+      ['In which town was Rizal born?', 'Calamba'],
+      ['Which journal published Guerrero in 1963?', 'Journal of History'],
+    ]);
+    const notes = 'Rizal was born in Calamba in 1861. Guerrero wrote about Rizal in 1963 in Journal of History.';
+    final set = await _engine(FakeLlmRuntime([facts, qa, _goodWrong])).generate(notes);
+    expect(set.flashcards.map((c) => c.front), ['In which town was Rizal born?']);
+  });
+
+  test('quiz choices share one style, so the right one does not stand out', () async {
+    final qa = _qa([
+      ['In which town was Rizal born?', 'calamba.'],
+      ['In which city did Rizal write Noli Me Tangere?', 'Berlin'],
+      ['Where was Rizal executed?', 'Bagumbayan'],
+    ]);
+    final wrong = _wrong([
+      ["'Manila'", 'cebu', 'Davao.'],
+      ['Madrid', 'Paris', 'London'],
+      ['Fort Santiago', 'Intramuros', 'Cavite'],
+    ]);
+    final set = await _engine(FakeLlmRuntime([_goodFacts, qa, wrong])).generate(_notes);
+    final q = set.questions.first;
+    expect(q.choices.toSet(), {'Calamba', 'Manila', 'Cebu', 'Davao'});
+    expect(q.choices[q.answerIndex], 'Calamba');
+  });
+
+  test('a long correct answer is not paired with one-word choices', () async {
+    const notes = 'Photosynthesis lets plants turn sunlight, water and carbon dioxide into sugar and oxygen.';
+    final facts = _facts(['Photosynthesis lets plants turn sunlight, water and carbon dioxide into sugar and oxygen.']);
+    final qa = _qa([
+      ['What does photosynthesis let plants do?', 'Turn sunlight water and carbon dioxide into sugar']
+    ]);
+    final wrong = _wrong([
+      ['Rain', 'Wind', 'Soil']
+    ]);
+    final set = await _engine(FakeLlmRuntime([facts, qa, wrong])).generate(notes);
+    expect(set.flashcards, hasLength(1));
+    expect(set.questions, isEmpty); // no believable choices: better no question than a giveaway
+  });
+
+  test('a question asking for three things gets all three, numbered, one per line', () async {
+    const notes = 'The ACM code has three principles:\n1. Contribute to society and to human well-being\n'
+        '2. Avoid harm\n3. Be honest and trustworthy';
+    final facts = _facts(['The ACM code has three principles: contribute to society, avoid harm, be honest.']);
+    // the model gives only two, run together on one line
+    final qa = _qa([
+      ['What are the three key principles that contribute to society?', '1. Contribute to society and to human well-being 2. Avoid harm']
+    ]);
+    final set = await _engine(FakeLlmRuntime([facts, qa]), maxChunks: 1).generate(notes);
+    expect(set.flashcards.single.back,
+        '1. Contribute to society and to human well-being\n2. Avoid harm\n3. Be honest and trustworthy');
+    expect(set.questions, isEmpty); // a list is for the card, not multiple choice
+  });
+
+  test('a list question whose items cannot be found is dropped, not shown incomplete', () async {
+    const notes = 'The ACM code has three principles: contribute to society, avoid harm and be honest and trustworthy.';
+    final facts = _facts(['The ACM code has three principles: contribute to society, avoid harm and be honest and trustworthy.']);
+    final qa = _qa([
+      ['What are the three key principles of the ACM code?', '1. Contribute to society 2. Avoid harm']
+    ]);
+    final rt = FakeLlmRuntime([facts, qa, qa, qa]);
+    final set = await _engine(rt, maxChunks: 1).generate(notes);
+    expect(set.flashcards.where((c) => c.front.contains('three key principles')), isEmpty);
+    expect(set.flashcards.any((c) => c.back.contains('1. Contribute')), isFalse);
+  });
+
+  test('"What are the main principles" with a vague one-sentence answer gets the notes\' full list', () async {
+    const notes = 'General Ethical Principles\nA computing professional should...\n'
+        '1.1 Contribute to society and to human well-being.\n1.2 Avoid harm.\n1.3 Be honest and trustworthy.\n1.4 Respect privacy.\n';
+    final facts = _facts(['A computing professional should contribute to society, avoid harm, be honest and respect privacy.']);
+    final qa = _qa([
+      ['What are the main principles of computing professionals?', 'The rules for computing professionals include guidelines.']
+    ]);
+    final set = await _engine(FakeLlmRuntime([facts, qa]), maxChunks: 1).generate(notes);
+    // the list is one card under its own title; the model's vague card is not kept beside it
+    expect(set.flashcards.where((c) => c.front.contains('main principles')), isEmpty);
+    final card = set.flashcards.firstWhere((c) => c.front == 'General Ethical Principles');
+    expect(card.back,
+        '1. Contribute to society and to human well-being\n2. Avoid harm\n3. Be honest and trustworthy\n4. Respect privacy');
+  });
+
+  test('a list question with a vague answer and no list in the notes is dropped', () async {
+    const notes = 'Computing professionals follow rules, and the rules include guidelines that explain how to apply them well.';
+    final facts = _facts(['Computing professionals follow rules, and the rules include guidelines that explain them.']);
+    final qa = _qa([
+      ['What are the main principles of computing professionals?', 'The rules for computing professionals include guidelines.']
+    ]);
+    // the vague card is dropped, and with nothing else to study from, generation says so
+    expect(_engine(FakeLlmRuntime([facts, qa, qa, qa]), maxChunks: 1).generate(notes),
+        throwsA(isA<GenerationFailed>()));
+  });
+
+  test('a question that mixes a date from one fact with a rule from another is dropped', () async {
+    const notes = '1974 - Revised after IEEE added Professional Activities to its Constitution. '
+        'The IEEE Code of Ethics comprises 10 principles, adopted in 1990.';
+    final facts = _facts([
+      'The IEEE revised its Code after adding Professional Activities to its Constitution in 1974.',
+      'The IEEE Code of Ethics comprises 10 principles, adopted in 1990.',
+    ]);
+    final qa = _qa([
+      ['What is the first principle of the revised IEEE Constitution?', 'The first principle states that all members of the IEEE are professional.'],
+      ['How many principles does the IEEE Code of Ethics comprise?', '10 principles'],
+    ]);
+    final set = await _engine(FakeLlmRuntime([facts, qa, qa, qa, 'x']), maxChunks: 1).generate(notes);
+    final fronts = set.flashcards.map((c) => c.front).toList();
+    expect(fronts.any((f) => f.contains('first principle')), isFalse);
+    expect(fronts, contains('How many principles does the IEEE Code of Ethics comprise?'));
+  });
+
+  test('titled lists give "which belongs under" questions with points from other lists as wrong choices', () async {
+    const notes = 'General Ethical Principles\n- Contribute to society and human well-being\n- Avoid harm to others\n- Be honest and trustworthy\n'
+        'Professional Leadership Principles\n- Manage personnel and resources well\n- Support policies that reflect the Code\n- Create opportunities for members to grow\n'
+        'Grades of Membership\n- Associate member grade\n- Senior member grade\n- Honorary member grade\n';
+    final set = await _engine(FakeLlmRuntime(['x', 'x', 'x']), maxChunks: 1).generate(notes);
+    expect(set.flashcards.map((c) => c.front),
+        containsAll(['General Ethical Principles', 'Professional Leadership Principles', 'Grades of Membership']));
+    final q = set.questions.firstWhere((q) => q.prompt == 'Which of these belongs under "General Ethical Principles"?');
+    const own = ['Contribute to society and human well-being', 'Avoid harm to others', 'Be honest and trustworthy'];
+    expect(own, contains(q.choices[q.answerIndex]));
+    // exactly one choice is from the asked list
+    expect(q.choices.where(own.contains), hasLength(1));
+    expect(q.choices.length, greaterThanOrEqualTo(3));
+  });
 }

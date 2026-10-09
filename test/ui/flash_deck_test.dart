@@ -157,4 +157,21 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('only'), findsOneWidget);
   });
+
+  testWidgets('a long answer shrinks to fit the card with no overflow', (t) async {
+    final long = List.filled(14, 'each party agrees to provide something of value').join(', ');
+    await _pump(t, cards: [Flashcard(front: 'Professionals and Employers', back: long)]);
+    await t.tap(find.byType(FlashDeck));
+    await t.pumpAndSettle();
+    expect(t.takeException(), isNull);
+    expect(faceFontSize(long), lessThan(faceFontSize('Short')));
+  });
+
+  testWidgets('a numbered list answer keeps its lines', (t) async {
+    await _pump(t, cards: const [Flashcard(front: 'Principles', back: '1. Be fair\n2. Be kind\n3. Be honest')]);
+    await t.tap(find.byType(FlashDeck));
+    await t.pumpAndSettle();
+    expect(find.text('1. Be fair\n2. Be kind\n3. Be honest'), findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
 }

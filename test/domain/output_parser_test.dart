@@ -30,4 +30,14 @@ void main() {
     expect(() => parseFacts('I cannot do that'), throwsFormatException);
     expect(() => parseQa('{"items":[{"question":"Q"'), throwsFormatException);
   });
+
+  test('parseQa and parseWrong drop placeholder answers and strip "The answer is"', () {
+    final qa = parseQa('{"items":['
+        '{"question":"Where was Rizal born?","answer":"The answer is Calamba"},'
+        '{"question":"Who wrote it?","answer":"answer"},'
+        '{"question":"When did he die?","answer":"N/A"}]}');
+    expect(qa.map((i) => i.answer), ['Calamba']);
+    final wrong = parseWrong('{"items":[{"wrong":["Manila","Answer","None of the above","Cebu"]}]}');
+    expect(wrong.single, ['Manila', 'Cebu']);
+  });
 }
