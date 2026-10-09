@@ -45,7 +45,8 @@ final _personWords = _set('mother mom mama nanay father dad papa tatay grandmoth
     'kuya ate cousin cousins aunt uncle tita tito friend friends classmate classmates teacher teachers coach neighbor neighbors '
     'vendor vendors driver drivers farmer farmers fisherman fishermen captain doctor nurse boy boys girl girls kids children child '
     'baby family team player players student students principal priest mayor crowd people everyone villagers tourists customers '
-    'baker cook chef guard owner parents volunteers officials scientist scientists leader elders');
+    'baker cook chef guard owner parents volunteers officials scientist scientists leader elders judge judges commuter commuters '
+    'passenger passengers visitor visitors audience stranger man woman men women lady');
 final _placeWords = _set('school classroom market house home kitchen yard backyard garden park plaza field court gym beach sea ocean '
     'river lake mountain volcano farm ricefield forest church chapel store shop library hospital clinic street road bridge town city '
     'village barangay port pier boat jeepney bus tricycle room bedroom hall stage canteen carinderia bakery reef island hill camp '
@@ -92,7 +93,8 @@ final _valenceOf = {
 String? valence(String s) => norm(s).split(' ').map((t) => _valenceOf[t]).nonNulls.firstOrNull;
 
 /// Capitalized words that are not people.
-final _notNames = _set('i filipino filipinos english tagalog god christmas easter pinoy okay oh yes no hello mr mrs ms dr let');
+final _notNames = _set('i filipino filipinos english tagalog god christmas easter pinoy okay oh yes no hello mr mrs ms dr let '
+    'elementary high university college academy street avenue road barangay city province island lake river mountain bay');
 const _titles = r'Aling|Mang|Lola|Lolo|Tita|Tito|Kuya|Ate|Teacher|Coach|Doctor|Mr\.|Mrs\.|Ms\.|Dr\.';
 final _english = _set('the a an and to of in on at was is he she it his her they them we i you for with as had that but said not were be my');
 
@@ -130,7 +132,9 @@ const _hold = '․'; // stands in for the dot of "Mr." while splitting
 /// Story text -> paragraphs of sentences. A dialogue tag (`"Wait!" said Ben.`)
 /// stays with its quote. Any other sentence that starts lowercase is kept, so
 /// [lintStory] can reject the draft.
-List<List<String>> splitStory(String text) {
+/// [keepAll] is for text a person wrote: nothing is dropped (a heading with no end
+/// mark, a line said twice) and long paragraphs are left as written.
+List<List<String>> splitStory(String text, {bool keepAll = false}) {
   final seen = <String>{}; // small models sometimes repeat a sentence word for word
   final cleaned = text
       .replaceAll(RegExp(r'\*\*|__|\*|^#+\s*', multiLine: true), '')
@@ -143,7 +147,8 @@ List<List<String>> splitStory(String text) {
         for (final m in RegExp(r'''[^.!?]+(?:[.!?]+["'”’)]*|$)''').allMatches(flat)) {
           final t = m[0]!.trim();
           // A sentence with no end mark was cut off by the model; drop it.
-          if (t.isEmpty || seen.contains(t.toLowerCase()) || !RegExp(r'''[.!?]["'”’)]*$''').hasMatch(t)) continue;
+          if (t.isEmpty) continue;
+          if (!keepAll && (seen.contains(t.toLowerCase()) || !RegExp(r'''[.!?]["'”’)]*$''').hasMatch(t))) continue;
           seen.add(t.toLowerCase());
           // Rejoin a dialogue tag or a thought that trails off ("Maybe... why not?").
           if (out.isNotEmpty && RegExp('^[a-z]').hasMatch(t) && RegExp(r'''([.!?,]["'”’]|\.\.\.|…)$''').hasMatch(out.last)) {
@@ -156,7 +161,7 @@ List<List<String>> splitStory(String text) {
       }(),
   ].where((p) => p.isNotEmpty).toList();
   // Small models often skip paragraph breaks; one wall of text is hard for young readers.
-  if (paras.length == 1 && paras[0].length > 6) {
+  if (!keepAll && paras.length == 1 && paras[0].length > 6) {
     final all = paras[0];
     paras = [for (var i = 0; i < all.length; i += 4) all.sublist(i, math.min(i + 4, all.length))];
   }
@@ -243,7 +248,8 @@ bool fitsKind(String answer, String kind, Entities ent) {
     case 'person':
       return toks.any(_personWords.contains) || ent.people.any((p) => _has(n, norm(p)));
     case 'place':
-      return toks.any((t) => _placeWords.contains(t) || _placeWords.contains(t.replaceFirst(RegExp(r's$'), '')) || _placeTokens.contains(t)) ||
+      return ent.places.any((p) => _has(n, norm(p))) ||
+          toks.any((t) => _placeWords.contains(t) || _placeWords.contains(t.replaceFirst(RegExp(r's$'), '')) || _placeTokens.contains(t)) ||
           RegExp(r'^(at|in|on|near|inside|outside|behind|under|to|into|by|beside)\b').hasMatch(n);
     case 'time':
       return toks.any(_timeWords.contains) || _digit.hasMatch(n) || RegExp(r'^(after|before|during|when|while|until)\b').hasMatch(n);
@@ -286,6 +292,15 @@ Entities entities(List<String> sentences, StoryPlan? plan) {
   for (final m in RegExp(r'\bthe ([a-z]+)\b', caseSensitive: false).allMatches(text)) {
     if (_placeWords.contains(m[1]!.toLowerCase())) places.add('the ${m[1]!.toLowerCase()}');
   }
+  // "in Talisay", "near Santa Rosa": a capitalized name after "in" or "near" is a place, not a person ("in Mika's room" is not).
+  for (final m in RegExp(r"\b(?:in|near)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)(?!['’]s|[a-z])").allMatches(text)) {
+    final name = m[1]!;
+    if (plan != null && name == plan.name) continue;
+    places.add(name);
+    for (final part in name.split(' ')) {
+      people.remove(part);
+    }
+  }
   final times = <String>{};
   for (final m in RegExp(r'\b(?:in the|on|at|every|that|one|last|next|after|before)\s+(?:the\s+)?([a-z]+)\b', caseSensitive: false)
       .allMatches(text)) {
@@ -314,6 +329,23 @@ bool _denied(String answer, String s) {
 }
 
 /// "very proud" -> "very sad", "3 hours" -> "4 hours": wrong choices with the same shape as the answer.
+/// "one hour" with the number swapped is "two hour": fix the noun that follows ("two hours", "one hour").
+List<String> _agree(String answer, List<String> options) {
+  final one = RegExp(r'\b(one|1)\b', caseSensitive: false);
+  final wasOne = one.hasMatch(answer);
+  return [
+    for (final o in options)
+      () {
+        final words = o.split(' ');
+        if (words.length < 2) return o;
+        final last = words.last;
+        if (wasOne && !one.hasMatch(o) && !last.endsWith('s')) words.last = '${last}s';
+        if (!wasOne && one.hasMatch(o) && last.length > 3 && last.endsWith('s')) words.last = last.substring(0, last.length - 1);
+        return words.join(' ');
+      }(),
+  ];
+}
+
 List<String> _variants(String answer, String kind) {
   List<String> swap(String word, List<String> others) => [
         for (final o in others)
@@ -321,8 +353,10 @@ List<String> _variants(String answer, String kind) {
       ];
   final toks = norm(answer).split(' ');
   if (kind == 'feeling') {
-    final f = toks.where(_valenceOf.containsKey).firstOrNull;
-    if (f == null) return [];
+    final feelings = toks.where(_valenceOf.containsKey).toList();
+    // "nervous but very excited": swapping one feeling leaves the other true, so the copy is not wrong.
+    if (feelings.length != 1) return [];
+    final f = feelings.first;
     final v = _valenceOf[f];
     return swap(f, _shuffled(v == 'pos' ? _feelNeg : v == 'neg' ? _feelPos : [..._feelPos, ..._feelNeg]));
   }
@@ -336,18 +370,18 @@ List<String> _variants(String answer, String kind) {
   final d = RegExp(r'\d+').firstMatch(answer);
   if (d != null) {
     final v = int.parse(d[0]!);
-    return [
+    return _agree(answer, [
       for (final k in [1, -1, 2, 3, -2])
         if (v + k > 0) answer.replaceFirst(d[0]!, '${v + k}'),
-    ];
+    ]);
   }
   final w = toks.where(_numberWords.contains).firstOrNull;
   if (w != null) {
     final i = _numberWords.indexOf(w);
-    return swap(w, [
+    return _agree(answer, swap(w, [
       for (final k in [i + 1, i - 1, i + 2, i + 3])
         if (k > 0 && k < _numberWords.length) _numberWords[k],
-    ]);
+    ]));
   }
   return [];
 }
@@ -446,7 +480,7 @@ Checked checkQuestion(Map<String, dynamic> raw, List<String> sentences, Entities
       return Checked.fail('the answer "${_clip(answer)}" only repeats the question');
     }
     final a = stems(answer);
-    if (a.length > 1 && _overlap(a, stems(question)) * 2 >= a.length) {
+    if (a.length > 1 && _overlap(a, stems(question)) * 2 > a.length) { // more than half of it is in the question
       return Checked.fail('the answer "${_clip(answer)}" gives itself away');
     }
     // The proof is the sentence that states the answer (word for word beats a
@@ -459,8 +493,20 @@ Checked checkQuestion(Map<String, dynamic> raw, List<String> sentences, Entities
     final scores = sentences.map(score).toList();
     final top = scores.fold(0, math.max);
     if (top == 0) return Checked.fail('the answer "${_clip(answer)}" is not stated in the story');
-    if (ev < 0 || ev >= scores.length || scores[ev] != top) ev = scores.indexOf(top);
-    if (_overlap(stems(question), stems(sentences[ev])) == 0) {
+    // The model's own pick stays unless another sentence is clearly the better proof: a word-for-word
+    // match elsewhere ("his homework") must not beat the sentence the question is really about.
+    final best = scores.indexOf(top);
+    final keepPick = ev >= 0 &&
+        ev < scores.length &&
+        scores[ev] > 0 &&
+        _overlap(stems(question), stems(sentences[ev])) > _overlap(stems(question), stems(sentences[best]));
+    if (!keepPick && (ev < 0 || ev >= scores.length || scores[ev] != top)) ev = best;
+    // Questions use "she" and "they" where the story names someone, and "what next?" points at the sentence before:
+    // look one sentence either way, and trust the proof when the answer is stated nowhere else.
+    final near = <String>{
+      for (var i = math.max(0, ev - 1); i <= math.min(sentences.length - 1, ev + 1); i++) ...stems(sentences[i]),
+    };
+    if (scores.where((x) => x > 0).length > 1 && _overlap(stems(question), near) == 0) {
       return const Checked.fail('the question is not about the sentence that answers it');
     }
     if (!fitsKind(answer, kind, ent)) return Checked.fail('a ${_kindLabel[kind]} question got the answer "${_clip(answer)}"');
@@ -478,16 +524,103 @@ Checked checkQuestion(Map<String, dynamic> raw, List<String> sentences, Entities
 // ---------- teacher skills and word help ----------
 
 /// The reading skills a question can practice, for the teacher's report.
-const skills = ['Details', 'Cause and effect', 'Feelings', 'Word meaning'];
+const skills = ['Details',
+  'Sequence', 'Cause and effect', 'Feelings', 'Word meaning',
+  'Main idea',
+  'Inference'];
+
+final _mainIdeaQ = RegExp(
+  r'\b(mostly about|main idea)\b',
+  caseSensitive: false,
+);
+final _inferenceQ = RegExp(
+  r'^\s*(why do you think|what can you tell|how can you tell)\b',
+  caseSensitive: false,
+);
 
 String skillOf(String question) {
   final kind = questionKind(question);
   if (kind == 'vocab') return 'Word meaning';
+  if (_mainIdeaQ.hasMatch(question)) return 'Main idea';
+  if (_inferenceQ.hasMatch(question)) return 'Inference';
   if (kind == 'feeling') return 'Feelings';
   if (RegExp(r'^\s*why\b|\bbecause\b|\bwhat (made|caused)\b', caseSensitive: false).hasMatch(question)) {
     return 'Cause and effect';
   }
+  if (RegExp(
+    r'\b(first|next|last|finally)\b|^\s*what happened (after|before)\b',
+    caseSensitive: false,
+  ).hasMatch(question)) {
+    return 'Sequence';
+  }
   return 'Details';
+}
+
+/// Main-idea and inference questions. Their answer is not copied from one
+/// sentence, so only the form is checked here; the AI-reader check (twice,
+/// choices in opposite orders) judges whether the answer is right.
+/// [raw] = {evidence: 1-based, question, answer, wrong: [...]}.
+Checked checkDeep(
+  Map<String, dynamic> raw,
+  List<String> sentences, {
+  required bool mainIdea,
+}) {
+  String clean(Object? x) => '$x'
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .replaceFirst(RegExp(r'[.!]+$'), '')
+      .trim();
+  final question = mainIdea
+      ? 'What is this story mostly about?'
+      : clean(raw['question']).replaceFirst(RegExp(r'\?*$'), '?');
+  if (!mainIdea && !_inferenceQ.hasMatch(question)) {
+    return const Checked.fail(
+      'the question does not start with "Why do you think" or "What can you tell"',
+    );
+  }
+  final answer = clean(raw['answer']);
+  final w = raw['wrong'];
+  final choices = [
+    answer,
+    if (w is List)
+      for (final x in w) clean(x),
+  ];
+  if (choices.length != 4 ||
+      choices.any((c) => c.isEmpty || _wordCount(c) > 12)) {
+    return const Checked.fail(
+      'it needs one answer and 3 wrong choices of 12 words or fewer',
+    );
+  }
+  if (choices.map(norm).toSet().length < 4) {
+    return const Checked.fail('two choices are the same');
+  }
+  if (choices.any(
+    (c) => RegExp(
+      r'\b(protagonist|all of the above|none of the above|both)\b',
+      caseSensitive: false,
+    ).hasMatch(c),
+  )) {
+    return const Checked.fail(
+      'a choice is a placeholder or "all of the above"',
+    );
+  }
+  // The proof is the sentence closest to the answer (the model's pick wins a tie).
+  final a = stems('$answer ${mainIdea ? '' : question}');
+  final scores = [for (final s in sentences) _overlap(a, stems(s))];
+  final top = scores.fold(0, math.max);
+  final pick = (num.tryParse('${raw['evidence']}') ?? 0).toInt() - 1;
+  final ev = pick >= 0 && pick < scores.length && scores[pick] == top
+      ? pick
+      : scores.indexOf(top);
+  final order = _shuffled([0, 1, 2, 3]);
+  return Checked.ok(
+    Question(
+      question,
+      [for (final i in order) _cap(choices[i])],
+      order.indexOf(0),
+      ev,
+    ),
+    mainIdea ? 'mainidea' : 'inference',
+  );
 }
 
 /// A word's meaning from the AI: short, and not explained with the word

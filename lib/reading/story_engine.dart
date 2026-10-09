@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import '../ai/ai_engine.dart';
 import 'levels.dart';
 import 'nlp.dart';
+import 'word_book.dart';
 
 /// Stories saved by an older pipeline are never served again.
 const pipelineVersion = 2;
@@ -71,6 +72,15 @@ class CallLine {
   final tooEasy = l.fk.$1 > 0 && grade < l.fk.$1 - 0.5;
   final off = tooEasy ? grade - l.fk.$1 : grade > l.fk.$2 + 0.5 ? grade - l.fk.$2 : 0.0;
   return (off: off, cost: off.abs());
+}
+
+/// The color whose reading band fits [grade] best (the lower one on a tie).
+int levelForGrade(double grade) {
+  var best = 0;
+  for (var i = 1; i < levels.length; i++) {
+    if (difficulty(levels[i], grade).cost < difficulty(levels[best], grade).cost) best = i;
+  }
+  return best;
 }
 
 /// A finished, checked story.
@@ -169,11 +179,23 @@ const Map<String, Object?> _wordSchema = {
   'required': ['meaning', 'synonym'],
 };
 
+const _pickSys = 'You help a child understand a word in a story. Choose the meaning the word has in the sentence.';
+Map<String, Object?> _pickSchema(int n) => {
+      'type': 'object',
+      'properties': {
+        'choice': {'type': 'integer', 'enum': [for (var i = 1; i <= n; i++) i]},
+      },
+      'required': ['choice'],
+    };
+
 class _BadJson implements Exception {}
 
 class StoryEngine {
-  StoryEngine(this.runtime, {this.maxDrafts = 4, this.modelName = 'the local AI', math.Random? random})
+  StoryEngine(this.runtime, {this.maxDrafts = 4, this.modelName = 'the local AI', this.book, math.Random? random})
       : _rng = random ?? math.Random();
+
+  /// Real meanings of words. Without it (or for a word it does not have) the AI explains the word.
+  final WordBook? book;
 
   /// The model server. Asked for on every call, so a tier change is picked up.
   final Future<LlmRuntime> Function() runtime;
@@ -267,7 +289,11 @@ class StoryEngine {
       // ponytail: a small model rarely hits grade 10+; a clean draft within 1.5 grades beats minutes of retries.
       final closeEnough = best != null && draft >= 2 && best.cost <= 1.5;
       step(3, 'Grade ${lint.grade} ($target), ${lint.words} words. Problem: ${problems.join('; ')}.'
-          '${closeEnough ? ' Keeping the clean draft at grade ${best.grade}.' : draft < maxDrafts ? ' Rewriting.' : ''}');
+        '${closeEnough
+            ? ' Keeping the clean draft at grade ${best.grade}.'
+            : draft < maxDrafts
+            ? ' Rewriting.'
+            : ''}');
       if (closeEnough) break;
       feedback = '\n\nYour last draft had these problems: ${problems.join('; ')}. Write a new draft that fixes them.'
           '${d.off > 0 ? ' Use shorter sentences and shorter, more common words.' : ''}'
@@ -303,12 +329,61 @@ class StoryEngine {
     return null;
   }
 
+  /// One main-idea or inference question, which no single sentence states.
+  /// Checked for form, then the AI reader must pick the keyed answer twice.
+  /// Null after 2 tries.
+  Future<Question?> _deep(
+    Job job,
+    String numbered,
+    List<String> sentences, {
+    required bool mainIdea,
+  }) async {
+    final brief = mainIdea
+        ? 'Write ONE multiple-choice question about the main idea. Put "What is this story mostly about?" in "question". '
+              '"answer" is one sentence of 4 to 10 words that sums up the whole story. "wrong" are 3 other sentences of 4 to 10 words: '
+              'each is about one small part of the story, or about something the story never says. Put 1 in "evidence".'
+        : 'Write ONE multiple-choice question that makes the reader figure out something the story shows but never says in so many words, '
+              'such as why a character did something or how a character really felt. Start "question" with "Why do you think" or "What can you tell about". '
+              '"evidence" is the number of the sentence that holds the clue. "answer" is 3 to 10 words. '
+              '"wrong" are 3 things the story clearly does not show, about as long as the answer.';
+    var feedback = '';
+    for (var tryNo = 1; tryNo <= 2; tryNo++) {
+      final Map<String, dynamic> raw;
+      try {
+        raw = await _chat(
+          job,
+          _qSys,
+          'Story:\n$numbered\n\n$brief$feedback',
+          _qItem,
+          temperature: 0.7,
+          maxTokens: 400,
+        );
+      } on _BadJson {
+        continue;
+      }
+      final res = checkDeep(raw, sentences, mainIdea: mainIdea);
+      final why = res.why ?? await _verify(job, res.q!, numbered);
+      if (why == null) return res.q;
+      feedback =
+          '\n\nYour last question failed because $why. Write a different one.';
+    }
+    return null;
+  }
+
   // Steps 4-6: number the sentences, write questions, then Check 2 on each one.
+  // From Gold up, the last one or two are main-idea and inference questions.
+  // [plan] is null for a teacher's own text, which has no planned main character.
   Future<({List<Question> questions, int rewritten, int dropped})> _writeQuestions(
-      Job job, int level, List<String> sentences, StoryPlan plan, OnStep step) async {
+      Job job, int level, List<String> sentences, StoryPlan? plan, OnStep step) async {
     final l = levels[level];
     final numbered = [for (final (i, s) in sentences.indexed) '[${i + 1}] $s'].join('\n');
     final ent = entities(sentences, plan);
+    final name = plan?.name ?? ent.people.firstOrNull ?? 'the girl';
+    final deepKinds = [
+      if (level >= 4) false,
+      if (level >= 2) true,
+    ]; // true = main idea
+    final target = l.q - deepKinds.length;
     step(4, '${sentences.length} sentences. Found ${ent.people.length} people, ${ent.places.length} places.');
 
     final kept = <(Question, String)>[];
@@ -324,8 +399,8 @@ class StoryEngine {
       return res;
     }
 
-    for (var batch = 0; batch < 2 && kept.length < l.q; batch++) {
-      final ask = l.q + 3;
+    for (var batch = 0; batch < 2 && kept.length < target; batch++) {
+      final ask = target + 3;
       step(5, batch > 0 ? 'Writing more questions' : '$ask questions: ${l.types}');
       final Map<String, dynamic> out;
       try {
@@ -333,14 +408,14 @@ class StoryEngine {
             job,
             _qSys,
             'Story:\n$numbered\n\nWrite $ask multiple-choice questions for Grade ${l.grades} readers, each about a different sentence. '
-            'Use ${l.types}.\n${_qRules(plan.name)}',
+          'Use ${l.types}.\n${_qRules(name)}',
             _qSchema(ask));
       } on _BadJson {
         continue;
       }
       final raws = out['questions'] is List ? (out['questions'] as List).whereType<Map<String, dynamic>>() : const <Map<String, dynamic>>[];
       for (final raw in raws) {
-        if (kept.length >= l.q) break;
+        if (kept.length >= target) break;
         var res = vet(checkQuestion(raw, sentences, ent, plan));
         var why = res.why ?? await _verify(job, res.q!, numbered);
         // The AI could not answer its own question: one rewrite, then it is thrown out.
@@ -352,7 +427,7 @@ class StoryEngine {
                 job,
                 _qSys,
                 'Story:\n$numbered\n\nThis question failed because $why:\n${jsonEncode(raw)}\n'
-                'Write ONE better question about the same sentence.\n${_qRules(plan.name)}',
+              'Write ONE better question about the same sentence.\n${_qRules(name)}',
                 _qItem);
             res = vet(checkQuestion(fix, sentences, ent, plan));
             why = res.why ?? await _verify(job, res.q!, numbered);
@@ -368,6 +443,28 @@ class StoryEngine {
         kept.add((res.q!, res.kind));
         step(6, '${kept.length} of ${l.q} questions passed: answer found in sentence ${res.q!.evidence + 1}, and the AI got it right.');
       }
+    }
+    for (final mainIdea in deepKinds) {
+      step(
+        5,
+        mainIdea
+            ? 'A question about the main idea'
+            : 'A question that needs thinking, not just finding',
+      );
+      final q = await _deep(job, numbered, sentences, mainIdea: mainIdea);
+      if (q == null) {
+        dropped++;
+        step(
+          6,
+          'Threw out a ${mainIdea ? 'main-idea' : 'thinking'} question: the AI could not get one that held up.',
+        );
+        continue;
+      }
+      kept.add((q, mainIdea ? 'mainidea' : 'inference'));
+      step(
+        6,
+        '${kept.length} of ${l.q} questions passed: the AI got it right both ways.',
+      );
     }
     return (questions: [for (final k in kept) k.$1], rewritten: rewritten, dropped: dropped);
   }
@@ -400,6 +497,7 @@ class StoryEngine {
           'words': story.words,
           'target': [l.fk.$1, l.fk.$2],
           'drafts': story.drafts,
+          'maxDrafts': maxDrafts,
           'name': p.name,
           'place': p.place,
           'verified': qs.questions.length,
@@ -414,6 +512,65 @@ class StoryEngine {
     throw StoryFailed('The AI could not write questions that hold up');
   }
 
+  /// Questions for a story the teacher wrote. Only the questions are the AI's
+  /// work (same checks as any story); the text is kept exactly as written.
+  /// [level] null = the color whose reading grade fits the text best.
+  /// Throws [StoryFailed] with a message a teacher can act on.
+  Future<WrittenStory> makeTeacherStory(
+    String title,
+    String text, {
+    int? level,
+    required Job job,
+    OnStep? onStep,
+  }) async {
+    final step = onStep ?? (_, _) {};
+    final watch = Stopwatch()..start();
+    final paras = splitStory(text, keepAll: true);
+    final sentences = [for (final p in paras) ...p];
+    final m = measure(sentences);
+    if (sentences.length < 4 || m.words < 30) {
+      throw StoryFailed(
+        'Paste at least 4 sentences (about 30 words).',
+      );
+    }
+    if (m.words > 700) throw StoryFailed('That is ${m.words} words. Keep it under 700 words.');
+    final lv = level ?? levelForGrade(m.grade);
+    final qs = await _writeQuestions(job, lv, sentences, null, step);
+    if (qs.questions.length < 2) {
+      throw StoryFailed('The AI could not write questions that hold up for this text. Try a clearer or longer text.');
+    }
+    return WrittenStory(lv, title, title, paras, qs.questions, {
+      'v': pipelineVersion,
+      'teacher': true,
+      'grade': m.grade,
+      'words': m.words,
+      'target': [levels[lv].fk.$1, levels[lv].fk.$2],
+      'verified': qs.questions.length,
+      'rewritten': qs.rewritten,
+      'dropped': qs.dropped,
+      'seconds': watch.elapsed.inSeconds,
+      'model': modelName,
+    });
+  }
+
+  /// The number (0-based) of the meaning that fits [sentence], or null if the AI cannot say.
+  Future<int?> _pickMeaning(Job job, String word, String sentence, List<Meaning> options) async {
+    try {
+      final r = await _chat(
+          job,
+          _pickSys,
+          'Sentence: "$sentence"\nWord: "$word"\n${[for (final (i, m) in options.indexed) '${i + 1}. (${m.pos}) ${m.text}'].join('\n')}\n\n'
+          'Which number is the meaning of "$word" in this sentence?',
+          _pickSchema(options.length),
+          temperature: 0,
+          maxTokens: 20);
+      final n = int.tryParse('${r['choice']}');
+      return n != null && n >= 1 && n <= options.length ? n - 1 : null;
+    } catch (_) {
+      return null; // no model or a bad answer: the most common meaning is shown instead
+    }
+  }
+
   /// The meaning of [word] as it is used in [sentence], for a reader at [level].
   /// Throws [StoryFailed] if no usable meaning comes back.
   Future<({String meaning, String? synonym})> explainWord(String word, String sentence, int level) async {
@@ -422,6 +579,15 @@ class StoryEngine {
     if (cached != null) return cached;
     final l = levels[level];
     final job = Job(Priority.word);
+    // A real dictionary comes first: the AI only picks which meaning fits, it never writes one.
+    final options = await book?.lookup(word) ?? const <Meaning>[];
+    if (options.isNotEmpty) {
+      final m = options[options.length == 1 ? 0 : await _pickMeaning(job, word, sentence, options) ?? 0];
+      var text = m.text[0].toUpperCase() + m.text.substring(1);
+      if (!RegExp(r'[.!?]$').hasMatch(text)) text += '.';
+      if (m.example.isNotEmpty && m.example.length <= 70) text += '\nExample: "${m.example}"';
+      return _wordCache[key] = (meaning: text, synonym: m.synonym.isEmpty ? null : m.synonym);
+    }
     // A synonym is usable if it is one or two words and not the same word again.
     bool okSynonym(String w) =>
         w.isNotEmpty && w.split(RegExp(r'\s+')).length <= 2 && !w.toLowerCase().startsWith(word.toLowerCase().substring(0, math.min(4, word.length)));
@@ -452,8 +618,7 @@ class StoryEngine {
         feedback = '\nYour last answer was not usable because $why. Explain it another way, for example "a person who..." or "to do...".';
       }
     }
-    // ponytail: a small model sometimes only manages a synonym; that still helps a reader.
-    if (meaning == null && synonym != null) meaning = 'It means about the same as "$synonym".';
+    // A synonym alone is not shown: a small model's synonym can be nonsense ("beginning" came back as "bulacan").
     if (meaning == null) throw StoryFailed('No good meaning for "$word"');
     final out = (meaning: meaning, synonym: meaning.contains('"$synonym"') ? null : synonym);
     return _wordCache[key] = out;

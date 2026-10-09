@@ -116,16 +116,14 @@ void main() {
     expect(s.questions.length, 3);
   });
 
-  test('word help rejects a meaning that uses the word, then falls back to the synonym', () async {
+  test('word help rejects a meaning that uses the word, and a bare synonym is not shown', () async {
     var tries = 0;
     final rt = ScriptedRuntime((system, user) {
       tries++;
       return jsonEncode({'meaning': 'a vendor who vends', 'synonym': 'seller'});
     });
-    final w = await StoryEngine(() async => rt).explainWord('vendor', 'The vendor sold fish.', 1);
+    await expectLater(StoryEngine(() async => rt).explainWord('vendor', 'The vendor sold fish.', 1), throwsA(isA<StoryFailed>()));
     expect(tries, 3);
-    expect(w.meaning, 'It means about the same as "seller".');
-    expect(w.synonym, isNull);
   });
 
   test('a waiting word lookup goes ahead of background writing', () async {
