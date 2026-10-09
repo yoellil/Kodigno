@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai/ai_engine.dart';
 import 'ai/llm_ai_engine.dart';
+import 'domain/card_assist.dart';
 import 'data/repository.dart';
 import 'domain/models.dart';
 import 'domain/summary.dart';
@@ -187,6 +188,48 @@ class AppController extends ChangeNotifier {
     }
   }
 
+  /// A suggestion for the empty side of a flashcard: the definition for [term], or the
+  /// term for [definition], with the set's [notes] for context. Throws
+  /// [CardAssistFailed] with a message fit to show the user.
+  Future<String> suggestCard({
+    required AssistField want,
+    String term = '',
+    String definition = '',
+    String notes = '',
+    String setTitle = '',
+  }) async {
+    final given = want == AssistField.definition ? term : definition;
+    if (given.trim().isEmpty) {
+      throw CardAssistFailed(want == AssistField.definition
+          ? 'Type the term first, then ask the AI for its definition.'
+          : 'Type the definition first, then ask the AI for the term.');
+    }
+    if (!modelReady) throw CardAssistFailed('The AI model is not set up yet. Open Settings to download it.');
+    try {
+      final reply = await (await runtime()).chat(
+        buildCardAssistMessages(
+            want: want, term: term, definition: definition, notes: notes, setTitle: setTitle),
+        maxTokens: 160,
+        temperature: 0.2,
+        schema: cardAssistSchema(want),
+      );
+      final s = parseCardAssist(reply, want);
+      if (s.isEmpty) {
+        throw CardAssistFailed("The AI wasn't sure about that one. Try adding a little more detail, or write it yourself.");
+      }
+      return s;
+    } on CardAssistFailed {
+      rethrow;
+    } on ModelUnavailableException {
+      await _dropEngine();
+      throw CardAssistFailed('The AI model could not run. Close other apps and try again.');
+    } on FormatException {
+      throw CardAssistFailed("The AI's answer was not usable. Try again.");
+    } catch (_) {
+      throw CardAssistFailed("Couldn't get a suggestion. Try again.");
+    }
+  }
+
   /// The current tier's model server, shared with Kulay so only one runs.
   Future<LlmRuntime> runtime() async {
     final e = await _engineForTier();
@@ -245,4 +288,12 @@ class AppController extends ChangeNotifier {
     _engine = null;
     _engineTier = null;
   }
+}
+
+/// Why a card suggestion could not be made, in words for the student.
+class CardAssistFailed implements Exception {
+  CardAssistFailed(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }

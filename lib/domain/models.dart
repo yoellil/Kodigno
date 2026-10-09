@@ -12,9 +12,12 @@ class QuizQuestion {
 }
 
 class Flashcard {
-  const Flashcard({required this.front, required this.back});
+  const Flashcard({required this.front, required this.back, this.id});
   final String front;
   final String back;
+
+  /// The card's row in the database, once saved. A card with an id can be edited.
+  final int? id;
 }
 
 class GeneratedSet {
