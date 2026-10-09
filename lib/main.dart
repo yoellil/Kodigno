@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
@@ -20,6 +21,9 @@ import 'models/model_downloader.dart';
 import 'models/model_manager.dart';
 import 'models/tier.dart';
 import 'ocr/ocr_service.dart';
+import 'reading/reading_controller.dart';
+import 'reading/reading_repository.dart';
+import 'reading/story_engine.dart';
 import 'sources/pdf_text.dart';
 import 'sources/source_reader.dart';
 import 'ui/add_source_screen.dart';
@@ -37,7 +41,8 @@ Future<void> main() async {
   final support = await getApplicationSupportDirectory();
   final modelsDir = Directory(p.join(support.path, 'models'))..createSync(recursive: true);
   final tiers = TierTable.fromJson(await rootBundle.loadString('assets/model_tiers.json'));
-  final repo = StudyRepository(AppDatabase(driftDatabase(name: 'kodigno')));
+  final db = AppDatabase(driftDatabase(name: 'kodigno'));
+  final repo = StudyRepository(db);
 
   final controller = AppController(
     tiers: tiers,
@@ -49,9 +54,21 @@ Future<void> main() async {
   );
   await controller.init();
 
+  final prefs = await SharedPreferences.getInstance();
+  final reading = ReadingController(
+    repo: ReadingRepository(db),
+    engine: StoryEngine(controller.runtime),
+    prefs: prefs,
+    tierInfo: () => (basic: controller.tier?.id == 'low', model: controller.tier?.model ?? 'the local AI'),
+  );
+  unawaited(reading.open(starters: await rootBundle.loadString('assets/kulay/starter_stories.json')));
+
   final reader = SourceReader(ocr: TesseractCliOcr.bundled(), pdf: PdfrxTextExtractor());
-  runApp(ChangeNotifierProvider.value(
-    value: controller,
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider.value(value: controller),
+      ChangeNotifierProvider.value(value: reading),
+    ],
     child: KodignoApp(repo: repo, reader: reader),
   ));
 }
@@ -81,6 +98,7 @@ class _KodignoAppState extends State<KodignoApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // Stop the bundled model server when the window closes.
     _lifecycle = AppLifecycleListener(onExitRequested: () async {
+      context.read<ReadingController>().cancelAll();
       await context.read<AppController>().shutdown();
       return AppExitResponse.exit;
     });

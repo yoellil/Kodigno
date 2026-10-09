@@ -13,7 +13,9 @@ abstract class LlmRuntime {
       {int maxTokens = 1024, Map<String, Object?>? schema});
 
   /// Chat completion over [messages], each {'role': ..., 'content': ...}.
-  Future<String> chat(List<Map<String, String>> messages, {int maxTokens = 512});
+  /// With [schema] the server can only emit matching JSON.
+  Future<String> chat(List<Map<String, String>> messages,
+      {int maxTokens = 512, double temperature = 0.5, Map<String, Object?>? schema});
   Future<void> dispose();
 }
 

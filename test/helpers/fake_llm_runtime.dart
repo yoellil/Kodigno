@@ -16,8 +16,9 @@ class FakeLlmRuntime implements LlmRuntime {
   }
 
   @override
-  Future<String> chat(List<Map<String, String>> messages, {int maxTokens = 512}) =>
-      complete(messages.last['content']!, maxTokens: maxTokens);
+  Future<String> chat(List<Map<String, String>> messages,
+          {int maxTokens = 512, double temperature = 0.5, Map<String, Object?>? schema}) =>
+      complete(messages.last['content']!, maxTokens: maxTokens, schema: schema);
 
   @override
   Future<void> dispose() async {}

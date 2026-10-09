@@ -5,6 +5,7 @@ import 'package:flutter/material.dart' show ThemeMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai/ai_engine.dart';
+import 'ai/llm_ai_engine.dart';
 import 'data/repository.dart';
 import 'models/device_profiler.dart';
 import 'models/model_manager.dart';
@@ -149,6 +150,13 @@ class AppController extends ChangeNotifier {
     } catch (e) {
       throw ChatFailed("Couldn't get an answer, try again.");
     }
+  }
+
+  /// The current tier's model server, shared with Kulay so only one runs.
+  Future<LlmRuntime> runtime() async {
+    final e = await _engineForTier();
+    if (e is LlmAiEngine) return e.runtime;
+    throw ModelUnavailableException('no model server for this engine');
   }
 
   Future<AiEngine> _engineForTier() async {

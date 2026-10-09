@@ -2,7 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 
+import '../reading/reading_controller.dart';
+import '../reading/ui/kulay_pages.dart';
+import '../reading/ui/story_view.dart' show LevelChip;
 import 'motion.dart';
 import 'theme.dart';
 
@@ -262,7 +266,8 @@ class _BurstPainter extends CustomPainter {
 }
 
 // ---------------------------------------------------------------------------
-// Full-screen Kulay dashboard.
+// Full-screen Kulay: the landing (beside the shelves) until a reader is
+// picked, then the reading app inside the same white card.
 
 class KulayScreen extends StatelessWidget {
   const KulayScreen({super.key, required this.onBack});
@@ -270,14 +275,8 @@ class KulayScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final still = reduceMotion(context);
-    Widget enter(Widget w, int i) => still
-        ? w
-        : w
-            .animate(delay: (250 + i * 90).ms)
-            .fadeIn(duration: 500.ms, curve: Motion.curve)
-            .slideX(begin: -0.08, end: 0, duration: 500.ms, curve: Motion.curve);
-
+    final c = context.watch<ReadingController>();
+    final landing = c.screen == KulayScreenId.welcome || c.screen == KulayScreenId.readers;
     return Scaffold(
       backgroundColor: _indigo,
       body: SafeArea(
@@ -285,75 +284,177 @@ class KulayScreen extends StatelessWidget {
           margin: const EdgeInsets.all(14),
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28)),
-          child: LayoutBuilder(builder: (context, box) {
-            final narrow = box.maxWidth < 760;
-            final content = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                enter(Row(mainAxisSize: MainAxisSize.min, children: [
-                  const KulayIcon(size: 34),
-                  const SizedBox(width: 10),
-                  Text('Kodigno', style: body(14, weight: FontWeight.w700, color: _indigoText)),
-                ]), 0),
-                const SizedBox(height: 22),
-                enter(Text('Kulay', style: display(narrow ? 52 : 72, color: _indigoText)), 1),
-                const SizedBox(height: 14),
-                enter(
-                    SizedBox(
-                      width: 360,
-                      child: Text(
-                        'A colorful shelf for your studies. Coming soon.',
-                        style: body(17, color: const Color(0xFF55507A)),
-                      ),
-                    ),
-                    2),
-                const SizedBox(height: 26),
-                enter(_BackPill(onTap: onBack), 3),
-                const SizedBox(height: 26),
-                enter(
-                    Row(mainAxisSize: MainAxisSize.min, children: [
-                      for (var i = 0; i < 3; i++)
-                        Container(
-                          width: i == 1 ? 8 : 6,
-                          height: i == 1 ? 8 : 6,
-                          margin: const EdgeInsets.only(right: 10),
-                          decoration: BoxDecoration(
-                            color: i == 1 ? _indigoText : const Color(0xFFC9C5DD),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                    ]),
-                    4),
-              ],
-            );
-            return Stack(children: [
-              Positioned.fill(child: _Shelves(narrow: narrow)),
-              Positioned(
-                left: narrow ? 20 : 64,
-                right: narrow ? 20 : null,
-                top: 0,
-                bottom: 0,
-                child: Align(
-                  alignment: narrow ? Alignment.topLeft : Alignment.centerLeft,
-                  child: narrow
-                      ? Container(
-                          margin: const EdgeInsets.only(top: 20),
-                          padding: const EdgeInsets.all(22),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.94),
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: content,
-                        )
-                      : content,
-                ),
-              ),
-            ]);
-          }),
+          child: landing
+              ? _Landing(
+                  onBack: onBack,
+                  panel: c.screen == KulayScreenId.welcome ? const WelcomePanel() : const ReadersPanel(),
+                )
+              : _Inside(onBack: onBack),
         ),
       ),
     );
+  }
+}
+
+class _Landing extends StatelessWidget {
+  const _Landing({required this.onBack, required this.panel});
+  final VoidCallback onBack;
+  final Widget panel;
+
+  @override
+  Widget build(BuildContext context) {
+    final still = reduceMotion(context);
+    final c = context.read<ReadingController>();
+    Widget enter(Widget w, int i) => still
+        ? w
+        : w
+            .animate(delay: (250 + i * 90).ms)
+            .fadeIn(duration: 500.ms, curve: Motion.curve)
+            .slideX(begin: -0.08, end: 0, duration: 500.ms, curve: Motion.curve);
+
+    return LayoutBuilder(builder: (context, box) {
+      final narrow = box.maxWidth < 760;
+      final content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          enter(Row(mainAxisSize: MainAxisSize.min, children: [
+            const KulayIcon(size: 34),
+            const SizedBox(width: 10),
+            Text('Kodigno', style: body(14, weight: FontWeight.w700, color: _indigoText)),
+          ]), 0),
+          const SizedBox(height: 22),
+          enter(Text('Kulay', style: display(narrow ? 52 : 72, color: _indigoText)), 1),
+          const SizedBox(height: 14),
+          enter(
+              SizedBox(
+                width: 380,
+                child: Text(
+                  'Stories at your reading color, written by the AI on this computer. No internet needed.',
+                  style: body(17, color: const Color(0xFF55507A)),
+                ),
+              ),
+              2),
+          const SizedBox(height: 26),
+          enter(SizedBox(width: 440, child: panel), 3),
+          const SizedBox(height: 26),
+          enter(
+              Wrap(spacing: 12, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                _BackPill(onTap: onBack),
+                if (c.mode == KulayMode.classroom)
+                  TextButton(onPressed: () => openTeacher(context), child: const Text('Teacher view')),
+              ]),
+              4),
+        ],
+      );
+      return Stack(children: [
+        Positioned.fill(child: _Shelves(narrow: narrow)),
+        Positioned(
+          left: narrow ? 20 : 64,
+          right: narrow ? 20 : null,
+          top: 0,
+          bottom: 0,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(vertical: narrow ? 20 : 40),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: box.maxHeight - (narrow ? 40 : 80)),
+              child: Align(
+                alignment: narrow ? Alignment.topLeft : Alignment.centerLeft,
+                child: narrow
+                    ? Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.94),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: content,
+                      )
+                    : content,
+              ),
+            ),
+          ),
+        ),
+      ]);
+    });
+  }
+}
+
+/// Opens the teacher view: behind a PIN in classroom mode.
+Future<void> openTeacher(BuildContext context) async {
+  final c = context.read<ReadingController>();
+  if (c.mode != KulayMode.classroom) return c.openTeacher();
+  final pin = await askPin(context, first: !c.hasPin);
+  if (pin == null || !context.mounted) return;
+  if (!await c.unlockTeacher(pin) && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('That PIN is not right. It is 4 digits.')));
+  }
+}
+
+/// The reading app: a top bar, then the current page.
+class _Inside extends StatelessWidget {
+  const _Inside({required this.onBack});
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.watch<ReadingController>();
+    final r = c.reader;
+    final classroom = c.mode == KulayMode.classroom;
+    final page = switch (c.screen) {
+      KulayScreenId.home when r != null => const HomePage(),
+      KulayScreenId.writing when r != null => const WritingPage(),
+      KulayScreenId.placement || KulayScreenId.story when c.passage != null => const ReadPage(),
+      KulayScreenId.teacher => const TeacherPage(),
+      _ => const SizedBox.shrink(),
+    };
+    final link = TextButton.styleFrom(foregroundColor: _indigoText, textStyle: body(14, weight: FontWeight.w700));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: 8,
+          children: [
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              const KulayIcon(size: 30),
+              const SizedBox(width: 10),
+              Text('Kulay', style: display(26, color: _indigoText)),
+              if (r != null && c.screen != KulayScreenId.teacher) ...[
+                const SizedBox(width: 16),
+                Text(r.name, style: body(15, weight: FontWeight.w700, color: _indigoText)),
+                if (r.placed) ...[const SizedBox(width: 8), LevelChip(r.level)],
+              ],
+            ]),
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              if (r != null && c.screen != KulayScreenId.home && c.screen != KulayScreenId.placement)
+                TextButton(style: link, onPressed: c.goHome, child: const Text('My page')),
+              if (classroom && c.screen != KulayScreenId.teacher)
+                TextButton(style: link, onPressed: c.switchReader, child: const Text('Switch reader')),
+              if (c.screen != KulayScreenId.teacher)
+                TextButton(
+                    style: link,
+                    onPressed: () => openTeacher(context),
+                    child: Text(classroom ? 'Teacher view' : 'My progress')),
+              if (c.screen == KulayScreenId.teacher && r == null)
+                TextButton(style: link, onPressed: c.switchReader, child: const Text('Readers')),
+              PopupMenuButton<KulayMode>(
+                tooltip: 'Who uses Kulay here',
+                icon: const Icon(Icons.more_horiz_rounded, color: _indigoText),
+                onSelected: c.setMode,
+                itemBuilder: (_) => [
+                  CheckedPopupMenuItem(value: KulayMode.personal, checked: !classroom, child: const Text('Just me')),
+                  CheckedPopupMenuItem(value: KulayMode.classroom, checked: classroom, child: const Text('A class, taking turns')),
+                ],
+              ),
+              const SizedBox(width: 8),
+              _BackPill(onTap: onBack),
+            ]),
+          ],
+        ),
+      ),
+      Expanded(child: page),
+    ]);
   }
 }
 

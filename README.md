@@ -10,6 +10,13 @@ Status: Windows desktop first. Android, iOS, audio and YouTube sources are plann
 - The model is downloaded once on first run (Basic about 470 MB, Standard about 1 GB, High about 2 GB), picked by your PC's RAM. After that it works offline.
 - Study sets, quiz scores and streaks are stored locally in SQLite.
 
+## Kulay reading lab
+Kulay (open it from the Kulay button in the nav) is a reading lab for Grades 1 to 12. The same local model writes an English story at the reader's color level (8 colors), asks questions about it, and shows the sentence that holds the answer when a reader gets one wrong. Scores of 80% or more on 3 stories in a row move the reader up a color. It works for one reader ("Just me") or a class taking turns on one computer, with a teacher view behind a PIN.
+- Every story and question passes rule-based language checks (`lib/reading/nlp.dart`) and the model must answer its own questions before a reader sees them.
+- 23 hand-reviewed starter stories ship in `assets/kulay/` for slow PCs and for when the model cannot run.
+- Read-aloud uses the speech engine built into Windows. Nothing goes online.
+- Design: `docs/superpowers/specs/2026-10-09-kulay-reading-design.md`.
+
 ## Build (Windows)
 Needs Flutter, Visual Studio with the C++ desktop workload, and Windows Developer Mode (plugins need symlinks).
 

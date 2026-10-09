@@ -1,0 +1,1922 @@
+[
+ {
+  "level": 0,
+  "topic": "Basketball",
+  "title": "Tala's First Basketball Game",
+  "paras": [
+   [
+    "Once upon a time, in Pampanga, there was a little girl named Tala."
+   ],
+   [
+    "Tala loved playing games with her friends.",
+    "Today, it was her first basketball game."
+   ],
+   [
+    "Tala had never played basketball before.",
+    "She was nervous but excited.",
+    "She ran onto the court.",
+    "She watched as her friends tried to throw the ball into the hoop.",
+    "Tala followed them, trying to join in.",
+    "Her heart was racing as she dribbled the ball, trying to get a good shot.",
+    "Finally, it went through the hoop.",
+    "Tala felt happy and proud.",
+    "She had done it!",
+    "She learned that even though she was nervous, she could do anything if she tried.",
+    "She was so proud of herself for being brave.",
+    "From that day on, Tala practiced every day.",
+    "She became better and better at basketball.",
+    "And she loved it more than ever.",
+    "Tala was glad she could be brave and try her best, even when it was hard."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What made Tala feel proud?",
+    "choices": [
+     "Being guilty",
+     "Being nervous",
+     "Being brave",
+     "Being heartbroken"
+    ],
+    "answer": 2,
+    "evidence": 13
+   },
+   {
+    "question": "What did Tala learn from the basketball game?",
+    "choices": [
+     "That she couldn't do anything",
+     "That she was the best",
+     "That she could do anything if she tried",
+     "That she should avoid hard things"
+    ],
+    "answer": 2,
+    "evidence": 12
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 2.8,
+   "words": 155,
+   "target": [
+    0,
+    2.5
+   ],
+   "drafts": 1,
+   "name": "Tala",
+   "place": "Pampanga",
+   "verified": 2,
+   "rewritten": 0,
+   "dropped": 9,
+   "seconds": 11,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 0,
+  "topic": "Fiesta",
+  "title": "Rey and the Fiesta",
+  "paras": [
+   [
+    "Rey lives in Vigan.",
+    "His house is near the river.",
+    "He loves to go there with his family during fiesta time.",
+    "On a sunny day, Rey sees the river."
+   ],
+   [
+    "Mom, can we go to the river to see the fiesta?"
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Where does Rey live?",
+    "choices": [
+     "Legazpi",
+     "Iloilo",
+     "Zamboanga",
+     "Vigan"
+    ],
+    "answer": 3,
+    "evidence": 0
+   },
+   {
+    "question": "What does Rey love to do during fiesta time?",
+    "choices": [
+     "Go to the farm",
+     "Go to the river",
+     "Go to the beach",
+     "Go to the zoo"
+    ],
+    "answer": 1,
+    "evidence": 4
+   },
+   {
+    "question": "What is near Rey's house?",
+    "choices": [
+     "The mountains",
+     "The city",
+     "The lake",
+     "The river"
+    ],
+    "answer": 3,
+    "evidence": 1
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 2.3,
+   "words": 40,
+   "target": [
+    0,
+    2.5
+   ],
+   "drafts": 4,
+   "name": "Rey",
+   "place": "Vigan",
+   "verified": 3,
+   "rewritten": 1,
+   "dropped": 5,
+   "seconds": 23,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 0,
+  "topic": "Jeepney ride",
+  "title": "Carla's Ride",
+  "paras": [
+   [
+    "Carla was going to school.",
+    "She got on the jeepney.",
+    "It was her first time."
+   ],
+   [
+    "It's a long ride today.",
+    "Don't be nervous."
+   ],
+   [
+    "The jeepney went to Baguio.",
+    "Carla looked outside.",
+    "It was so beautiful.",
+    "She saw mountains and trees.",
+    "She was happy.",
+    "When they got to the school, Carla felt sick.",
+    "She got off the jeepney.",
+    "She was tired.",
+    "Carla learned that sometimes we don't want to go somewhere.",
+    "She learned that jeepneys are for the big people."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Who was going to school?",
+    "choices": [
+     "The coach",
+     "A neighbor",
+     "The baby",
+     "Carla"
+    ],
+    "answer": 3,
+    "evidence": 0
+   },
+   {
+    "question": "Where did Carla go when she got off the jeepney?",
+    "choices": [
+     "The library",
+     "The beach",
+     "The park",
+     "The school"
+    ],
+    "answer": 3,
+    "evidence": 10
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 1.7,
+   "words": 79,
+   "target": [
+    0,
+    2.5
+   ],
+   "drafts": 1,
+   "name": "Carla",
+   "place": "Baguio",
+   "verified": 2,
+   "rewritten": 0,
+   "dropped": 5,
+   "seconds": 7,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 1,
+  "topic": "Sari-sari store",
+  "title": "Divina and the Sari-sari Store",
+  "paras": [
+   [
+    "Divina lives in a small town called Batangas.",
+    "There's a sari-sari store on the corner of her house.",
+    "Her parents run it."
+   ],
+   [
+    "One day, when Divina comes home from school, the store is empty.",
+    "The sign outside says, 'Closed for maintenance.'"
+   ],
+   [
+    "Divina's parents say they're not sure what's wrong.",
+    "Divina wants to help, so she goes to check on the store herself.",
+    "She knocks on the door but no one answers.",
+    "She looks in the windows and sees the store is empty and broken.",
+    "The sign is missing, and the store looks like it hasn't been open in years.",
+    "The floor is covered in papers and clothes.",
+    "The windows are cracked, and the door is rusty.",
+    "Inside, the shelves are empty, and the floors are wet.",
+    "There's no sign of anyone who lives in the store.",
+    "The store is closed for good."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Where does Divina come from?",
+    "choices": [
+     "Bohol",
+     "Samar",
+     "Batangas",
+     "Palawan"
+    ],
+    "answer": 2,
+    "evidence": 0
+   },
+   {
+    "question": "When did the store close?",
+    "choices": [
+     "The next day",
+     "The previous day",
+     "The weekend",
+     "The day Divina came home from school"
+    ],
+    "answer": 3,
+    "evidence": 3
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 2.7,
+   "words": 143,
+   "target": [
+    1.5,
+    3.5
+   ],
+   "drafts": 1,
+   "name": "Divina",
+   "place": "Batangas",
+   "verified": 2,
+   "rewritten": 0,
+   "dropped": 5,
+   "seconds": 12,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 1,
+  "topic": "Typhoon day",
+  "title": "Typhoon Day in Naga",
+  "paras": [
+   [
+    "Sofia loved going to school in the mornings.",
+    "Today was going to be the worst day of her life.",
+    "She woke up early, feeling excited about the day ahead.",
+    "But as the first rays of sunlight crept through the window, Sofia knew something was wrong."
+   ],
+   [
+    "Sofia rushed out of bed, hoping to find a way to change her fate.",
+    "She was too young to understand what a typhoon was, but she knew it was not good.",
+    "Her mother came to her room, looking worried."
+   ],
+   [
+    "Sofia asked, 'Mom, what's wrong?",
+    "Why are you worried?",
+    "Can I go to school today?",
+    "I don't want to miss any lessons.",
+    "What if the typhoon comes during the day?",
+    "I can't imagine it hurting us!"
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Who loves going to school in the mornings?",
+    "choices": [
+     "Her father",
+     "Her brother",
+     "Sofia",
+     "The vendor"
+    ],
+    "answer": 2,
+    "evidence": 0
+   },
+   {
+    "question": "How did Sofia feel when she woke up?",
+    "choices": [
+     "Angry",
+     "Tired",
+     "Excited",
+     "Discouraged"
+    ],
+    "answer": 2,
+    "evidence": 2
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 2.8,
+   "words": 120,
+   "target": [
+    1.5,
+    3.5
+   ],
+   "drafts": 1,
+   "name": "Sofia",
+   "place": "Naga",
+   "verified": 2,
+   "rewritten": 0,
+   "dropped": 0,
+   "seconds": 10,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 1,
+  "topic": "Rice farm",
+  "title": "Andrea's Harvest",
+  "paras": [
+   [
+    "Andrea lives in a small village called Barangay Cagayan.",
+    "Her daddy has a rice farm, and she helps him every day.",
+    "Today, they're planting new seeds in the soil.",
+    "It feels new, like a game, but it's also hard work."
+   ],
+   [
+    "When the sun is high in the sky, Andrea stands under the big shade tree, holding a hoe.",
+    "She waters the seedlings, making sure they get enough water.",
+    "As the leaves grow, the soil becomes rich, and soon, the plants start to sprout.",
+    "It's exciting!"
+   ],
+   [
+    "One morning, while Andrea is walking home, she notices that the soil isn't as rich as usual.",
+    "She asks her dad what's wrong, and he explains that it's probably because the farmers didn't use their fertilizers properly.",
+    "Andrea is worried, but she knows they can fix it by adding more."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What is Andrea doing today?",
+    "choices": [
+     "She is making cookies",
+     "She is cleaning the house",
+     "She is playing a game",
+     "She is planting new seeds"
+    ],
+    "answer": 3,
+    "evidence": 2
+   },
+   {
+    "question": "Where is Andrea standing while watering the seedlings?",
+    "choices": [
+     "In the kitchen",
+     "On the road",
+     "Under the big shade tree",
+     "In the classroom"
+    ],
+    "answer": 2,
+    "evidence": 4
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 4.7,
+   "words": 135,
+   "target": [
+    1.5,
+    3.5
+   ],
+   "drafts": 2,
+   "name": "Andrea",
+   "place": "Nueva Ecija",
+   "verified": 2,
+   "rewritten": 0,
+   "dropped": 2,
+   "seconds": 9,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 2,
+  "topic": "Fishing village",
+  "title": "Rey and the Merienda Moon",
+  "paras": [
+   [
+    "Rey lived in a small fishing village by the sea.",
+    "The village had a river for washing fish and a market where people sold merienda.",
+    "Rey loved going to the market with his dad to buy their daily merienda.",
+    "One day, the full moon came out bright and the village was quiet.",
+    "Rey decided to go to the market alone."
+   ],
+   [
+    "Rey found a nice spot to watch the moon and started to walk.",
+    "It was very quiet and the moon was the only thing to hear.",
+    "Suddenly, a big wave came and washed over the village.",
+    "The houses were damaged, and the people were scared.",
+    "Rey saw the village in a mess and was worried."
+   ],
+   [
+    "Rey tried to help his dad, but they couldn't fix everything.",
+    "The next day, Rey went to the market with his dad to buy more merienda.",
+    "The moon was full that night and Rey decided to stay and watch it.",
+    "The next day, the river was high and the fish were hard to catch.",
+    "Rey and his dad had to spend the day in the village, trying to help fix the damage."
+   ],
+   [
+    "Rey learned that sometimes, even the most peaceful places could change.",
+    "He realized that people needed to work together to solve problems.",
+    "He also realized that he was good at watching the moon and helping others.",
+    "Rey's day in the village became a valuable lesson in the importance of being kind to others and working together."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Where was Rey's fishing village?",
+    "choices": [
+     "In a forest",
+     "By the sea",
+     "In the sky",
+     "Under the moon"
+    ],
+    "answer": 1,
+    "evidence": 0
+   },
+   {
+    "question": "What did the village have for washing fish?",
+    "choices": [
+     "A lake",
+     "A pond",
+     "A swimming pool",
+     "A river"
+    ],
+    "answer": 3,
+    "evidence": 1
+   },
+   {
+    "question": "What did Rey see that made him worried?",
+    "choices": [
+     "The moon",
+     "The village in a mess",
+     "The sky",
+     "A river"
+    ],
+    "answer": 1,
+    "evidence": 9
+   },
+   {
+    "question": "What was the main reason Rey went to the market?",
+    "choices": [
+     "To buy merienda",
+     "To learn about the sea",
+     "To meet new friends",
+     "To play games"
+    ],
+    "answer": 0,
+    "evidence": 11
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 4.4,
+   "words": 243,
+   "target": [
+    2.5,
+    4.5
+   ],
+   "drafts": 1,
+   "name": "Rey",
+   "place": "Dumaguete",
+   "verified": 4,
+   "rewritten": 1,
+   "dropped": 5,
+   "seconds": 17,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 2,
+  "topic": "Basketball",
+  "title": "Jomar's Game Night",
+  "paras": [
+   [
+    "Jomar loved the game of basketball.",
+    "He had a shiny basketball that he practiced with every day.",
+    "He played at the backyard, where his family and friends gathered to watch him dunk the ball."
+   ],
+   [
+    "One evening, the whole neighborhood decided to have a game night.",
+    "Jomar was asked to play with a group of friends.",
+    "The park was filled with other kids, all waiting to start the game."
+   ],
+   [
+    "As the night began, Jomar found his feet tapping and his heart racing.",
+    "He was excited and nervous at the same time.",
+    "He couldn't wait to show everyone what he could do."
+   ],
+   [
+    "When the game started, Jomar was a bit scared.",
+    "The other kids were better at the game than he expected.",
+    "Jomar tried his best, but he couldn't keep up with them.",
+    "He missed several shots and let the other players win easily."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What does Jomar love to play?",
+    "choices": [
+     "Tennis",
+     "Soccer",
+     "Baseball",
+     "Basketball"
+    ],
+    "answer": 3,
+    "evidence": 0
+   },
+   {
+    "question": "Where did Jomar's family and friends gather to watch Jomar play?",
+    "choices": [
+     "The street",
+     "The park",
+     "The backyard",
+     "The library"
+    ],
+    "answer": 2,
+    "evidence": 2
+   },
+   {
+    "question": "Where was the game night?",
+    "choices": [
+     "In the park",
+     "In the backyard",
+     "At home",
+     "At school"
+    ],
+    "answer": 0,
+    "evidence": 5
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 3.9,
+   "words": 142,
+   "target": [
+    2.5,
+    4.5
+   ],
+   "drafts": 1,
+   "name": "Jomar",
+   "place": "Baguio",
+   "verified": 3,
+   "rewritten": 0,
+   "dropped": 11,
+   "seconds": 8,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 2,
+  "topic": "Jeepney ride",
+  "title": "The Adventure of Nico's Ride",
+  "paras": [
+   [
+    "Nico loved nothing more than spending the afternoon at his aunt's house in Zamboanga.",
+    "Today, his aunt wanted to show him around the city.",
+    "But first, Nico had to take a jeepney to the bus stop."
+   ],
+   [
+    "Nico was excited to see all the sights and sounds of Zamboanga.",
+    "As the jeepney pulled away, Nico felt nervous.",
+    "He had never been on a jeepney before, and he didn't know what to expect."
+   ],
+   [
+    "The jeepney driver, a friendly man with a warm smile, started the engine.",
+    "As the jeepney sped down the street, Nico felt a rush of adrenaline.",
+    "He was finally on a jeepney, and he couldn't wait to see what adventures this vehicle could take him on."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Who loved spending the afternoon at the aunt's house?",
+    "choices": [
+     "A classmate",
+     "The friend",
+     "The teacher",
+     "Nico"
+    ],
+    "answer": 3,
+    "evidence": 0
+   },
+   {
+    "question": "Where did Nico have to go first?",
+    "choices": [
+     "The hospital",
+     "The beach",
+     "The park",
+     "The bus stop"
+    ],
+    "answer": 3,
+    "evidence": 2
+   },
+   {
+    "question": "What did Nico feel as the jeepney pulled away?",
+    "choices": [
+     "Nervous",
+     "Pleased",
+     "Excited",
+     "Happy"
+    ],
+    "answer": 0,
+    "evidence": 4
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 5.4,
+   "words": 117,
+   "target": [
+    2.5,
+    4.5
+   ],
+   "drafts": 3,
+   "name": "Nico",
+   "place": "Zamboanga",
+   "verified": 3,
+   "rewritten": 1,
+   "dropped": 3,
+   "seconds": 18,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 3,
+  "topic": "Science fair",
+  "title": "Joy's Science Fair Experiment",
+  "paras": [
+   [
+    "Joy lived in Zamboanga with her family.",
+    "She loved science and was always up for the science fair.",
+    "One day, her teacher announced that this year's fair would have a theme on renewable energy."
+   ],
+   [
+    "Joy was excited!",
+    "She started brainstorming ideas in the backyard, but the sun was too bright and it felt hot.",
+    "Joy decided to use a cooler room to do her experiment."
+   ],
+   [
+    "The room was too dark, but Joy tried to adjust her experiment.",
+    "She used a lamp and placed a small plant next to the lamp to see if the lamp could help the plant grow faster.",
+    "After a few days, the plant was not growing as quickly as it had before."
+   ],
+   [
+    "Joy tried adjusting the temperature, but nothing seemed to help.",
+    "She was frustrated, but then she remembered that she had a few bottles of water.",
+    "She poured water into the plant's soil and noticed that the plant started to grow faster.",
+    "Joy realized that the water could help the plant grow better."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Where did Joy live?",
+    "choices": [
+     "In Naga",
+     "In Makati",
+     "In Zamboanga",
+     "In Dumaguete"
+    ],
+    "answer": 2,
+    "evidence": 0
+   },
+   {
+    "question": "What did Joy try to do?",
+    "choices": [
+     "Turn on the fan",
+     "Call her parents",
+     "Adjust her experiment",
+     "Clean her room"
+    ],
+    "answer": 2,
+    "evidence": 6
+   },
+   {
+    "question": "What did Joy use to place next to the lamp?",
+    "choices": [
+     "A rock",
+     "A toy",
+     "A book",
+     "A small plant"
+    ],
+    "answer": 3,
+    "evidence": 7
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 4.7,
+   "words": 168,
+   "target": [
+    3.5,
+    5.5
+   ],
+   "drafts": 1,
+   "name": "Joy",
+   "place": "Zamboanga",
+   "verified": 3,
+   "rewritten": 1,
+   "dropped": 6,
+   "seconds": 9,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 3,
+  "topic": "School garden",
+  "title": "Andrea's First Garden",
+  "paras": [
+   [
+    "Andrea, a 10-year-old girl from Legazpi, loved spending her days in the backyard.",
+    "There was a small patch of soil and a few seedlings, but it never seemed to produce much.",
+    "One summer, she decided it was time to make her backyard a real garden.",
+    "She started by asking her parents for permission, but they just laughed.",
+    "She knew she had to do it herself."
+   ],
+   [
+    "It was a hard start.",
+    "She borrowed tools from her neighbors and picked seeds from the local market.",
+    "Each day, she would plant a few seeds and keep track of her progress.",
+    "She was determined, but the lack of rain and sunlight made it difficult.",
+    "One day, her dad came over with a new book.",
+    "It had pictures of gardens, and Andrea realized that not everything needed to be perfect right away.",
+    "She started to learn from her mistakes, and soon her garden was a beautiful sight."
+   ],
+   [
+    "Andrea's hard work paid off.",
+    "Her parents noticed the difference and allowed her to keep her garden.",
+    "She decided to grow some vegetables for their meals and started selling the extra harvest at the local market.",
+    "Andrea learned that it was important to be patient and to not give up on her dreams.",
+    "Her garden became a success, and Andrea was proud of what she had achieved."
+   ],
+   [
+    "From that day on, Andrea's backyard was a place of joy for her and her family.",
+    "She learned that success comes with hard work, patience, and the right attitude.",
+    "Her garden was not just a place for her, but a source of happiness and food for her family.",
+    "And Andrea was grateful for the start she had made in her backyard."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What did Andrea do each day?",
+    "choices": [
+     "Read books",
+     "Played in the water",
+     "Baked cookies",
+     "Planted seeds"
+    ],
+    "answer": 3,
+    "evidence": 7
+   },
+   {
+    "question": "What did Andrea's parents do when they heard her plans?",
+    "choices": [
+     "Took over the project",
+     "Encouraged her",
+     "Got angry",
+     "Laughed"
+    ],
+    "answer": 3,
+    "evidence": 3
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 5,
+   "words": 281,
+   "target": [
+    3.5,
+    5.5
+   ],
+   "drafts": 2,
+   "name": "Andrea",
+   "place": "Legazpi",
+   "verified": 2,
+   "rewritten": 0,
+   "dropped": 7,
+   "seconds": 10,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 3,
+  "topic": "Fishing village",
+  "title": "Aya's First Fishing Trip",
+  "paras": [
+   [
+    "Aya, a lively 10-year-old girl from Bulacan, eagerly awaited the day when she could join her father in a fishing trip.",
+    "The village buzzed with excitement.",
+    "The days leading up to the trip were filled with anticipation as everyone gathered in the barangay plaza, ready to catch the best of the fish.",
+    "The smell of fresh fish, merienda, and the sound of the sea echoed in the air."
+   ],
+   [
+    "Aya's heart raced with excitement.",
+    "She had never been fishing before, but she was determined to learn and impress her father.",
+    "The day finally arrived.",
+    "They drove towards the village's nearby lake, the serene blue waters reflecting the warm sun.",
+    "The water was calm, and the sky was painted with the promise of a day filled with joy and adventure."
+   ],
+   [
+    "Aya’s dad, a seasoned fisherman, handed her a rod and a line.",
+    "She held it with a mixture of nervousness and enthusiasm.",
+    "'You’re going to do great, Aya,' he said with a proud smile.",
+    "'The lake is not too far from the sea, so we should catch plenty of fish.'",
+    "She nodded, her eyes wide with curiosity and hope.",
+    "They set out, the small boat bobbing gently on the water, the gentle lapping of the waves underfoot."
+   ],
+   [
+    "Hours turned into a day.",
+    "The sky began to darken, and the shadows lengthened.",
+    "Aya felt the tension in her father's shoulders, but he held her hand tightly.",
+    "The sun dipped below the horizon, and the sky turned a deep shade of orange.",
+    "The boat started to slow, and the fish became harder to catch."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "How did Aya's father feel about her?",
+    "choices": [
+     "Proud",
+     "Scared",
+     "Sad",
+     "Nervous"
+    ],
+    "answer": 0,
+    "evidence": 11
+   },
+   {
+    "question": "What did everyone do on the days leading up to the trip?",
+    "choices": [
+     "Participated in a dance recital",
+     "Gathered in the barangay plaza",
+     "Went to the church",
+     "Preparations for a community event"
+    ],
+    "answer": 1,
+    "evidence": 2
+   },
+   {
+    "question": "What happened to the fish?",
+    "choices": [
+     "Got bigger",
+     "Froze in the cold water",
+     "Harder to catch",
+     "Were easier to catch"
+    ],
+    "answer": 2,
+    "evidence": 19
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 5.3,
+   "words": 263,
+   "target": [
+    3.5,
+    5.5
+   ],
+   "drafts": 1,
+   "name": "Aya",
+   "place": "Bulacan",
+   "verified": 3,
+   "rewritten": 2,
+   "dropped": 6,
+   "seconds": 16,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 4,
+  "topic": "School garden",
+  "title": "The Garden and the Seed",
+  "paras": [
+   [
+    "Jun was always drawn to the school garden, where the plants were vibrant and healthy.",
+    "Today, he saw something new—a seedling growing from the ground, no bigger than his thumb."
+   ],
+   [
+    "Jun looked at the tiny seed with big eyes.",
+    "He thought, 'I want to see it grow, just like I do in my dreams.'",
+    "He picked up a piece of soil and planted the seed."
+   ],
+   [
+    "The next morning, the garden was full of excitement.",
+    "Jun watched as the seedling grew taller, stronger, and more beautiful.",
+    "The leaves were a bright green, and the flower buds were starting to show."
+   ],
+   [
+    "One afternoon, Jun woke up early to see the garden at its best.",
+    "The sun was shining, and the seedling was towering over all the other plants.",
+    "Jun felt a sense of pride and accomplishment.",
+    "He had seen a dream come true."
+   ],
+   [
+    "The turning point came when a group of students, led by a teacher, started to take over the garden.",
+    "They wanted to transform it into a perfect flower bed.",
+    "Jun was shocked when he saw the plans, and he realized that the seedling was not just a random plant.",
+    "It was a symbol of the beauty that could be achieved through hard work and determination."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Who saw a seedling grow?",
+    "choices": [
+     "The students",
+     "A teacher",
+     "The parents",
+     "Jun"
+    ],
+    "answer": 3,
+    "evidence": 14
+   },
+   {
+    "question": "What color were the leaves?",
+    "choices": [
+     "Green",
+     "Purple",
+     "White",
+     "Yellow"
+    ],
+    "answer": 0,
+    "evidence": 7
+   },
+   {
+    "question": "What did the students want to do with the garden?",
+    "choices": [
+     "Clean the garden",
+     "Plant flowers",
+     "Remove the plants",
+     "Make a perfect flower bed"
+    ],
+    "answer": 3,
+    "evidence": 13
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 4.6,
+   "words": 207,
+   "target": [
+    4.5,
+    6.5
+   ],
+   "drafts": 1,
+   "name": "Jun",
+   "place": "Cagayan de Oro",
+   "verified": 3,
+   "rewritten": 2,
+   "dropped": 12,
+   "seconds": 16,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 4,
+  "topic": "Fiesta",
+  "title": "Fiesta of Naga",
+  "paras": [
+   [
+    "Tonyo and his family lived in the bustling streets of Naga, a place known for its vibrant festivals.",
+    "Each year, Naga would host the Fiesta, a celebration of the city's rich history and culture.",
+    "The streets were filled with colorful decorations and excited locals.",
+    "Tonyo was eagerly looking forward to another Fiesta this year."
+   ],
+   [
+    "It was a bright, sunny day, and Tonyo decided to visit the Fiesta grounds with his family.",
+    "They arrived early, and soon, the streets were filled with the sounds of music and laughter.",
+    "The scent of freshly baked pastries filled the air."
+   ],
+   [
+    "Suddenly, a group of young boys gathered around Tonyo, pointing excitedly at the festival area.",
+    "Tonyo followed their gaze, and there they saw a colorful, vibrant festival.",
+    "The smell of barbecue, the sight of vendors, and the sounds of music were a welcome change from the usual quietness of the day."
+   ],
+   [
+    "The turning point came when Tonyo saw a group of people dressed in traditional costumes.",
+    "They were performing a dance that had been passed down through generations.",
+    "The music was lively, and the dance moves were graceful and powerful.",
+    "Tonyo watched in awe as they performed, feeling a deep sense of pride and belonging."
+   ],
+   [
+    "After the performance, the festival area was filled with families enjoying the food and games.",
+    "Tonyo and his family joined in, laughing and having fun.",
+    "The festival was not just a celebration of music and food but also a time for people to come together and forget the stresses of daily life."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What was Tonyo looking forward to that year?",
+    "choices": [
+     "A science fair",
+     "A music concert",
+     "Another Fiesta",
+     "A new festival"
+    ],
+    "answer": 2,
+    "evidence": 3
+   },
+   {
+    "question": "How did the festival area change after the performance?",
+    "choices": [
+     "Filled with families enjoying food and games",
+     "Becoming a movie screening",
+     "Emptying",
+     "Changing its theme"
+    ],
+    "answer": 0,
+    "evidence": 14
+   },
+   {
+    "question": "What did the festival help people do?",
+    "choices": [
+     "Play games",
+     "Travel to different places",
+     "Learn new languages",
+     "Come together and forget daily stresses"
+    ],
+    "answer": 3,
+    "evidence": 16
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 7.8,
+   "words": 253,
+   "target": [
+    4.5,
+    6.5
+   ],
+   "drafts": 2,
+   "name": "Tonyo",
+   "place": "Naga",
+   "verified": 3,
+   "rewritten": 1,
+   "dropped": 3,
+   "seconds": 27,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 4,
+  "topic": "Sari-sari store",
+  "title": "Rey's Sari-sari Store Adventure",
+  "paras": [
+   [
+    "Rey, a lively 11-year-old boy from Davao, loved nothing more than exploring his favorite sari-sari store.",
+    "Inside, he would find all sorts of treats, from freshly squeezed juice to sweet snacks and even some toys.",
+    "Rey's parents often came in to pick up their shopping, but Rey preferred the company of his sari-sari store, where he could find his own friends and playmates."
+   ],
+   [
+    "One day, Rey's parents were late coming in, leaving him with no one to play with.",
+    "Rey's heart sank as he realized that no one was in the store.",
+    "Rey's face fell, and he started to feel a bit lonely and sad."
+   ],
+   [
+    "Rey's parents returned, but they were surprised to see Rey's tears.",
+    "Rey explained that he had no one to play with, and his parents decided to give Rey a special treat to make him happy."
+   ],
+   [
+    "Rey's parents took Rey to the candy counter, where they bought some lollipops and chocolates.",
+    "Rey couldn't believe his eyes as he started to dance around with joy.",
+    "As he walked back home, Rey's parents noticed his tears of joy and realized that they had found the perfect solution to Rey's problem."
+   ],
+   [
+    "Rey's parents taught Rey how to make some of the treats he loved at the store and how to run the store.",
+    "Rey was thrilled and eager to try his hand at managing the store.",
+    "He quickly learned the tricks of the trade and soon became the best manager in the store.",
+    "Rey's parents were overjoyed with their son's success and continued to support him as he grew and learned more about business and entrepreneurship.",
+    "Rey's parents were proud of their son's hard work and dedication to his sari-sari store, and Rey had realized that he could make his own future and make the world a better place."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What did Rey's parents notice?",
+    "choices": [
+     "Tears of frustration",
+     "Tears of sadness",
+     "Tears of anger",
+     "Tears of joy"
+    ],
+    "answer": 3,
+    "evidence": 10
+   },
+   {
+    "question": "How did Rey learn the tricks?",
+    "choices": [
+     "From a book",
+     "From his parents",
+     "From the internet",
+     "From a friend"
+    ],
+    "answer": 1,
+    "evidence": 14
+   },
+   {
+    "question": "What did Rey realize?",
+    "choices": [
+     "He could be a writer",
+     "He could be a teacher",
+     "He could be a scientist",
+     "He could make his own future"
+    ],
+    "answer": 3,
+    "evidence": 15
+   },
+   {
+    "question": "What did Rey find in the sari-sari store?",
+    "choices": [
+     "Music",
+     "Treats",
+     "Books",
+     "Clothes"
+    ],
+    "answer": 1,
+    "evidence": 11
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 6.9,
+   "words": 304,
+   "target": [
+    4.5,
+    6.5
+   ],
+   "drafts": 2,
+   "name": "Rey",
+   "place": "Davao",
+   "verified": 4,
+   "rewritten": 1,
+   "dropped": 5,
+   "seconds": 14,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 5,
+  "topic": "Coral reef",
+  "title": "Coral Reef Rescue: A Teen's Adventure in Palawan",
+  "paras": [
+   [
+    "Gabriel, a 14-year-old boy from the lush islands of Palawan, loved nothing more than diving into the clear blue waters of the ocean.",
+    "Every summer, he spent his days snorkeling along the vibrant reefs of Coron, an island in the north of Palawan."
+   ],
+   [
+    "An unusually strong storm was brewing in the northern part of Palawan.",
+    "Winds howled, and the waves threatened to break the calm surface of the sea.",
+    "The calmness Gabriel and his friends had always known on Coron was about to shift."
+   ],
+   [
+    "The storm grew stronger, and the sky turned a dark shade of purple as it threatened to swallow the entire island.",
+    "The young boy, always eager for a challenge, decided to venture out into the storm, hoping to help."
+   ],
+   [
+    "Gabriel climbed the rope ladder, which had become a familiar symbol of his bravery and zest for adventure.",
+    "He jumped into the sea, his breath coming out in big, puffy bubbles as he swam towards the reef.",
+    "The water was colder than usual, and the waves pounded against the side of the boat they had chartered."
+   ],
+   [
+    "The reef was a labyrinth of colors and shapes, each rock a home for some of the most colorful fish in the sea.",
+    "But the storm had other plans.",
+    "The waves crept closer, threatening to engulf the boat.",
+    "Gabriel swam deeper, diving into the water's depths where the currents were stronger.",
+    "He felt small but determined, his heart pounding in his chest as he swam closer to the reef's edge."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What was the storm like?",
+    "choices": [
+     "A cold wind",
+     "An unusually strong storm",
+     "A gentle breeze",
+     "A bright sunny day"
+    ],
+    "answer": 1,
+    "evidence": 2
+   },
+   {
+    "question": "What color did the sky turn?",
+    "choices": [
+     "Yellow",
+     "Green",
+     "Dark purple",
+     "Blue"
+    ],
+    "answer": 2,
+    "evidence": 5
+   },
+   {
+    "question": "What did the winds do?",
+    "choices": [
+     "Rushed",
+     "Sang",
+     "Howled",
+     "Broke"
+    ],
+    "answer": 2,
+    "evidence": 3
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 7,
+   "words": 249,
+   "target": [
+    6,
+    8.5
+   ],
+   "drafts": 1,
+   "name": "Gabriel",
+   "place": "Palawan",
+   "verified": 3,
+   "rewritten": 0,
+   "dropped": 7,
+   "seconds": 14,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 5,
+  "topic": "Fiesta",
+  "title": "Fiesta Night in Laguna",
+  "paras": [
+   [
+    "Jun was a regular at the small town of Santa Cruz, Laguna.",
+    "The town was known for its vibrant fiestas and lively atmosphere.",
+    "Every year, a grand fiesta was held to celebrate the patron saint of Laguna, St. John the Baptist."
+   ],
+   [
+    "One evening, Jun and his friends were chatting outside the community center when they heard the sound of horns and drums.",
+    "They knew it was time for the fiesta, and they couldn't wait to join in the festivities."
+   ],
+   [
+    "As they walked towards the plaza, they saw a sea of colorful flags and banners.",
+    "The smell of fried foods filled the air, and the sounds of music and laughter echoed throughout the town.",
+    "It was a celebration unlike any other."
+   ],
+   [
+    "As they made their way through the streets, they couldn't help but notice the people dressed in traditional costumes.",
+    "Some were playing instruments, while others were dancing in the streets.",
+    "The sound of their music filled the air, and it was clear that everyone was enjoying themselves."
+   ],
+   [
+    "As they reached the main square, they saw a group of people preparing for a dance.",
+    "They were practicing the steps and moving in sync.",
+    "It was clear that this was going to be a grand dance to be performed during the fiesta.",
+    "Jun couldn't wait to see how it would turn out."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Where was Jun when they heard the horns and drums?",
+    "choices": [
+     "At home",
+     "Outside the community center",
+     "In the library",
+     "On the beach"
+    ],
+    "answer": 1,
+    "evidence": 3
+   },
+   {
+    "question": "What did Jun and his friends notice as they walked through the streets?",
+    "choices": [
+     "Monkeys",
+     "Traditional costumes",
+     "Modern buildings",
+     "Spacecraft"
+    ],
+    "answer": 1,
+    "evidence": 8
+   },
+   {
+    "question": "What was known about the town of Laguna?",
+    "choices": [
+     "Misty and foggy",
+     "Vibrant and lively",
+     "Cold and quiet",
+     "Dusty and old"
+    ],
+    "answer": 1,
+    "evidence": 1
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 5.8,
+   "words": 220,
+   "target": [
+    6,
+    8.5
+   ],
+   "drafts": 1,
+   "name": "Jun",
+   "place": "Laguna",
+   "verified": 3,
+   "rewritten": 1,
+   "dropped": 13,
+   "seconds": 16,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 6,
+  "topic": "Jeepney ride",
+  "title": "Sofia's Unexpected Adventure: The Jeepney Ride Incident",
+  "paras": [
+   [
+    "Sofia, a vibrant 16-year-old girl from the bustling town of Bulacan, found herself early that morning as the sun was just beginning to peek over the horizon.",
+    "The sky was painted with hues of orange and pink, promising a day of adventure.",
+    "Sofia had plans to catch the first jeepney of the day and ride through the narrow streets of her hometown."
+   ],
+   [
+    "As she made her way to the jeepney stand, Sofia felt the anticipation building within her.",
+    "It had been a while since she had taken a ride in one of these old, worn-out vehicles.",
+    "The jeepney was a beloved mode of transportation in Bulacan, a small but vibrant town known for its vibrant culture and friendly locals."
+   ],
+   [
+    "The jeepney driver, an elderly man named Pedro, greeted Sofia with a smile.",
+    "'Good morning, Sofia.",
+    "You're in luck today.",
+    "The jeepney is going to be a bit slower, but there's plenty of space for you to sit.'"
+   ],
+   [
+    "As Sofia climbed into the backseat, she felt a mix of excitement and trepidation.",
+    "Pedro had a history of being a bit erratic, but Sofia trusted him.",
+    "They chatted about the day's weather and the sights they'd see, but the conversation was interrupted when Sofia realized she was in the wrong jeepney."
+   ],
+   [
+    "The jeepney was overcrowded, and soon Sofia found herself standing on the side, trying to peer inside.",
+    "She could see the faces of the passengers, many of whom had similar stories to hers.",
+    "There was Maria, a young mother trying to get to work, and Pedro, who had a history of breaking down in the middle of the ride.",
+    "The jeepney seemed to be about to break down at any moment, and Sofia was the only one left standing outside, holding onto her backpack and refusing to give up her seat for the new passengers who had just boarded the vehicle.",
+    "The driver seemed to notice Sofia's distress and made an effort to accommodate her, but the situation was tense.",
+    "Sofia had never faced such a challenging situation before, and she was struggling to decide whether she should stick it out or try to find a different way home.",
+    "Her father had always told her to be strong, but this was a situation that demanded courage, and Sofia was not sure if she had the strength to face it alone.",
+    "The driver, Pedro, saw the strain on Sofia's face and offered his hand, a gesture that brought her a small measure of comfort.",
+    "He explained that they were about to reach the next stop, and Sofia could either continue with her discomfort or make a decision to walk home.",
+    "Sofia hesitated for a moment, but the thought of walking alone through the narrow streets of Bulacan was too much to bear.",
+    "She made the difficult decision to board the jeepney again, hoping that the new passengers would be able to accommodate her and that the driver would be able to handle the situation better.",
+    "The rest of the journey was a blur of discomfort and worry, but Sofia managed to stay calm and focused, knowing that she had made a difficult decision and that she was capable of handling it."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What did the old jeepney driver, Pedro, do?",
+    "choices": [
+     "Broke down on the road",
+     "Taught Sofia to drive",
+     "Drove her to the hospital",
+     "Greeted Sofia"
+    ],
+    "answer": 3,
+    "evidence": 6
+   },
+   {
+    "question": "What gesture did the jeepney driver make?",
+    "choices": [
+     "Hit Sofia",
+     "Broke the car",
+     "Offered his hand",
+     "Started a fire"
+    ],
+    "answer": 2,
+    "evidence": 20
+   },
+   {
+    "question": "What color was the sky when Sofia went outside?",
+    "choices": [
+     "Orange and pink",
+     "Red",
+     "Purple",
+     "Green"
+    ],
+    "answer": 0,
+    "evidence": 1
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 9.2,
+   "words": 531,
+   "target": [
+    8,
+    10.5
+   ],
+   "drafts": 1,
+   "name": "Sofia",
+   "place": "Bulacan",
+   "verified": 3,
+   "rewritten": 0,
+   "dropped": 5,
+   "seconds": 22,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 6,
+  "topic": "Sari-sari store",
+  "title": "Sari-sari Store and the Hard Choice",
+  "paras": [
+   [
+    "Sofia, a 16-year-old girl from Pampanga, had always known that the sari-sari store was a place where she could find everything she needed.",
+    "It was the heart of her community, a place where people trusted her to provide them with the essentials they needed at affordable prices.",
+    "She loved the hustle and bustle of the place, the friendly faces, and the cheerful conversations that filled the air.",
+    "The sari-sari store was her sanctuary, a place where she could escape the monotony of her daily routine and immerse herself in the vibrant world of the barangay."
+   ],
+   [
+    "Sofia's routine started early in the morning, as she would rush to the store with her book bag filled with the necessary supplies for her studies.",
+    "The store was always bustling with people, each one seeking the advice of the knowledgeable storekeeper, who was always available to help them with their questions.",
+    "Sofia was there, a familiar face to all the customers, her knowledge of the store's products and prices as well as her ability to provide them with the best advice and recommendations.",
+    "The store was her second home, where she could find solace and companionship."
+   ],
+   [
+    "But something was changing.",
+    "The store had been running smoothly for years, until one day, Sofia noticed a small change in the prices of some of the items she used to sell.",
+    "She couldn't understand why the prices had suddenly increased, and she started to worry.",
+    "It was a small change, but it was significant enough to make her question the integrity of the store.",
+    "The customers she usually trusted were now complaining about the price increase, and it was starting to make her uneasy.",
+    "The store had always been honest and fair, but now there was a shadow of doubt hanging over her reputation.",
+    "She couldn't shake the feeling that there was something fishy going on."
+   ],
+   [
+    "Sofia's parents were always supportive of her career choice, but now they were starting to worry.",
+    "The store was a source of income for them, and if there was a problem, it could affect their lives.",
+    "Sofia had always prided herself on being a good manager, but now she was faced with a hard decision.",
+    "She knew that she could stay and try to resolve the issue, but that would mean going against the grain and potentially losing her customers.",
+    "Or she could leave and start a new career in another field, but that would mean abandoning her roots and her passion."
+   ],
+   [
+    "The turning point came when Sofia received a letter from a local radio station, asking her to comment on the price increase at the store.",
+    "She hesitated for a moment, but the idea of talking about the issue was too tempting to resist.",
+    "She decided to write a short article, explaining that the prices were increasing because of the rising cost of living, and that the store was always striving to provide the best quality at the best price.",
+    "It was a well-written article, and it caught the attention of the readers, who appreciated her honesty and compassion.",
+    "The store was able to keep their prices, and the customers were grateful.",
+    "Sofia's hard decision had paid off, and she realized that her role as a community manager was more than just a job.",
+    "She had a responsibility to her customers, her community, and her reputation as a trustworthy storekeeper.",
+    "Sofia's experience taught her that sometimes, the hardest choice was to stay true to oneself and one's values, even when it meant going against the norm."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What did Sofia's parents do when they saw the change in prices?",
+    "choices": [
+     "They were proud",
+     "They celebrated",
+     "They started to worry",
+     "They were indifferent"
+    ],
+    "answer": 2,
+    "evidence": 15
+   },
+   {
+    "question": "What was the first sign that Sofia's routine was being disrupted?",
+    "choices": [
+     "She woke up late",
+     "She noticed a small change in prices",
+     "She missed her friends",
+     "She had an argument"
+    ],
+    "answer": 1,
+    "evidence": 9
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 9.6,
+   "words": 590,
+   "target": [
+    8,
+    10.5
+   ],
+   "drafts": 4,
+   "name": "Sofia",
+   "place": "Pampanga",
+   "verified": 2,
+   "rewritten": 0,
+   "dropped": 13,
+   "seconds": 31,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 6,
+  "topic": "Typhoon day",
+  "title": "The Day the Wind Replaced the Rain",
+  "paras": [
+   [
+    "Jomar stood on the shore of Zamboanga, the sun casting a warm glow over the bay.",
+    "The sky was a canvas of blues and greens, with the occasional fluffy white clouds that promised a gentle breeze.",
+    "But today, the wind was relentless, and the sea was a mirror of its anger, shimmering in shades of gray and white."
+   ],
+   [
+    "Jomar's father had been fishing for hours, his boat caught in a storm.",
+    "The wind had turned the waves into a turbulent river, and the boat was now a ghost, its captain lost at sea.",
+    "The villagers had taken shelter in the community center, where they listened to the radio and the news of the day."
+   ],
+   [
+    "Typhoon day was a day when the wind replaced the rain, and the skies turned black with clouds that threatened to unleash a torrent of water.",
+    "The winds howled, and the waves crashed against the shore, creating a symphony of sound that echoed through the streets of Zamboanga."
+   ],
+   [
+    "Jomar had never seen such a fierce storm.",
+    "The sea was boiling, and the wind was a beast, tearing at the very fabric of the earth.",
+    "The villagers had organized a relief drive, collecting food and supplies for the fishermen and the stranded families.",
+    "The school had been canceled, and the students were left to their own devices."
+   ],
+   [
+    "Jomar's family was one of the few that had managed to secure a room in the community center, where they were provided with food and water.",
+    "The villagers had also set up tents, creating a makeshift shelter for those who had lost their homes.",
+    "The wind had even toppled some of the trees, creating a windbreak for the few who were left outside the community center's walls."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Where did the family find shelter?",
+    "choices": [
+     "The forest",
+     "The beach",
+     "The community center",
+     "The shore"
+    ],
+    "answer": 2,
+    "evidence": 5
+   },
+   {
+    "question": "What was the father doing?",
+    "choices": [
+     "Fishing",
+     "Cooking",
+     "Playing",
+     "Studying"
+    ],
+    "answer": 0,
+    "evidence": 3
+   },
+   {
+    "question": "What was the captain's current situation?",
+    "choices": [
+     "Lost at sea",
+     "Preparing food",
+     "Driving a car",
+     "Working on the boat"
+    ],
+    "answer": 0,
+    "evidence": 4
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 7.7,
+   "words": 287,
+   "target": [
+    8,
+    10.5
+   ],
+   "drafts": 1,
+   "name": "Jomar",
+   "place": "Zamboanga",
+   "verified": 3,
+   "rewritten": 3,
+   "dropped": 8,
+   "seconds": 20,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 7,
+  "topic": "Rice farm",
+  "title": "Rina's Harvest: The Struggle with Nueva Ecija’s Rice Farm",
+  "paras": [
+   [
+    "Rina, a 18-year-old girl from Nueva Ecija, spent her adolescence dreaming of a future where her family’s rice farm would be a thriving business.",
+    "The Nueva Ecija Rice Region was renowned for its exceptional rice, and Rina wanted nothing more than to be a part of this success.",
+    "Her parents, José and Lina, had started the family farm a decade ago, and the success had been steady.",
+    "However, a recent change in the market conditions had thrown the entire farm into turmoil.",
+    "The prices had dropped significantly, and the traditional market channels had become unreliable.",
+    "Rina’s family had to find a new way to sell their rice to ensure they could feed their growing number of customers without jeopardizing their livelihood."
+   ],
+   [
+    "A problem started when the rice prices hit rock bottom.",
+    "Rina’s father, José, had always maintained that the farm’s potential was greater than the current market value.",
+    "Despite their best efforts, the family’s rice was often sold at a loss, leading to financial strain and doubts about the future.",
+    "The family was struggling to make ends meet, and Rina, who had been eager to take over the farming business, found herself burdened with the responsibility of the family’s future."
+   ],
+   [
+    "Rina, eager to find a solution, began to explore alternative market options.",
+    "She sought the help of an agricultural expert, a local professor from the University of the Philippines.",
+    "The expert’s insights were invaluable, and they led to a series of meetings with potential buyers and a decision to introduce the farm to a new market.",
+    "The expert’s advice was crucial in understanding the evolving market dynamics and finding the most effective strategies."
+   ],
+   [
+    "As the process unfolded, Rina’s relationship with her father became strained.",
+    "The constant stress and financial pressure had begun to take a toll on the relationship.",
+    "José, feeling the weight of his daughter’s expectations, tried to reassure her of the farm’s potential.",
+    "However, the reality of the situation had left Rina with a heavy heart and a sense of hopelessness."
+   ],
+   [
+    "One turning point came when a group of local farmers decided to form a cooperative, offering their rice to a new market.",
+    "The idea was that the cooperative would negotiate better prices and potentially even increase the quality of the rice.",
+    "José, initially skeptical, was drawn into the conversation when he realized that his daughter was not just a part of the family but a crucial player in the future of the rice industry."
+   ],
+   [
+    "Rina, faced with the overwhelming pressure, found solace in the support of her friends and family.",
+    "Her closest friends, whom she had grown up with, offered advice and encouragement.",
+    "They reminded her of the importance of not giving up and the support of her parents.",
+    "The village’s tradition of community support was a lifeline for Rina, and she found that the strength of the collective, the love from her friends, and the kindness from her parents helped her to cope with the immense pressure."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What did the expert’s advice lead to?",
+    "choices": [
+     "Introducing the farm to a new market",
+     "Reducing the farm’s land size",
+     "Increasing the farm’s planting area",
+     "Enhancing the farm’s irrigation system"
+    ],
+    "answer": 0,
+    "evidence": 12
+   },
+   {
+    "question": "Who were the members of the new market offering rice?",
+    "choices": [
+     "Rina",
+     "The college’s student organization",
+     "A group of local farmers",
+     "Region"
+    ],
+    "answer": 2,
+    "evidence": 18
+   },
+   {
+    "question": "What did Rina start doing when she realized the market changes?",
+    "choices": [
+     "Painting",
+     "Exploring",
+     "Relaxing",
+     "Studying"
+    ],
+    "answer": 1,
+    "evidence": 10
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 10.6,
+   "words": 504,
+   "target": [
+    10,
+    13
+   ],
+   "drafts": 1,
+   "name": "Rina",
+   "place": "Nueva Ecija",
+   "verified": 3,
+   "rewritten": 0,
+   "dropped": 12,
+   "seconds": 48,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 7,
+  "topic": "Fishing village",
+  "title": "Fishing Village: The Joy of Independence",
+  "paras": [
+   [
+    "Joy had always been a girl from the fishing village of Iloilo, where the sea was a constant companion.",
+    "Her days were filled with the rhythm of the waves, the taste of salty air, and the promise of a future that seemed unattainable.",
+    "She was an active girl, quick to learn and quick to adapt, but her love for fishing had always been the most profound.",
+    "Her family had been fishermen for generations, and her parents had always encouraged her to follow in their footsteps."
+   ],
+   [
+    "One morning, as she was out on the sea, she caught herself daydreaming about the freedom of a different lifestyle - one that didn't involve the grueling hours of manual labor, the constant fear of danger, and the loneliness of being the only fisherwoman in her community.",
+    "The thought of escaping the village, of finding a place where she could truly be herself, was a dream she had been trying to forget for so long."
+   ],
+   [
+    "Joy was a determined girl, and she knew that she had to do something to change her life.",
+    "She decided to start her own fishing business, and with the help of her father, they set up a small shop that sold locally caught fish.",
+    "It was a small beginning, but it was a start, and it was a start that she felt she could build on."
+   ],
+   [
+    "Over the next few years, Joy's business grew.",
+    "She started taking orders from her neighbors, and soon, her shop was known throughout the village.",
+    "The villagers were impressed by her dedication and hard work, and they began to see her as a source of pride.",
+    "Joy's father was proud of his daughter, and he saw the signs of a successful business in her."
+   ],
+   [
+    "Joy's business was more than just a means of making a living.",
+    "It was a way for her to connect with her community, to share her knowledge of the sea, and to give back to those who had helped her become the person she was.",
+    "She had always felt that she was different, that she had more to offer than just fishing.",
+    "The business had been her way of proving that, and it had given her a sense of purpose."
+   ],
+   [
+    "One day, as she was working in her shop, she saw a young boy looking around, lost in thought.",
+    "It was his first day of school, and he was having trouble finding his way.",
+    "Joy saw the young boy's tears as she spoke to him.",
+    "She felt a pang of sadness, but also a sense of connection.",
+    "She realized that she had always felt a connection with children, that she had always been the one who had helped them when they needed it."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What did Joy always have a love for?",
+    "choices": [
+     "Books",
+     "Sports",
+     "Fishing",
+     "Music"
+    ],
+    "answer": 2,
+    "evidence": 0
+   },
+   {
+    "question": "What did Joy decide to do?",
+    "choices": [
+     "Become a writer",
+     "Learn to dance",
+     "Start a fishing business",
+     "Become a teacher"
+    ],
+    "answer": 2,
+    "evidence": 7
+   },
+   {
+    "question": "Who started taking orders from Joy?",
+    "choices": [
+     "School children",
+     "The vendor",
+     "Neighbors",
+     "The coach"
+    ],
+    "answer": 2,
+    "evidence": 10
+   },
+   {
+    "question": "What did the villagers notice about Joy?",
+    "choices": [
+     "Jealous of her achievements",
+     "Afraid of her business",
+     "Worried about her success",
+     "Impressed by her dedication and hard work"
+    ],
+    "answer": 3,
+    "evidence": 11
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 7.8,
+   "words": 451,
+   "target": [
+    10,
+    13
+   ],
+   "drafts": 4,
+   "name": "Joy",
+   "place": "Iloilo",
+   "verified": 4,
+   "rewritten": 1,
+   "dropped": 12,
+   "seconds": 72,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ },
+ {
+  "level": 7,
+  "topic": "Lola's cooking",
+  "title": "Nico's Cooking Class: A Vigan Tradition",
+  "paras": [
+   [
+    "Nico entered the bustling kitchen of his mother’s house, where the aroma of simmering spices filled the air.",
+    "The kitchen, a cozy space filled with memories, was a place where Nico felt most at ease.",
+    "Today, the aroma was the comforting scent of freshly made merienda, the local sweet treat that was a staple in Vigan."
+   ],
+   [
+    "Nico's heart thumped with the anticipation of his first cooking class, a day he had been eagerly looking forward to.",
+    "The class was a tradition passed down from generation to generation, a ritual where each family member contributed a dish to the communal meal."
+   ],
+   [
+    "The day began with a round of introductions, with each family member sharing the dish they had prepared.",
+    "Nico's eyes were glued to the table, where the aroma of the dishes was already starting to waft through the room.",
+    "When it was Nico's turn, he felt a mix of excitement and nervousness.",
+    "The thought of cooking in front of everyone was daunting, but he knew this was a chance for him to showcase his skills and learn from the experienced hands of his family."
+   ],
+   [
+    "The instructor, a wise old woman known for her excellent cooking skills, introduced Nico to the ingredients and techniques.",
+    "She started with the basics, showing him how to knead the dough for the pancit, the traditional noodle soup dish.",
+    "Nico watched intently, the tips of his hands tingling with the warmth of the pot as the dough bubbled on the stove.",
+    "The instructor's gentle guidance was like a balm to Nico's nerves, and soon he felt more confident as he started to add the ingredients with the help of the instructor."
+   ],
+   [
+    "As the day progressed, Nico's confidence grew as he learned more techniques and perfected his skills.",
+    "Each dish was a lesson in patience and technique, and Nico found himself becoming more and more absorbed in the process.",
+    "The instructor's patience was unmatched, and Nico felt a sense of gratitude towards her for her time and expertise."
+   ],
+   [
+    "The culmination of the class came when everyone gathered around the table for the communal meal.",
+    "The aroma of the dishes filled the room, each one reflecting the family's cultural heritage.",
+    "As Nico cut into his pancit, he felt a sense of pride and accomplishment.",
+    "He had learned to cook, and he had done so with the love and traditions that were so important to his family.",
+    "The meal was a success, and Nico knew that he had made a valuable contribution to his family's culinary traditions.",
+    "He left the kitchen with a sense of pride, knowing that he had learned something not just from the class, but from the whole experience of sharing food with his family and culture."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "How did Nico feel as he learned new cooking techniques?",
+    "choices": [
+     "Anxious",
+     "Confident",
+     "Afraid",
+     "Annoyed"
+    ],
+    "answer": 1,
+    "evidence": 12
+   },
+   {
+    "question": "What was the aroma in the kitchen that filled the air?",
+    "choices": [
+     "Flowers",
+     "Fresh bread",
+     "Crockery",
+     "Simmering spices"
+    ],
+    "answer": 3,
+    "evidence": 0
+   },
+   {
+    "question": "What was the wise old woman known for?",
+    "choices": [
+     "Good writing skills",
+     "Bad cooking skills",
+     "Bad sewing skills",
+     "Excellent cooking skills"
+    ],
+    "answer": 3,
+    "evidence": 9
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "grade": 9.5,
+   "words": 452,
+   "target": [
+    10,
+    13
+   ],
+   "drafts": 3,
+   "name": "Nico",
+   "place": "Vigan",
+   "verified": 3,
+   "rewritten": 1,
+   "dropped": 12,
+   "seconds": 29,
+   "model": "qwen2.5:1.5b",
+   "reviewed": true
+  }
+ }
+]

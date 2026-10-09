@@ -73,6 +73,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/model_tiers.json
+    - assets/kulay/starter_stories.json
   fonts:
     - family: Bricolage
       fonts:

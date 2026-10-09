@@ -1630,6 +1630,1468 @@ class AttemptsCompanion extends UpdateCompanion<Attempt> {
   }
 }
 
+class $ReadersTable extends Readers with TableInfo<$ReadersTable, Reader> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _levelMeta = const VerificationMeta('level');
+  @override
+  late final GeneratedColumn<int> level = GeneratedColumn<int>(
+    'level',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _placedMeta = const VerificationMeta('placed');
+  @override
+  late final GeneratedColumn<bool> placed = GeneratedColumn<bool>(
+    'placed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("placed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, level, placed, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'readers';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Reader> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('level')) {
+      context.handle(
+        _levelMeta,
+        level.isAcceptableOrUnknown(data['level']!, _levelMeta),
+      );
+    }
+    if (data.containsKey('placed')) {
+      context.handle(
+        _placedMeta,
+        placed.isAcceptableOrUnknown(data['placed']!, _placedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Reader map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Reader(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      level: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}level'],
+      )!,
+      placed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}placed'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadersTable createAlias(String alias) {
+    return $ReadersTable(attachedDatabase, alias);
+  }
+}
+
+class Reader extends DataClass implements Insertable<Reader> {
+  final int id;
+  final String name;
+  final int level;
+  final bool placed;
+  final DateTime createdAt;
+  const Reader({
+    required this.id,
+    required this.name,
+    required this.level,
+    required this.placed,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['level'] = Variable<int>(level);
+    map['placed'] = Variable<bool>(placed);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ReadersCompanion toCompanion(bool nullToAbsent) {
+    return ReadersCompanion(
+      id: Value(id),
+      name: Value(name),
+      level: Value(level),
+      placed: Value(placed),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Reader.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Reader(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      level: serializer.fromJson<int>(json['level']),
+      placed: serializer.fromJson<bool>(json['placed']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'level': serializer.toJson<int>(level),
+      'placed': serializer.toJson<bool>(placed),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Reader copyWith({
+    int? id,
+    String? name,
+    int? level,
+    bool? placed,
+    DateTime? createdAt,
+  }) => Reader(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    level: level ?? this.level,
+    placed: placed ?? this.placed,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Reader copyWithCompanion(ReadersCompanion data) {
+    return Reader(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      level: data.level.present ? data.level.value : this.level,
+      placed: data.placed.present ? data.placed.value : this.placed,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Reader(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('level: $level, ')
+          ..write('placed: $placed, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, level, placed, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Reader &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.level == this.level &&
+          other.placed == this.placed &&
+          other.createdAt == this.createdAt);
+}
+
+class ReadersCompanion extends UpdateCompanion<Reader> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<int> level;
+  final Value<bool> placed;
+  final Value<DateTime> createdAt;
+  const ReadersCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.level = const Value.absent(),
+    this.placed = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ReadersCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.level = const Value.absent(),
+    this.placed = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<Reader> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<int>? level,
+    Expression<bool>? placed,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (level != null) 'level': level,
+      if (placed != null) 'placed': placed,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ReadersCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<int>? level,
+    Value<bool>? placed,
+    Value<DateTime>? createdAt,
+  }) {
+    return ReadersCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      level: level ?? this.level,
+      placed: placed ?? this.placed,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (level.present) {
+      map['level'] = Variable<int>(level.value);
+    }
+    if (placed.present) {
+      map['placed'] = Variable<bool>(placed.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadersCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('level: $level, ')
+          ..write('placed: $placed, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StoriesTable extends Stories with TableInfo<$StoriesTable, StoryRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _levelMeta = const VerificationMeta('level');
+  @override
+  late final GeneratedColumn<int> level = GeneratedColumn<int>(
+    'level',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _topicMeta = const VerificationMeta('topic');
+  @override
+  late final GeneratedColumn<String> topic = GeneratedColumn<String>(
+    'topic',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _parasMeta = const VerificationMeta('paras');
+  @override
+  late final GeneratedColumn<String> paras = GeneratedColumn<String>(
+    'paras',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _questionsMeta = const VerificationMeta(
+    'questions',
+  );
+  @override
+  late final GeneratedColumn<String> questions = GeneratedColumn<String>(
+    'questions',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _checksMeta = const VerificationMeta('checks');
+  @override
+  late final GeneratedColumn<String> checks = GeneratedColumn<String>(
+    'checks',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _pipelineMeta = const VerificationMeta(
+    'pipeline',
+  );
+  @override
+  late final GeneratedColumn<int> pipeline = GeneratedColumn<int>(
+    'pipeline',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('ai'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    level,
+    topic,
+    title,
+    paras,
+    questions,
+    checks,
+    pipeline,
+    source,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StoryRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('level')) {
+      context.handle(
+        _levelMeta,
+        level.isAcceptableOrUnknown(data['level']!, _levelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_levelMeta);
+    }
+    if (data.containsKey('topic')) {
+      context.handle(
+        _topicMeta,
+        topic.isAcceptableOrUnknown(data['topic']!, _topicMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_topicMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('paras')) {
+      context.handle(
+        _parasMeta,
+        paras.isAcceptableOrUnknown(data['paras']!, _parasMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_parasMeta);
+    }
+    if (data.containsKey('questions')) {
+      context.handle(
+        _questionsMeta,
+        questions.isAcceptableOrUnknown(data['questions']!, _questionsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_questionsMeta);
+    }
+    if (data.containsKey('checks')) {
+      context.handle(
+        _checksMeta,
+        checks.isAcceptableOrUnknown(data['checks']!, _checksMeta),
+      );
+    }
+    if (data.containsKey('pipeline')) {
+      context.handle(
+        _pipelineMeta,
+        pipeline.isAcceptableOrUnknown(data['pipeline']!, _pipelineMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pipelineMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StoryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StoryRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      level: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}level'],
+      )!,
+      topic: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}topic'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      paras: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}paras'],
+      )!,
+      questions: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}questions'],
+      )!,
+      checks: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}checks'],
+      )!,
+      pipeline: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pipeline'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $StoriesTable createAlias(String alias) {
+    return $StoriesTable(attachedDatabase, alias);
+  }
+}
+
+class StoryRow extends DataClass implements Insertable<StoryRow> {
+  final int id;
+  final int level;
+  final String topic;
+  final String title;
+  final String paras;
+  final String questions;
+  final String checks;
+  final int pipeline;
+  final String source;
+  final DateTime createdAt;
+  const StoryRow({
+    required this.id,
+    required this.level,
+    required this.topic,
+    required this.title,
+    required this.paras,
+    required this.questions,
+    required this.checks,
+    required this.pipeline,
+    required this.source,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['level'] = Variable<int>(level);
+    map['topic'] = Variable<String>(topic);
+    map['title'] = Variable<String>(title);
+    map['paras'] = Variable<String>(paras);
+    map['questions'] = Variable<String>(questions);
+    map['checks'] = Variable<String>(checks);
+    map['pipeline'] = Variable<int>(pipeline);
+    map['source'] = Variable<String>(source);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  StoriesCompanion toCompanion(bool nullToAbsent) {
+    return StoriesCompanion(
+      id: Value(id),
+      level: Value(level),
+      topic: Value(topic),
+      title: Value(title),
+      paras: Value(paras),
+      questions: Value(questions),
+      checks: Value(checks),
+      pipeline: Value(pipeline),
+      source: Value(source),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory StoryRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StoryRow(
+      id: serializer.fromJson<int>(json['id']),
+      level: serializer.fromJson<int>(json['level']),
+      topic: serializer.fromJson<String>(json['topic']),
+      title: serializer.fromJson<String>(json['title']),
+      paras: serializer.fromJson<String>(json['paras']),
+      questions: serializer.fromJson<String>(json['questions']),
+      checks: serializer.fromJson<String>(json['checks']),
+      pipeline: serializer.fromJson<int>(json['pipeline']),
+      source: serializer.fromJson<String>(json['source']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'level': serializer.toJson<int>(level),
+      'topic': serializer.toJson<String>(topic),
+      'title': serializer.toJson<String>(title),
+      'paras': serializer.toJson<String>(paras),
+      'questions': serializer.toJson<String>(questions),
+      'checks': serializer.toJson<String>(checks),
+      'pipeline': serializer.toJson<int>(pipeline),
+      'source': serializer.toJson<String>(source),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  StoryRow copyWith({
+    int? id,
+    int? level,
+    String? topic,
+    String? title,
+    String? paras,
+    String? questions,
+    String? checks,
+    int? pipeline,
+    String? source,
+    DateTime? createdAt,
+  }) => StoryRow(
+    id: id ?? this.id,
+    level: level ?? this.level,
+    topic: topic ?? this.topic,
+    title: title ?? this.title,
+    paras: paras ?? this.paras,
+    questions: questions ?? this.questions,
+    checks: checks ?? this.checks,
+    pipeline: pipeline ?? this.pipeline,
+    source: source ?? this.source,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  StoryRow copyWithCompanion(StoriesCompanion data) {
+    return StoryRow(
+      id: data.id.present ? data.id.value : this.id,
+      level: data.level.present ? data.level.value : this.level,
+      topic: data.topic.present ? data.topic.value : this.topic,
+      title: data.title.present ? data.title.value : this.title,
+      paras: data.paras.present ? data.paras.value : this.paras,
+      questions: data.questions.present ? data.questions.value : this.questions,
+      checks: data.checks.present ? data.checks.value : this.checks,
+      pipeline: data.pipeline.present ? data.pipeline.value : this.pipeline,
+      source: data.source.present ? data.source.value : this.source,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StoryRow(')
+          ..write('id: $id, ')
+          ..write('level: $level, ')
+          ..write('topic: $topic, ')
+          ..write('title: $title, ')
+          ..write('paras: $paras, ')
+          ..write('questions: $questions, ')
+          ..write('checks: $checks, ')
+          ..write('pipeline: $pipeline, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    level,
+    topic,
+    title,
+    paras,
+    questions,
+    checks,
+    pipeline,
+    source,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StoryRow &&
+          other.id == this.id &&
+          other.level == this.level &&
+          other.topic == this.topic &&
+          other.title == this.title &&
+          other.paras == this.paras &&
+          other.questions == this.questions &&
+          other.checks == this.checks &&
+          other.pipeline == this.pipeline &&
+          other.source == this.source &&
+          other.createdAt == this.createdAt);
+}
+
+class StoriesCompanion extends UpdateCompanion<StoryRow> {
+  final Value<int> id;
+  final Value<int> level;
+  final Value<String> topic;
+  final Value<String> title;
+  final Value<String> paras;
+  final Value<String> questions;
+  final Value<String> checks;
+  final Value<int> pipeline;
+  final Value<String> source;
+  final Value<DateTime> createdAt;
+  const StoriesCompanion({
+    this.id = const Value.absent(),
+    this.level = const Value.absent(),
+    this.topic = const Value.absent(),
+    this.title = const Value.absent(),
+    this.paras = const Value.absent(),
+    this.questions = const Value.absent(),
+    this.checks = const Value.absent(),
+    this.pipeline = const Value.absent(),
+    this.source = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  StoriesCompanion.insert({
+    this.id = const Value.absent(),
+    required int level,
+    required String topic,
+    required String title,
+    required String paras,
+    required String questions,
+    this.checks = const Value.absent(),
+    required int pipeline,
+    this.source = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : level = Value(level),
+       topic = Value(topic),
+       title = Value(title),
+       paras = Value(paras),
+       questions = Value(questions),
+       pipeline = Value(pipeline);
+  static Insertable<StoryRow> custom({
+    Expression<int>? id,
+    Expression<int>? level,
+    Expression<String>? topic,
+    Expression<String>? title,
+    Expression<String>? paras,
+    Expression<String>? questions,
+    Expression<String>? checks,
+    Expression<int>? pipeline,
+    Expression<String>? source,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (level != null) 'level': level,
+      if (topic != null) 'topic': topic,
+      if (title != null) 'title': title,
+      if (paras != null) 'paras': paras,
+      if (questions != null) 'questions': questions,
+      if (checks != null) 'checks': checks,
+      if (pipeline != null) 'pipeline': pipeline,
+      if (source != null) 'source': source,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  StoriesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? level,
+    Value<String>? topic,
+    Value<String>? title,
+    Value<String>? paras,
+    Value<String>? questions,
+    Value<String>? checks,
+    Value<int>? pipeline,
+    Value<String>? source,
+    Value<DateTime>? createdAt,
+  }) {
+    return StoriesCompanion(
+      id: id ?? this.id,
+      level: level ?? this.level,
+      topic: topic ?? this.topic,
+      title: title ?? this.title,
+      paras: paras ?? this.paras,
+      questions: questions ?? this.questions,
+      checks: checks ?? this.checks,
+      pipeline: pipeline ?? this.pipeline,
+      source: source ?? this.source,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (level.present) {
+      map['level'] = Variable<int>(level.value);
+    }
+    if (topic.present) {
+      map['topic'] = Variable<String>(topic.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (paras.present) {
+      map['paras'] = Variable<String>(paras.value);
+    }
+    if (questions.present) {
+      map['questions'] = Variable<String>(questions.value);
+    }
+    if (checks.present) {
+      map['checks'] = Variable<String>(checks.value);
+    }
+    if (pipeline.present) {
+      map['pipeline'] = Variable<int>(pipeline.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StoriesCompanion(')
+          ..write('id: $id, ')
+          ..write('level: $level, ')
+          ..write('topic: $topic, ')
+          ..write('title: $title, ')
+          ..write('paras: $paras, ')
+          ..write('questions: $questions, ')
+          ..write('checks: $checks, ')
+          ..write('pipeline: $pipeline, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReadingAttemptsTable extends ReadingAttempts
+    with TableInfo<$ReadingAttemptsTable, ReadingAttempt> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadingAttemptsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _readerIdMeta = const VerificationMeta(
+    'readerId',
+  );
+  @override
+  late final GeneratedColumn<int> readerId = GeneratedColumn<int>(
+    'reader_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES readers (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _storyIdMeta = const VerificationMeta(
+    'storyId',
+  );
+  @override
+  late final GeneratedColumn<int> storyId = GeneratedColumn<int>(
+    'story_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stories (id)',
+    ),
+  );
+  static const VerificationMeta _levelMeta = const VerificationMeta('level');
+  @override
+  late final GeneratedColumn<int> level = GeneratedColumn<int>(
+    'level',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _correctMeta = const VerificationMeta(
+    'correct',
+  );
+  @override
+  late final GeneratedColumn<int> correct = GeneratedColumn<int>(
+    'correct',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _totalMeta = const VerificationMeta('total');
+  @override
+  late final GeneratedColumn<int> total = GeneratedColumn<int>(
+    'total',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _movedMeta = const VerificationMeta('moved');
+  @override
+  late final GeneratedColumn<int> moved = GeneratedColumn<int>(
+    'moved',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _skillsMeta = const VerificationMeta('skills');
+  @override
+  late final GeneratedColumn<String> skills = GeneratedColumn<String>(
+    'skills',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _takenAtMeta = const VerificationMeta(
+    'takenAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> takenAt = GeneratedColumn<DateTime>(
+    'taken_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    readerId,
+    storyId,
+    level,
+    correct,
+    total,
+    moved,
+    skills,
+    takenAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reading_attempts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReadingAttempt> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('reader_id')) {
+      context.handle(
+        _readerIdMeta,
+        readerId.isAcceptableOrUnknown(data['reader_id']!, _readerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_readerIdMeta);
+    }
+    if (data.containsKey('story_id')) {
+      context.handle(
+        _storyIdMeta,
+        storyId.isAcceptableOrUnknown(data['story_id']!, _storyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_storyIdMeta);
+    }
+    if (data.containsKey('level')) {
+      context.handle(
+        _levelMeta,
+        level.isAcceptableOrUnknown(data['level']!, _levelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_levelMeta);
+    }
+    if (data.containsKey('correct')) {
+      context.handle(
+        _correctMeta,
+        correct.isAcceptableOrUnknown(data['correct']!, _correctMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_correctMeta);
+    }
+    if (data.containsKey('total')) {
+      context.handle(
+        _totalMeta,
+        total.isAcceptableOrUnknown(data['total']!, _totalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_totalMeta);
+    }
+    if (data.containsKey('moved')) {
+      context.handle(
+        _movedMeta,
+        moved.isAcceptableOrUnknown(data['moved']!, _movedMeta),
+      );
+    }
+    if (data.containsKey('skills')) {
+      context.handle(
+        _skillsMeta,
+        skills.isAcceptableOrUnknown(data['skills']!, _skillsMeta),
+      );
+    }
+    if (data.containsKey('taken_at')) {
+      context.handle(
+        _takenAtMeta,
+        takenAt.isAcceptableOrUnknown(data['taken_at']!, _takenAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {readerId, storyId},
+  ];
+  @override
+  ReadingAttempt map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReadingAttempt(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      readerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reader_id'],
+      )!,
+      storyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}story_id'],
+      )!,
+      level: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}level'],
+      )!,
+      correct: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}correct'],
+      )!,
+      total: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total'],
+      )!,
+      moved: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}moved'],
+      )!,
+      skills: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}skills'],
+      )!,
+      takenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}taken_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadingAttemptsTable createAlias(String alias) {
+    return $ReadingAttemptsTable(attachedDatabase, alias);
+  }
+}
+
+class ReadingAttempt extends DataClass implements Insertable<ReadingAttempt> {
+  final int id;
+  final int readerId;
+  final int storyId;
+  final int level;
+  final int correct;
+  final int total;
+  final int moved;
+  final String skills;
+  final DateTime takenAt;
+  const ReadingAttempt({
+    required this.id,
+    required this.readerId,
+    required this.storyId,
+    required this.level,
+    required this.correct,
+    required this.total,
+    required this.moved,
+    required this.skills,
+    required this.takenAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['reader_id'] = Variable<int>(readerId);
+    map['story_id'] = Variable<int>(storyId);
+    map['level'] = Variable<int>(level);
+    map['correct'] = Variable<int>(correct);
+    map['total'] = Variable<int>(total);
+    map['moved'] = Variable<int>(moved);
+    map['skills'] = Variable<String>(skills);
+    map['taken_at'] = Variable<DateTime>(takenAt);
+    return map;
+  }
+
+  ReadingAttemptsCompanion toCompanion(bool nullToAbsent) {
+    return ReadingAttemptsCompanion(
+      id: Value(id),
+      readerId: Value(readerId),
+      storyId: Value(storyId),
+      level: Value(level),
+      correct: Value(correct),
+      total: Value(total),
+      moved: Value(moved),
+      skills: Value(skills),
+      takenAt: Value(takenAt),
+    );
+  }
+
+  factory ReadingAttempt.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReadingAttempt(
+      id: serializer.fromJson<int>(json['id']),
+      readerId: serializer.fromJson<int>(json['readerId']),
+      storyId: serializer.fromJson<int>(json['storyId']),
+      level: serializer.fromJson<int>(json['level']),
+      correct: serializer.fromJson<int>(json['correct']),
+      total: serializer.fromJson<int>(json['total']),
+      moved: serializer.fromJson<int>(json['moved']),
+      skills: serializer.fromJson<String>(json['skills']),
+      takenAt: serializer.fromJson<DateTime>(json['takenAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'readerId': serializer.toJson<int>(readerId),
+      'storyId': serializer.toJson<int>(storyId),
+      'level': serializer.toJson<int>(level),
+      'correct': serializer.toJson<int>(correct),
+      'total': serializer.toJson<int>(total),
+      'moved': serializer.toJson<int>(moved),
+      'skills': serializer.toJson<String>(skills),
+      'takenAt': serializer.toJson<DateTime>(takenAt),
+    };
+  }
+
+  ReadingAttempt copyWith({
+    int? id,
+    int? readerId,
+    int? storyId,
+    int? level,
+    int? correct,
+    int? total,
+    int? moved,
+    String? skills,
+    DateTime? takenAt,
+  }) => ReadingAttempt(
+    id: id ?? this.id,
+    readerId: readerId ?? this.readerId,
+    storyId: storyId ?? this.storyId,
+    level: level ?? this.level,
+    correct: correct ?? this.correct,
+    total: total ?? this.total,
+    moved: moved ?? this.moved,
+    skills: skills ?? this.skills,
+    takenAt: takenAt ?? this.takenAt,
+  );
+  ReadingAttempt copyWithCompanion(ReadingAttemptsCompanion data) {
+    return ReadingAttempt(
+      id: data.id.present ? data.id.value : this.id,
+      readerId: data.readerId.present ? data.readerId.value : this.readerId,
+      storyId: data.storyId.present ? data.storyId.value : this.storyId,
+      level: data.level.present ? data.level.value : this.level,
+      correct: data.correct.present ? data.correct.value : this.correct,
+      total: data.total.present ? data.total.value : this.total,
+      moved: data.moved.present ? data.moved.value : this.moved,
+      skills: data.skills.present ? data.skills.value : this.skills,
+      takenAt: data.takenAt.present ? data.takenAt.value : this.takenAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingAttempt(')
+          ..write('id: $id, ')
+          ..write('readerId: $readerId, ')
+          ..write('storyId: $storyId, ')
+          ..write('level: $level, ')
+          ..write('correct: $correct, ')
+          ..write('total: $total, ')
+          ..write('moved: $moved, ')
+          ..write('skills: $skills, ')
+          ..write('takenAt: $takenAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    readerId,
+    storyId,
+    level,
+    correct,
+    total,
+    moved,
+    skills,
+    takenAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReadingAttempt &&
+          other.id == this.id &&
+          other.readerId == this.readerId &&
+          other.storyId == this.storyId &&
+          other.level == this.level &&
+          other.correct == this.correct &&
+          other.total == this.total &&
+          other.moved == this.moved &&
+          other.skills == this.skills &&
+          other.takenAt == this.takenAt);
+}
+
+class ReadingAttemptsCompanion extends UpdateCompanion<ReadingAttempt> {
+  final Value<int> id;
+  final Value<int> readerId;
+  final Value<int> storyId;
+  final Value<int> level;
+  final Value<int> correct;
+  final Value<int> total;
+  final Value<int> moved;
+  final Value<String> skills;
+  final Value<DateTime> takenAt;
+  const ReadingAttemptsCompanion({
+    this.id = const Value.absent(),
+    this.readerId = const Value.absent(),
+    this.storyId = const Value.absent(),
+    this.level = const Value.absent(),
+    this.correct = const Value.absent(),
+    this.total = const Value.absent(),
+    this.moved = const Value.absent(),
+    this.skills = const Value.absent(),
+    this.takenAt = const Value.absent(),
+  });
+  ReadingAttemptsCompanion.insert({
+    this.id = const Value.absent(),
+    required int readerId,
+    required int storyId,
+    required int level,
+    required int correct,
+    required int total,
+    this.moved = const Value.absent(),
+    this.skills = const Value.absent(),
+    this.takenAt = const Value.absent(),
+  }) : readerId = Value(readerId),
+       storyId = Value(storyId),
+       level = Value(level),
+       correct = Value(correct),
+       total = Value(total);
+  static Insertable<ReadingAttempt> custom({
+    Expression<int>? id,
+    Expression<int>? readerId,
+    Expression<int>? storyId,
+    Expression<int>? level,
+    Expression<int>? correct,
+    Expression<int>? total,
+    Expression<int>? moved,
+    Expression<String>? skills,
+    Expression<DateTime>? takenAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (readerId != null) 'reader_id': readerId,
+      if (storyId != null) 'story_id': storyId,
+      if (level != null) 'level': level,
+      if (correct != null) 'correct': correct,
+      if (total != null) 'total': total,
+      if (moved != null) 'moved': moved,
+      if (skills != null) 'skills': skills,
+      if (takenAt != null) 'taken_at': takenAt,
+    });
+  }
+
+  ReadingAttemptsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? readerId,
+    Value<int>? storyId,
+    Value<int>? level,
+    Value<int>? correct,
+    Value<int>? total,
+    Value<int>? moved,
+    Value<String>? skills,
+    Value<DateTime>? takenAt,
+  }) {
+    return ReadingAttemptsCompanion(
+      id: id ?? this.id,
+      readerId: readerId ?? this.readerId,
+      storyId: storyId ?? this.storyId,
+      level: level ?? this.level,
+      correct: correct ?? this.correct,
+      total: total ?? this.total,
+      moved: moved ?? this.moved,
+      skills: skills ?? this.skills,
+      takenAt: takenAt ?? this.takenAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (readerId.present) {
+      map['reader_id'] = Variable<int>(readerId.value);
+    }
+    if (storyId.present) {
+      map['story_id'] = Variable<int>(storyId.value);
+    }
+    if (level.present) {
+      map['level'] = Variable<int>(level.value);
+    }
+    if (correct.present) {
+      map['correct'] = Variable<int>(correct.value);
+    }
+    if (total.present) {
+      map['total'] = Variable<int>(total.value);
+    }
+    if (moved.present) {
+      map['moved'] = Variable<int>(moved.value);
+    }
+    if (skills.present) {
+      map['skills'] = Variable<String>(skills.value);
+    }
+    if (takenAt.present) {
+      map['taken_at'] = Variable<DateTime>(takenAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingAttemptsCompanion(')
+          ..write('id: $id, ')
+          ..write('readerId: $readerId, ')
+          ..write('storyId: $storyId, ')
+          ..write('level: $level, ')
+          ..write('correct: $correct, ')
+          ..write('total: $total, ')
+          ..write('moved: $moved, ')
+          ..write('skills: $skills, ')
+          ..write('takenAt: $takenAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1637,6 +3099,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $QuestionRowsTable questionRows = $QuestionRowsTable(this);
   late final $FlashcardRowsTable flashcardRows = $FlashcardRowsTable(this);
   late final $AttemptsTable attempts = $AttemptsTable(this);
+  late final $ReadersTable readers = $ReadersTable(this);
+  late final $StoriesTable stories = $StoriesTable(this);
+  late final $ReadingAttemptsTable readingAttempts = $ReadingAttemptsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1646,6 +3113,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     questionRows,
     flashcardRows,
     attempts,
+    readers,
+    stories,
+    readingAttempts,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -1669,6 +3139,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('attempts', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'readers',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('reading_attempts', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -3181,6 +4658,1169 @@ typedef $$AttemptsTableProcessedTableManager =
       Attempt,
       PrefetchHooks Function({bool studySetId})
     >;
+typedef $$ReadersTableCreateCompanionBuilder = ReadersCompanion Function({
+  Value<int> id,
+  required String name,
+  Value<int> level,
+  Value<bool> placed,
+  Value<DateTime> createdAt,
+});
+typedef $$ReadersTableUpdateCompanionBuilder = ReadersCompanion Function({
+  Value<int> id,
+  Value<String> name,
+  Value<int> level,
+  Value<bool> placed,
+  Value<DateTime> createdAt,
+});
+
+final class $$ReadersTableReferences
+    extends BaseReferences<_$AppDatabase, $ReadersTable, Reader> {
+  $$ReadersTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$ReadingAttemptsTable, List<ReadingAttempt>>
+  _readingAttemptsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.readingAttempts,
+    aliasName: 'readers__id__reading_attempts__reader_id',
+  );
+
+  $$ReadingAttemptsTableProcessedTableManager get readingAttemptsRefs {
+    final manager = $$ReadingAttemptsTableTableManager(
+      $_db,
+      $_db.readingAttempts,
+    ).filter((f) => f.readerId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _readingAttemptsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ReadersTableFilterComposer
+    extends Composer<_$AppDatabase, $ReadersTable> {
+  $$ReadersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get placed => $composableBuilder(
+    column: $table.placed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> readingAttemptsRefs(
+    Expression<bool> Function($$ReadingAttemptsTableFilterComposer f) f,
+  ) {
+    final $$ReadingAttemptsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingAttempts,
+      getReferencedColumn: (t) => t.readerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingAttemptsTableFilterComposer(
+            $db: $db,
+            $table: $db.readingAttempts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ReadersTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReadersTable> {
+  $$ReadersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get placed => $composableBuilder(
+    column: $table.placed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ReadersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReadersTable> {
+  $$ReadersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get level =>
+      $composableBuilder(column: $table.level, builder: (column) => column);
+
+  GeneratedColumn<bool> get placed =>
+      $composableBuilder(column: $table.placed, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> readingAttemptsRefs<T extends Object>(
+    Expression<T> Function($$ReadingAttemptsTableAnnotationComposer a) f,
+  ) {
+    final $$ReadingAttemptsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingAttempts,
+      getReferencedColumn: (t) => t.readerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingAttemptsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readingAttempts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ReadersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReadersTable,
+          Reader,
+          $$ReadersTableFilterComposer,
+          $$ReadersTableOrderingComposer,
+          $$ReadersTableAnnotationComposer,
+          $$ReadersTableCreateCompanionBuilder,
+          $$ReadersTableUpdateCompanionBuilder,
+          (Reader, $$ReadersTableReferences),
+          Reader,
+          PrefetchHooks Function({bool readingAttemptsRefs})
+        > {
+  $$ReadersTableTableManager(_$AppDatabase db, $ReadersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReadersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReadersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReadersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> level = const Value.absent(),
+                Value<bool> placed = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ReadersCompanion(
+                id: id,
+                name: name,
+                level: level,
+                placed: placed,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<int> level = const Value.absent(),
+                Value<bool> placed = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ReadersCompanion.insert(
+                id: id,
+                name: name,
+                level: level,
+                placed: placed,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReadersTable, Reader>(table),
+                  $$ReadersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({readingAttemptsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (readingAttemptsRefs) db.readingAttempts,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (readingAttemptsRefs)
+                    await $_getPrefetchedData<
+                      Reader,
+                      $ReadersTable,
+                      ReadingAttempt
+                    >(
+                      currentTable: table,
+                      referencedTable: $$ReadersTableReferences
+                          ._readingAttemptsRefsTable(db),
+                      managerFromTypedResult: (p0) => $$ReadersTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).readingAttemptsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.readerId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ReadersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReadersTable,
+      Reader,
+      $$ReadersTableFilterComposer,
+      $$ReadersTableOrderingComposer,
+      $$ReadersTableAnnotationComposer,
+      $$ReadersTableCreateCompanionBuilder,
+      $$ReadersTableUpdateCompanionBuilder,
+      (Reader, $$ReadersTableReferences),
+      Reader,
+      PrefetchHooks Function({bool readingAttemptsRefs})
+    >;
+typedef $$StoriesTableCreateCompanionBuilder = StoriesCompanion Function({
+  Value<int> id,
+  required int level,
+  required String topic,
+  required String title,
+  required String paras,
+  required String questions,
+  Value<String> checks,
+  required int pipeline,
+  Value<String> source,
+  Value<DateTime> createdAt,
+});
+typedef $$StoriesTableUpdateCompanionBuilder = StoriesCompanion Function({
+  Value<int> id,
+  Value<int> level,
+  Value<String> topic,
+  Value<String> title,
+  Value<String> paras,
+  Value<String> questions,
+  Value<String> checks,
+  Value<int> pipeline,
+  Value<String> source,
+  Value<DateTime> createdAt,
+});
+
+final class $$StoriesTableReferences
+    extends BaseReferences<_$AppDatabase, $StoriesTable, StoryRow> {
+  $$StoriesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$ReadingAttemptsTable, List<ReadingAttempt>>
+  _readingAttemptsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.readingAttempts,
+    aliasName: 'stories__id__reading_attempts__story_id',
+  );
+
+  $$ReadingAttemptsTableProcessedTableManager get readingAttemptsRefs {
+    final manager = $$ReadingAttemptsTableTableManager(
+      $_db,
+      $_db.readingAttempts,
+    ).filter((f) => f.storyId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _readingAttemptsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$StoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $StoriesTable> {
+  $$StoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get topic => $composableBuilder(
+    column: $table.topic,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get paras => $composableBuilder(
+    column: $table.paras,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get questions => $composableBuilder(
+    column: $table.questions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get checks => $composableBuilder(
+    column: $table.checks,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pipeline => $composableBuilder(
+    column: $table.pipeline,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> readingAttemptsRefs(
+    Expression<bool> Function($$ReadingAttemptsTableFilterComposer f) f,
+  ) {
+    final $$ReadingAttemptsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingAttempts,
+      getReferencedColumn: (t) => t.storyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingAttemptsTableFilterComposer(
+            $db: $db,
+            $table: $db.readingAttempts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$StoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $StoriesTable> {
+  $$StoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get topic => $composableBuilder(
+    column: $table.topic,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get paras => $composableBuilder(
+    column: $table.paras,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get questions => $composableBuilder(
+    column: $table.questions,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get checks => $composableBuilder(
+    column: $table.checks,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pipeline => $composableBuilder(
+    column: $table.pipeline,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$StoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StoriesTable> {
+  $$StoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get level =>
+      $composableBuilder(column: $table.level, builder: (column) => column);
+
+  GeneratedColumn<String> get topic =>
+      $composableBuilder(column: $table.topic, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get paras =>
+      $composableBuilder(column: $table.paras, builder: (column) => column);
+
+  GeneratedColumn<String> get questions =>
+      $composableBuilder(column: $table.questions, builder: (column) => column);
+
+  GeneratedColumn<String> get checks =>
+      $composableBuilder(column: $table.checks, builder: (column) => column);
+
+  GeneratedColumn<int> get pipeline =>
+      $composableBuilder(column: $table.pipeline, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> readingAttemptsRefs<T extends Object>(
+    Expression<T> Function($$ReadingAttemptsTableAnnotationComposer a) f,
+  ) {
+    final $$ReadingAttemptsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingAttempts,
+      getReferencedColumn: (t) => t.storyId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingAttemptsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readingAttempts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$StoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $StoriesTable,
+          StoryRow,
+          $$StoriesTableFilterComposer,
+          $$StoriesTableOrderingComposer,
+          $$StoriesTableAnnotationComposer,
+          $$StoriesTableCreateCompanionBuilder,
+          $$StoriesTableUpdateCompanionBuilder,
+          (StoryRow, $$StoriesTableReferences),
+          StoryRow,
+          PrefetchHooks Function({bool readingAttemptsRefs})
+        > {
+  $$StoriesTableTableManager(_$AppDatabase db, $StoriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> level = const Value.absent(),
+                Value<String> topic = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> paras = const Value.absent(),
+                Value<String> questions = const Value.absent(),
+                Value<String> checks = const Value.absent(),
+                Value<int> pipeline = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => StoriesCompanion(
+                id: id,
+                level: level,
+                topic: topic,
+                title: title,
+                paras: paras,
+                questions: questions,
+                checks: checks,
+                pipeline: pipeline,
+                source: source,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int level,
+                required String topic,
+                required String title,
+                required String paras,
+                required String questions,
+                Value<String> checks = const Value.absent(),
+                required int pipeline,
+                Value<String> source = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => StoriesCompanion.insert(
+                id: id,
+                level: level,
+                topic: topic,
+                title: title,
+                paras: paras,
+                questions: questions,
+                checks: checks,
+                pipeline: pipeline,
+                source: source,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$StoriesTable, StoryRow>(table),
+                  $$StoriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({readingAttemptsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (readingAttemptsRefs) db.readingAttempts,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (readingAttemptsRefs)
+                    await $_getPrefetchedData<
+                      StoryRow,
+                      $StoriesTable,
+                      ReadingAttempt
+                    >(
+                      currentTable: table,
+                      referencedTable: $$StoriesTableReferences
+                          ._readingAttemptsRefsTable(db),
+                      managerFromTypedResult: (p0) => $$StoriesTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).readingAttemptsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.storyId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$StoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $StoriesTable,
+      StoryRow,
+      $$StoriesTableFilterComposer,
+      $$StoriesTableOrderingComposer,
+      $$StoriesTableAnnotationComposer,
+      $$StoriesTableCreateCompanionBuilder,
+      $$StoriesTableUpdateCompanionBuilder,
+      (StoryRow, $$StoriesTableReferences),
+      StoryRow,
+      PrefetchHooks Function({bool readingAttemptsRefs})
+    >;
+typedef $$ReadingAttemptsTableCreateCompanionBuilder =
+    ReadingAttemptsCompanion Function({
+      Value<int> id,
+      required int readerId,
+      required int storyId,
+      required int level,
+      required int correct,
+      required int total,
+      Value<int> moved,
+      Value<String> skills,
+      Value<DateTime> takenAt,
+    });
+typedef $$ReadingAttemptsTableUpdateCompanionBuilder =
+    ReadingAttemptsCompanion Function({
+      Value<int> id,
+      Value<int> readerId,
+      Value<int> storyId,
+      Value<int> level,
+      Value<int> correct,
+      Value<int> total,
+      Value<int> moved,
+      Value<String> skills,
+      Value<DateTime> takenAt,
+    });
+
+final class $$ReadingAttemptsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $ReadingAttemptsTable, ReadingAttempt> {
+  $$ReadingAttemptsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ReadersTable _readerIdTable(_$AppDatabase db) =>
+      db.readers.createAlias('reading_attempts__reader_id__readers__id');
+
+  $$ReadersTableProcessedTableManager get readerId {
+    final $_column = $_itemColumn<int>('reader_id')!;
+
+    final manager = $$ReadersTableTableManager(
+      $_db,
+      $_db.readers,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_readerIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $StoriesTable _storyIdTable(_$AppDatabase db) =>
+      db.stories.createAlias('reading_attempts__story_id__stories__id');
+
+  $$StoriesTableProcessedTableManager get storyId {
+    final $_column = $_itemColumn<int>('story_id')!;
+
+    final manager = $$StoriesTableTableManager(
+      $_db,
+      $_db.stories,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_storyIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ReadingAttemptsTableFilterComposer
+    extends Composer<_$AppDatabase, $ReadingAttemptsTable> {
+  $$ReadingAttemptsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get correct => $composableBuilder(
+    column: $table.correct,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get total => $composableBuilder(
+    column: $table.total,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get moved => $composableBuilder(
+    column: $table.moved,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get skills => $composableBuilder(
+    column: $table.skills,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get takenAt => $composableBuilder(
+    column: $table.takenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ReadersTableFilterComposer get readerId {
+    final $$ReadersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.readerId,
+      referencedTable: $db.readers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadersTableFilterComposer(
+            $db: $db,
+            $table: $db.readers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$StoriesTableFilterComposer get storyId {
+    final $$StoriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.storyId,
+      referencedTable: $db.stories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StoriesTableFilterComposer(
+            $db: $db,
+            $table: $db.stories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingAttemptsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReadingAttemptsTable> {
+  $$ReadingAttemptsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get correct => $composableBuilder(
+    column: $table.correct,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get total => $composableBuilder(
+    column: $table.total,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get moved => $composableBuilder(
+    column: $table.moved,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get skills => $composableBuilder(
+    column: $table.skills,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get takenAt => $composableBuilder(
+    column: $table.takenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ReadersTableOrderingComposer get readerId {
+    final $$ReadersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.readerId,
+      referencedTable: $db.readers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadersTableOrderingComposer(
+            $db: $db,
+            $table: $db.readers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$StoriesTableOrderingComposer get storyId {
+    final $$StoriesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.storyId,
+      referencedTable: $db.stories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StoriesTableOrderingComposer(
+            $db: $db,
+            $table: $db.stories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingAttemptsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReadingAttemptsTable> {
+  $$ReadingAttemptsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get level =>
+      $composableBuilder(column: $table.level, builder: (column) => column);
+
+  GeneratedColumn<int> get correct =>
+      $composableBuilder(column: $table.correct, builder: (column) => column);
+
+  GeneratedColumn<int> get total =>
+      $composableBuilder(column: $table.total, builder: (column) => column);
+
+  GeneratedColumn<int> get moved =>
+      $composableBuilder(column: $table.moved, builder: (column) => column);
+
+  GeneratedColumn<String> get skills =>
+      $composableBuilder(column: $table.skills, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get takenAt =>
+      $composableBuilder(column: $table.takenAt, builder: (column) => column);
+
+  $$ReadersTableAnnotationComposer get readerId {
+    final $$ReadersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.readerId,
+      referencedTable: $db.readers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$StoriesTableAnnotationComposer get storyId {
+    final $$StoriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.storyId,
+      referencedTable: $db.stories,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StoriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingAttemptsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReadingAttemptsTable,
+          ReadingAttempt,
+          $$ReadingAttemptsTableFilterComposer,
+          $$ReadingAttemptsTableOrderingComposer,
+          $$ReadingAttemptsTableAnnotationComposer,
+          $$ReadingAttemptsTableCreateCompanionBuilder,
+          $$ReadingAttemptsTableUpdateCompanionBuilder,
+          (ReadingAttempt, $$ReadingAttemptsTableReferences),
+          ReadingAttempt,
+          PrefetchHooks Function({bool readerId, bool storyId})
+        > {
+  $$ReadingAttemptsTableTableManager(
+    _$AppDatabase db,
+    $ReadingAttemptsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReadingAttemptsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReadingAttemptsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReadingAttemptsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> readerId = const Value.absent(),
+                Value<int> storyId = const Value.absent(),
+                Value<int> level = const Value.absent(),
+                Value<int> correct = const Value.absent(),
+                Value<int> total = const Value.absent(),
+                Value<int> moved = const Value.absent(),
+                Value<String> skills = const Value.absent(),
+                Value<DateTime> takenAt = const Value.absent(),
+              }) => ReadingAttemptsCompanion(
+                id: id,
+                readerId: readerId,
+                storyId: storyId,
+                level: level,
+                correct: correct,
+                total: total,
+                moved: moved,
+                skills: skills,
+                takenAt: takenAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int readerId,
+                required int storyId,
+                required int level,
+                required int correct,
+                required int total,
+                Value<int> moved = const Value.absent(),
+                Value<String> skills = const Value.absent(),
+                Value<DateTime> takenAt = const Value.absent(),
+              }) => ReadingAttemptsCompanion.insert(
+                id: id,
+                readerId: readerId,
+                storyId: storyId,
+                level: level,
+                correct: correct,
+                total: total,
+                moved: moved,
+                skills: skills,
+                takenAt: takenAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReadingAttemptsTable, ReadingAttempt>(table),
+                  $$ReadingAttemptsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({readerId = false, storyId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (readerId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.readerId,
+                        referencedTable: $$ReadingAttemptsTableReferences
+                            ._readerIdTable(db),
+                        referencedColumn: $$ReadingAttemptsTableReferences
+                            ._readerIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (storyId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.storyId,
+                        referencedTable: $$ReadingAttemptsTableReferences
+                            ._storyIdTable(db),
+                        referencedColumn: $$ReadingAttemptsTableReferences
+                            ._storyIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ReadingAttemptsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReadingAttemptsTable,
+      ReadingAttempt,
+      $$ReadingAttemptsTableFilterComposer,
+      $$ReadingAttemptsTableOrderingComposer,
+      $$ReadingAttemptsTableAnnotationComposer,
+      $$ReadingAttemptsTableCreateCompanionBuilder,
+      $$ReadingAttemptsTableUpdateCompanionBuilder,
+      (ReadingAttempt, $$ReadingAttemptsTableReferences),
+      ReadingAttempt,
+      PrefetchHooks Function({bool readerId, bool storyId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3193,4 +5833,10 @@ class $AppDatabaseManager {
       $$FlashcardRowsTableTableManager(_db, _db.flashcardRows);
   $$AttemptsTableTableManager get attempts =>
       $$AttemptsTableTableManager(_db, _db.attempts);
+  $$ReadersTableTableManager get readers =>
+      $$ReadersTableTableManager(_db, _db.readers);
+  $$StoriesTableTableManager get stories =>
+      $$StoriesTableTableManager(_db, _db.stories);
+  $$ReadingAttemptsTableTableManager get readingAttempts =>
+      $$ReadingAttemptsTableTableManager(_db, _db.readingAttempts);
 }
