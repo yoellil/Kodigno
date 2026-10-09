@@ -12,9 +12,9 @@ import 'story_view.dart';
 TextStyle _h(double size) => display(size, color: kIndigoText);
 TextStyle _p(
   double size, {
-  Color color = kSoft,
+  Color? color,
   FontWeight weight = FontWeight.w500,
-}) => body(size, color: color, weight: weight);
+}) => body(size, color: color ?? kSoft, weight: weight);
 
 // ---------- streak, speed, reading look ----------
 
@@ -135,6 +135,13 @@ Future<void> showReadingLook(BuildContext context) => showDialog<void>(
             subtitle: Text('Wider, plainer letters with more space between them.', style: readFont(_p(13), c.easyFont)),
             value: c.easyFont,
             onChanged: (v) => c.setLook(easy: v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('Dark mode', style: _p(15, color: kIndigoText, weight: FontWeight.w600)),
+            subtitle: Text('Light letters on a dark page. Easier on the eyes at night.', style: _p(13)),
+            value: c.darkMode,
+            onChanged: (v) => c.setLook(dark: v),
           ),
         ],
       ),
@@ -394,7 +401,7 @@ class _TeacherStoriesState extends State<TeacherStories> {
                 controller: _title,
                 maxLength: 60,
                 style: _p(15, color: kIndigoText),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Title',
                   counterText: '',
                   fillColor: kPaper,
@@ -407,7 +414,7 @@ class _TeacherStoriesState extends State<TeacherStories> {
               minLines: 6,
               maxLines: 14,
               style: _p(15, color: kIndigoText),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Paste the story here (4 or more sentences, under 700 words)',
                 fillColor: kPaper,
               ),
@@ -505,7 +512,7 @@ class _TeacherStoriesState extends State<TeacherStories> {
                         ),
                         IconButton(
                           tooltip: 'Delete ${s.title}',
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.delete_outline_rounded,
                             color: kSoft,
                           ),

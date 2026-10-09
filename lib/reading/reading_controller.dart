@@ -59,7 +59,11 @@ class ReadingController extends ChangeNotifier {
   /// Wider, plainer letters (Verdana) for readers who find the normal font hard.
   bool get easyFont => prefs.getBool('kulay.easy') ?? false;
 
-  Future<void> setLook({int? size, bool? easy}) async {
+  /// Kulay's dark mode: light letters on a dark page.
+  bool get darkMode => prefs.getBool('kulay.dark') ?? false;
+
+  Future<void> setLook({int? size, bool? easy, bool? dark}) async {
+    if (dark != null) await prefs.setBool('kulay.dark', dark);
     if (size != null) await prefs.setInt('kulay.size', size);
     if (easy != null) await prefs.setBool('kulay.easy', easy);
     notifyListeners();
@@ -80,6 +84,11 @@ class ReadingController extends ChangeNotifier {
   int step = 0;
   final stepDetail = List<String>.filled(8, '');
   String? notice;
+
+  /// When the AI could not write the asked topic: a ready story at the same
+  /// color the reader may pick instead (never swapped in without asking).
+  int? fallbackStory;
+  String? fallbackTopic;
 
   // Reading
   Passage? passage; // a Story, or a placement passage
@@ -301,6 +310,8 @@ class ReadingController extends ChangeNotifier {
     final asked = topic!;
     if (waitingTopic == asked) waitingTopic = null; // reading it now
     notice = null;
+    fallbackStory = null;
+    fallbackTopic = null;
     step = 1;
     stepDetail.fillRange(0, 8, '');
     stepDetail[0] = '${levels[r.level].name}, $topic';
@@ -329,18 +340,17 @@ class ReadingController extends ChangeNotifier {
           }
           return;
         }
-        // AI down or stuck: any saved story at this color.
-        id = await repo.unread(r.id, r.level, null) ?? await repo.anyStory(r.level);
-        if (id == null) {
-          error = e is ModelUnavailableException
-              ? 'The AI could not start on this computer, and there are no saved stories for this color yet. Try Basic quality in Settings.'
-              : "Couldn't write a story. Try another topic.";
-          notifyListeners();
-          return;
-        }
-        notice = e is ModelUnavailableException
-            ? 'The AI could not start, so here is a saved story. If this keeps happening, choose Basic quality in Settings.'
-            : 'Here is a ready story while the AI rests.';
+        // AI down or stuck: say so, and offer a ready story at this color,
+        // which is likely on another topic, instead of swapping it in.
+        final other = await repo.unread(r.id, r.level, null) ?? await repo.anyStory(r.level);
+        fallbackStory = other;
+        fallbackTopic = other == null ? null : (await repo.story(other))?.topic;
+        error = e is ModelUnavailableException
+            ? 'The AI could not start on this computer, so it could not write a $asked story. '
+                'If this keeps happening, choose Basic quality in Settings.'
+            : "The AI couldn't finish a $asked story this time.";
+        notifyListeners();
+        return;
       }
     }
     if (_asking == asked) _asking = null;
@@ -388,6 +398,22 @@ class ReadingController extends ChangeNotifier {
   void dismissWaiting() {
     waitingTopic = null;
     notifyListeners();
+  }
+
+  /// Reads the ready story offered when the AI could not write the asked topic.
+  Future<void> readFallback() async {
+    final id = fallbackStory;
+    final asked = topic;
+    if (id == null) return;
+    final s = await repo.story(id);
+    if (s == null) return;
+    _showPassage(s);
+    notice = asked == null || s.topic.toLowerCase() == asked.toLowerCase()
+        ? null
+        : 'The AI could not write about $asked this time, so this is a ready ${s.topic} story.';
+    fallbackStory = null;
+    fallbackTopic = null;
+    _go(KulayScreenId.story);
   }
 
   /// Checks the reader's answers, moves their color, and starts the next story.

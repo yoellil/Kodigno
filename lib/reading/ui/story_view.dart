@@ -9,15 +9,24 @@ import '../../ui/theme.dart';
 import '../levels.dart';
 import '../reading_repository.dart';
 
-/// Kulay's frame colors, after JIM's Kulay screen.
-const kIndigo = Color(0xFF3A2C82);
-const kIndigoText = Color(0xFF2E2378);
-const kSoft = Color(0xFF55507A);
-const kPaper = Color(0xFFF6F4FB);
-const kLine = Color(0xFFE3E0EF);
-const kGood = Color(0xFF1E7A46);
-const kBad = Color(0xFFB3261E);
-const kMark = Color(0xFFFFE58A);
+/// Kulay's own dark mode, a reading-look setting. Kulay's colors are read as
+/// it builds: KulayScreen sets this from the saved setting and rebuilds the
+/// whole of Kulay when it flips.
+bool kulayDark = false;
+
+/// Kulay's colors, after JIM's Kulay screen, with a dark version of each.
+Color get kIndigo => kulayDark ? const Color(0xFF1C1736) : const Color(0xFF3A2C82); // the frame
+Color get kIndigoText => kulayDark ? const Color(0xFFE2DCFF) : const Color(0xFF2E2378); // headings, icons
+Color get kSoft => kulayDark ? const Color(0xFFADA6D2) : const Color(0xFF55507A); // quieter text
+Color get kPaper => kulayDark ? const Color(0xFF29243F) : const Color(0xFFF6F4FB); // fields, chips
+Color get kLine => kulayDark ? const Color(0xFF3D3757) : const Color(0xFFE3E0EF);
+Color get kGood => kulayDark ? const Color(0xFF6BD69B) : const Color(0xFF1E7A46);
+Color get kBad => kulayDark ? const Color(0xFFFF8F86) : const Color(0xFFB3261E);
+Color get kMark => kulayDark ? const Color(0xFF6A5820) : const Color(0xFFFFE58A); // proof highlight
+Color get kCard => kulayDark ? const Color(0xFF16132A) : Colors.white; // the page itself
+Color get kInk => kulayDark ? const Color(0xFFECE8F8) : const Color(0xFF1C1A2E); // story and answer text
+Color get kAccent => kulayDark ? const Color(0xFF6C5AE0) : const Color(0xFF2E2378); // filled buttons (white text)
+Color get kSpeaking => kulayDark ? const Color(0xFF33406E) : const Color(0xFFD6E4FF); // sentence being read aloud
 
 // ---------- read aloud: the computer's own voices, no internet ----------
 
@@ -155,12 +164,12 @@ class KButton extends StatelessWidget {
         ? OutlinedButton(
             onPressed: onTap,
             style: OutlinedButton.styleFrom(
-                padding: pad, shape: const StadiumBorder(), side: const BorderSide(color: kIndigoText, width: 1.5), foregroundColor: kIndigoText),
+                padding: pad, shape: StadiumBorder(), side: BorderSide(color: kIndigoText, width: 1.5), foregroundColor: kIndigoText),
             child: Text(label, style: style))
         : FilledButton(
             onPressed: onTap,
             style: FilledButton.styleFrom(
-                padding: pad, shape: const StadiumBorder(), backgroundColor: kIndigoText, disabledBackgroundColor: kLine),
+                padding: pad, shape: const StadiumBorder(), backgroundColor: kAccent, disabledBackgroundColor: kLine),
             child: Text(label, style: style));
   }
 }
@@ -228,7 +237,7 @@ class _StoryCardState extends State<StoryCard> {
     final sentences = p.sentences;
     return Container(
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: kLine)),
+      decoration: BoxDecoration(color: kCard, borderRadius: BorderRadius.circular(22), border: Border.all(color: kLine)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Container(
           color: l.bg,
@@ -265,7 +274,7 @@ class _StoryCardState extends State<StoryCard> {
                         _sentence(s, _index(pi, si), speaking),
                       ],
                     ]),
-                    style: readFont( body(size, weight: FontWeight.w500, color: const Color(0xFF1C1A2E)).copyWith(height: 1.6),
+                    style: readFont( body(size, weight: FontWeight.w500, color: kInk).copyWith(height: 1.6),
                           widget.easy),
                   ),
                 ),
@@ -286,7 +295,7 @@ class _StoryCardState extends State<StoryCard> {
 
   TextSpan _sentence(String s, int i, int? speaking) {
     final bg = speaking == i
-        ? const Color(0xFFD6E4FF)
+        ? kSpeaking
         : widget.proof.contains(i)
             ? kMark
             : null;
@@ -351,7 +360,7 @@ class _WordPop extends StatelessWidget {
         top: top,
         width: w,
         child: Material(
-          color: Colors.white,
+          color: kCard,
           elevation: 6,
           shadowColor: kIndigo.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(16),
@@ -375,8 +384,8 @@ class _WordPop extends StatelessWidget {
                           : Text.rich(TextSpan(children: [
                               TextSpan(text: snap.data!.meaning),
                               if (snap.data!.synonym != null)
-                                TextSpan(text: ' Like "${snap.data!.synonym}".', style: const TextStyle(color: kSoft)),
-                            ]), style: body(15, color: const Color(0xFF1C1A2E))),
+                                TextSpan(text: ' Like "${snap.data!.synonym}".', style: TextStyle(color: kSoft)),
+                            ]), style: body(15, color: kInk)),
                 ),
               ),
             ]),
@@ -410,7 +419,7 @@ class QuizPanel extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: kCard,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
                 color: !checked ? kLine : answers[i] == q.answer ? kGood : kBad, width: checked ? 2 : 1),
@@ -429,7 +438,7 @@ class QuizPanel extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(color: kMark.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(10)),
-                child: Text(sentences[q.evidence], style: body(14, color: const Color(0xFF1C1A2E))),
+                child: Text(sentences[q.evidence], style: body(14, color: kInk)),
               ),
             ],
           ]),
@@ -441,7 +450,7 @@ class QuizPanel extends StatelessWidget {
     final picked = answers[i] == j;
     final key = checked && j == q.answer;
     final miss = checked && picked && j != q.answer;
-    final bg = key ? kGood.withValues(alpha: 0.12) : miss ? kBad.withValues(alpha: 0.10) : picked ? kPaper : Colors.white;
+    final bg = key ? kGood.withValues(alpha: 0.12) : miss ? kBad.withValues(alpha: 0.10) : picked ? kPaper : kCard;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -461,11 +470,11 @@ class QuizPanel extends StatelessWidget {
                 width: 26,
                 height: 26,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: picked ? kIndigoText : kPaper),
+                decoration: BoxDecoration(shape: BoxShape.circle, color: picked ? kAccent : kPaper),
                 child: Text('ABCD'[j], style: body(12, weight: FontWeight.w800, color: picked ? Colors.white : kIndigoText)),
               ),
               const SizedBox(width: 10),
-              Expanded(child: Text(c, style: readFont( body(15, color: const Color(0xFF1C1A2E)),
+              Expanded(child: Text(c, style: readFont( body(15, color: kInk),
                       easy))),
             ]),
           ),

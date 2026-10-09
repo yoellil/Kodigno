@@ -7,9 +7,9 @@ import 'package:flutter/scheduler.dart';
 
 import '../../ui/motion.dart';
 import '../../ui/theme.dart';
-import 'story_view.dart' show kIndigoText;
 
 const _cream = Color(0xFFFFF7E6);
+const _pageInk = Color(0xFF2E2378); // printed lines on cream pages, in either mode
 
 /// Book cover colors, after the reference: deep, printed-cloth tones.
 const bookColors = [
@@ -279,7 +279,7 @@ class _Pages extends StatelessWidget {
               height: 1.6,
               width: i % 4 == 3 ? w * 0.4 : w,
               margin: const EdgeInsets.only(bottom: 10),
-              color: kIndigoText.withValues(alpha: 0.13),
+              color: _pageInk.withValues(alpha: 0.13),
             ),
         ]),
       );
@@ -488,8 +488,13 @@ class _BookLoaderPainter extends CustomPainter {
   final Color cover;
 
   static const openTime = 0.9; // seconds for the cover to swing open
-  static const pageTime = 1.4; // seconds per page
+  static const firstRest = 0.5; // a beat on the open book before the first page
+  static const turnTime = 1.25; // one page turning
+  static const restTime = 0.75; // the book at rest between pages
+  static const pageTime = turnTime + restTime;
+  static const settleTime = 0.5; // a landed page easing onto the pile
   static const maxPile = 10;
+  static const _tintTop = 0.18, _tintEdge = 0.75; // how much color a top page and a pile edge show
   static const _pageColors = [
     Color(0xFFF25C8A),
     Color(0xFFF7934C),
@@ -501,34 +506,42 @@ class _BookLoaderPainter extends CustomPainter {
   ];
 
   static Color _colorOf(int page) => _pageColors[page % _pageColors.length];
+  static Color _tinted(int page, double amount) => Color.lerp(_cream, _colorOf(page), amount)!;
 
   @override
   void paint(Canvas canvas, Size size) {
     final t = time.value;
     final cx = size.width / 2;
     const w = 122.0, h = 150.0;
-    final top = (size.height - h) / 2 + 4;
+    // A slow drift, so the book feels held rather than stamped in place.
+    final top = (size.height - h) / 2 + 4 + 1.5 * math.sin(t * 1.1);
 
-    // Where we are: opening, then page after page.
+    // Timeline: the cover opens, a short rest, then each page turns and rests.
     final opening = t < openTime;
-    // Closed for a moment, then the cover swings over.
     final o = opening ? Curves.easeInOutSine.transform(((t - 0.3) / (openTime - 0.3)).clamp(0.0, 1.0)) : 1.0;
-    final pt = opening ? 0.0 : (t - openTime) / pageTime;
-    final turned = pt.floor(); // pages already on the left pile
-    final p = Curves.easeInOutSine.transform(pt - turned); // the page turning now
-    final current = _colorOf(turned);
+    final since = t - openTime - firstRest; // into the page cycles
+    final cycle = since < 0 ? -1 : (since / pageTime).floor(); // page now turning or just turned
+    final phase = since < 0 ? 0.0 : since - cycle * pageTime;
+    final turning = cycle >= 0 && phase < turnTime;
+    final p = turning ? Curves.easeInOutCubic.transform(phase / turnTime) : 0.0;
+    // Pages lying on the left, and how far the newest one has eased in.
+    final landed = cycle < 0 ? 0 : (turning ? cycle : cycle + 1);
+    final settle = turning || landed == 0 ? 1.0 : Curves.easeOutCubic.transform(((phase - turnTime) / settleTime).clamp(0.0, 1.0));
 
-    // Soft glow that pulses with the color of the turning page.
+    // Glow: crossfades to the turning page's color and breathes gently.
     if (!opening) {
-      final pulse = 0.5 + 0.5 * math.sin(math.pi * p);
+      final from = landed > 0 ? _colorOf(landed - 1) : cover;
+      final glowColor = turning ? Color.lerp(from, _colorOf(cycle), p)! : from;
+      final rise = ((t - openTime) / 0.8).clamp(0.0, 1.0); // fades in after the cover opens
+      final strength = (0.12 + 0.16 * math.sin(math.pi * p) + 0.03 * math.sin(t * 1.7)) * rise;
       final glow = Offset(cx, top + h / 2);
       canvas.drawCircle(
         glow,
         150,
         Paint()
           ..shader = ui.Gradient.radial(glow, 150, [
-            current.withValues(alpha: 0.10 + 0.22 * pulse),
-            current.withValues(alpha: 0),
+            glowColor.withValues(alpha: strength),
+            glowColor.withValues(alpha: 0),
           ]),
       );
     }
@@ -537,28 +550,33 @@ class _BookLoaderPainter extends CustomPainter {
     // Cover board, right half always, left half once it has swung over.
     canvas.drawRRect(
         RRect.fromLTRBR(cx - 2, top - 6, cx + w + 8, top + h + 8, const Radius.circular(6)), coverPaint);
-    if (!opening) {
+    if (!opening || o > 0.5) {
       canvas.drawRRect(
           RRect.fromLTRBR(cx - w - 8, top - 6, cx + 2, top + h + 8, const Radius.circular(6)), coverPaint);
     }
 
-    // Right block: what is left to read gets thinner as pages turn.
-    final rightLayers = math.max(2, 6 - turned ~/ 2);
-    for (var k = rightLayers; k >= 1; k--) {
+    // Right block: a steady stack, its top page already the color of the page
+    // that turns next (so lifting it changes nothing underneath).
+    for (var k = 5; k >= 1; k--) {
       _page(canvas, cx, top, w, h, side: 1, dx: k * 1.4, dy: k * 1.1, color: _shade(_cream, 0.04 * k));
     }
-    _page(canvas, cx, top, w, h, side: 1, color: _cream, lines: true);
+    // The next page to turn; while a page turns, the one after it waits below.
+    final waiting = cycle < 0 ? 0 : cycle + 1;
+    _page(canvas, cx, top, w, h, side: 1, color: _tinted(waiting, _tintTop), lines: true);
 
-    // Left pile: every turned page stays, its colored edge showing.
+    // Left pile. Each page's place is measured from the top, in fractions, so
+    // a newly landed page pushes the others out smoothly instead of all at once.
     if (!opening) {
-      final pile = math.min(turned, maxPile);
-      for (var k = pile; k >= 1; k--) {
-        final c = _colorOf(turned - k);
-        _page(canvas, cx, top, w, h, side: -1, dx: -k * 1.6, dy: k * 1.2, color: Color.lerp(_cream, c, 0.75)!);
+      for (var j = 0; j < landed - 1; j++) {
+        final k = (landed - 1 - j) - (1 - settle); // 0 = flush with the top page
+        if (k > maxPile + 1) continue;
+        final fade = (maxPile + 1 - k).clamp(0.0, 1.0); // the oldest fade off the bottom
+        final c = Color.lerp(_cream, _colorOf(j), _tintTop + (_tintEdge - _tintTop) * k.clamp(0.0, 1.0))!;
+        _page(canvas, cx, top, w, h,
+            side: -1, dx: -k * 1.6, dy: k * 1.2, color: c.withValues(alpha: fade));
       }
-      final last = turned > 0 ? _colorOf(turned - 1) : null;
       _page(canvas, cx, top, w, h,
-          side: -1, color: last == null ? _cream : Color.lerp(_cream, last, 0.18)!, lines: true);
+          side: -1, color: landed == 0 ? _cream : _tinted(landed - 1, _tintTop), lines: true);
     }
 
     // The fold at the spine.
@@ -572,10 +590,32 @@ class _BookLoaderPainter extends CustomPainter {
         ], const [0, 0.5, 1]),
     );
 
-    // The moving sheet: the cover while opening, then the current page.
-    final sweep = opening ? o : p;
-    final tint = opening ? cover : Color.lerp(_cream, current, 0.25 + 0.4 * math.sin(math.pi * p))!;
-    _turning(canvas, cx, top, w, h, sweep, tint, isCover: opening);
+    // The moving sheet: the cover while opening, then the turning page. It
+    // starts and ends at the same light tint as the pages it leaves and joins.
+    // Its texture differs a little from a flat page, so it fades in as it
+    // lifts and fades out as it settles, instead of swapping in one frame.
+    if (opening) {
+      _turning(canvas, cx, top, w, h, o, cover, isCover: true);
+    } else if (cycle < 0 && since > -firstRest) {
+      // The cover, flat on the left, giving way to the first page.
+      final fade = 1 - ((since + firstRest) / (firstRest * 0.8)).clamp(0.0, 1.0);
+      if (fade > 0) _faded(canvas, size, fade, () => _turning(canvas, cx, top, w, h, 1, cover, isCover: true));
+    } else if (turning) {
+      final fade = (phase / (turnTime * 0.12)).clamp(0.0, 1.0);
+      _faded(canvas, size, fade,
+          () => _turning(canvas, cx, top, w, h, p, _tinted(cycle, _tintTop + 0.3 * math.sin(math.pi * p)), isCover: false));
+    } else if (landed > 0 && settle < 1) {
+      _faded(canvas, size, 1 - settle,
+          () => _turning(canvas, cx, top, w, h, 1, _tinted(landed - 1, _tintTop), isCover: false));
+    }
+  }
+
+  /// Draws [draw] at [opacity] as one layer.
+  void _faded(Canvas canvas, Size size, double opacity, void Function() draw) {
+    if (opacity >= 0.999) return draw();
+    canvas.saveLayer(Offset.zero & size, Paint()..color = Colors.black.withValues(alpha: opacity));
+    draw();
+    canvas.restore();
   }
 
   /// One flat page on [side] (1 right, -1 left) with a gently curved top and bottom.
@@ -599,7 +639,7 @@ class _BookLoaderPainter extends CustomPainter {
     final ink = Paint()
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round
-      ..color = kIndigoText.withValues(alpha: 0.14);
+      ..color = _pageInk.withValues(alpha: 0.14);
     for (var i = 0; i < 8; i++) {
       final y = top + 26 + i * 14.0;
       final inner = cx + side * 16, outer = cx + side * (i % 4 == 3 ? w * 0.5 : w - 16);
@@ -610,7 +650,7 @@ class _BookLoaderPainter extends CustomPainter {
   /// The sheet in mid-turn: [p] 0 lies flat on the right, 1 flat on the left.
   void _turning(Canvas canvas, double cx, double top, double w, double h, double p, Color color,
       {required bool isCover}) {
-    if ((!isCover && p <= 0.001) || p >= 0.999) return;
+    // Drawn for the whole turn, flat ends included, so nothing underneath flashes.
     final edge = cx + w * math.cos(math.pi * p); // outer edge, right to left
     final lift = math.sin(math.pi * p); // highest mid-turn
     final span = edge - cx;
@@ -704,7 +744,7 @@ class _BookLoaderPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
         ..strokeCap = StrokeCap.round
-        ..color = kIndigoText.withValues(alpha: back ? 0.06 : 0.16);
+        ..color = _pageInk.withValues(alpha: back ? 0.06 : 0.16);
       final lines = Path();
       for (var i = 0; i < 8; i++) {
         final v = 0.15 + i * 0.094;

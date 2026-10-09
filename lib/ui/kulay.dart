@@ -7,7 +7,8 @@ import 'package:provider/provider.dart';
 import '../reading/reading_controller.dart';
 import '../reading/ui/kulay_pages.dart';
 import '../reading/ui/kulay_extras.dart' show WordsPage, showReadingLook;
-import '../reading/ui/story_view.dart' show KButton, LevelChip;
+import '../reading/ui/story_view.dart'
+    show KButton, LevelChip, kAccent, kCard, kIndigo, kIndigoText, kPaper, kSoft, kulayDark;
 import 'motion.dart';
 import 'theme.dart';
 
@@ -22,8 +23,6 @@ const kulayColors = [
   Color(0xFF8E52EC), // purple
   Color(0xFFFF6B6B), // coral
 ];
-const _indigo = Color(0xFF3A2C82);
-const _indigoText = Color(0xFF2E2378);
 
 // ---------------------------------------------------------------------------
 // Icon: colored book spines on a little shelf. They wiggle while [active].
@@ -272,16 +271,24 @@ class _BurstPainter extends CustomPainter {
 
 /// Kulay is always a white card, so its buttons, dialogs and fields use the light
 /// theme even when the app is dark (white text buttons vanished on the white card).
-final _kulayTheme = () {
-  final was = K.dark;
-  K.dark = false;
-  try {
-    final t = kTheme();
-    return t.copyWith(colorScheme: t.colorScheme.copyWith(primary: _indigoText, onSurface: const Color(0xFF1C1A2E)));
-  } finally {
-    K.dark = was;
-  }
-}();
+/// Kulay's theme for dialogs and fields, light or dark with Kulay's own setting.
+final _kulayThemes = <bool, ThemeData>{};
+ThemeData _kulayTheme(bool dark) => _kulayThemes[dark] ??= () {
+      final was = K.dark;
+      K.dark = dark;
+      try {
+        final t = kTheme();
+        return t.copyWith(
+          dialogTheme: t.dialogTheme.copyWith(backgroundColor: dark ? const Color(0xFF1E1A33) : Colors.white),
+          colorScheme: t.colorScheme.copyWith(
+            primary: dark ? const Color(0xFFB7A9FF) : const Color(0xFF2E2378),
+            onSurface: dark ? const Color(0xFFECE8F8) : const Color(0xFF1C1A2E),
+          ),
+        );
+      } finally {
+        K.dark = was;
+      }
+    }();
 
 class KulayScreen extends StatelessWidget {
   const KulayScreen({super.key, required this.onBack});
@@ -290,39 +297,106 @@ class KulayScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.watch<ReadingController>();
+    kulayDark = c.darkMode; // Kulay's colors read this as they build
     final landing = c.screen == KulayScreenId.welcome || c.screen == KulayScreenId.readers;
     // The band above the card (kept clear for the window buttons, see
     // WindowFrame) carries the brand and the reader once inside.
     final band = MediaQuery.paddingOf(context).top;
     final brandInBand = !landing && band >= 40;
-    final card = Container(
-      margin: EdgeInsets.fromLTRB(14, brandInBand ? 0 : 14, 14, 14),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28)),
-      child: landing
-          ? _Landing(
-              onBack: onBack,
-              panel: c.screen == KulayScreenId.welcome ? const WelcomePanel() : const ReadersPanel(),
-            )
-          : _Inside(onBack: onBack, showBrand: !brandInBand),
+    // A Material surface (not a plain colored box), so taps on the card show
+    // their ripple instead of drawing it underneath the card.
+    final card = Padding(
+      padding: EdgeInsets.fromLTRB(14, brandInBand ? 0 : 14, 14, 14),
+      child: Material(
+        color: kCard,
+        clipBehavior: Clip.antiAlias,
+        borderRadius: BorderRadius.circular(28),
+        child: landing
+            ? _Landing(
+                onBack: onBack,
+                panel: c.screen == KulayScreenId.welcome ? const WelcomePanel() : const ReadersPanel(),
+              )
+            : _Inside(onBack: onBack, showBrand: !brandInBand),
+      ),
     );
     return Theme(
-      data: _kulayTheme,
-      child: Scaffold(
-      backgroundColor: _indigo,
-      body: brandInBand
-          ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              SizedBox(
-                height: band + 14,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(30, 6, 120, 8),
-                  child: const Align(alignment: Alignment.centerLeft, child: _Brand(onIndigo: true)),
-                ),
+      data: _kulayTheme(kulayDark),
+      child: Stack(children: [
+        // A new subtree when the mode flips, so every color is read again.
+        KeyedSubtree(
+          key: ValueKey(kulayDark),
+          child: Scaffold(
+            backgroundColor: kIndigo,
+            body: brandInBand
+                ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    SizedBox(
+                      height: band + 14,
+                      child: Padding(
+                        // Clear of the dark-mode toggle and the window buttons on the right.
+                        padding: const EdgeInsets.fromLTRB(30, 6, 270, 8),
+                        child: const Align(alignment: Alignment.centerLeft, child: _Brand(onIndigo: true)),
+                      ),
+                    ),
+                    Expanded(child: MediaQuery.removePadding(context: context, removeTop: true, child: card)),
+                  ])
+                : SafeArea(child: card),
+          ),
+        ),
+        // Always in reach, on every Kulay screen: in the top band beside the
+        // window buttons, or at the bottom corner when there is no band.
+        if (band >= 40)
+          const Positioned(top: 8, right: 136, child: _ModeToggle())
+        else
+          const Positioned(bottom: 22, right: 26, child: _ModeToggle()),
+      ]),
+    );
+  }
+}
+
+/// One click between Kulay's light and dark pages. White on the indigo band.
+class _ModeToggle extends StatelessWidget {
+  const _ModeToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.watch<ReadingController>();
+    final dark = c.darkMode;
+    final label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        child: Material(
+          color: Colors.white.withValues(alpha: 0.16),
+          shape: StadiumBorder(side: BorderSide(color: Colors.white.withValues(alpha: 0.28))),
+          child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: () => c.setLook(dark: !dark),
+            child: SizedBox(
+              height: 36,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, a) => RotationTransition(
+                      turns: Tween(begin: 0.6, end: 1.0).animate(a),
+                      child: FadeTransition(opacity: a, child: child),
+                    ),
+                    child: Icon(dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        key: ValueKey(dark), size: 18, color: Colors.white),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(dark ? 'Light' : 'Dark', style: body(14, weight: FontWeight.w700, color: Colors.white)),
+                ]),
               ),
-              Expanded(child: MediaQuery.removePadding(context: context, removeTop: true, child: card)),
-            ])
-          : SafeArea(child: card),
-    ));
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -351,17 +425,17 @@ class _Landing extends StatelessWidget {
           enter(Row(mainAxisSize: MainAxisSize.min, children: [
             const KulayIcon(size: 34),
             const SizedBox(width: 10),
-            Text('Kodigno', style: body(14, weight: FontWeight.w700, color: _indigoText)),
+            Text('Kodigno', style: body(14, weight: FontWeight.w700, color: kIndigoText)),
           ]), 0),
           const SizedBox(height: 16),
-          enter(Text('Kulay', style: display(narrow ? 52 : 64, color: _indigoText)), 1),
+          enter(Text('Kulay', style: display(narrow ? 52 : 64, color: kIndigoText)), 1),
           const SizedBox(height: 10),
           enter(
               SizedBox(
                 width: 380,
                 child: Text(
                   'Stories at your reading color, written by the AI on this computer. No internet needed.',
-                  style: body(16, color: const Color(0xFF55507A)),
+                  style: body(16, color: kSoft),
                 ),
               ),
               2),
@@ -396,7 +470,7 @@ class _Landing extends StatelessWidget {
                     ? Container(
                         padding: const EdgeInsets.all(22),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.94),
+                          color: kCard.withValues(alpha: 0.94),
                           borderRadius: BorderRadius.circular(22),
                         ),
                         child: content,
@@ -432,7 +506,7 @@ class _Brand extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.watch<ReadingController>();
     final r = c.reader;
-    final fg = onIndigo ? Colors.white : _indigoText;
+    final fg = onIndigo ? Colors.white : kIndigoText;
     return Row(mainAxisSize: MainAxisSize.min, children: [
       const KulayIcon(size: 28),
       const SizedBox(width: 10),
@@ -442,7 +516,7 @@ class _Brand extends StatelessWidget {
         Container(
           padding: const EdgeInsets.fromLTRB(12, 5, 6, 5),
           decoration: BoxDecoration(
-            color: onIndigo ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFF6F4FB),
+            color: onIndigo ? Colors.white.withValues(alpha: 0.14) : kPaper,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -487,16 +561,16 @@ class _Inside extends StatelessWidget {
             IconButton(
               tooltip: 'My page',
               onPressed: c.goHome,
-              icon: const Icon(Icons.home_rounded, color: _indigoText),
+              icon: Icon(Icons.home_rounded, color: kIndigoText),
             ),
           IconButton(
-            tooltip: 'Reading look: text size and easy-read font',
+            tooltip: 'Reading look: text size, easy-read font and dark mode',
             onPressed: () => showReadingLook(context),
-            icon: const Icon(Icons.text_fields_rounded, color: _indigoText),
+            icon: Icon(Icons.text_fields_rounded, color: kIndigoText),
           ),
           PopupMenuButton<String>(
             tooltip: 'More',
-            icon: const Icon(Icons.more_horiz_rounded, color: _indigoText),
+            icon: Icon(Icons.more_horiz_rounded, color: kIndigoText),
             onSelected: (v) => switch (v) {
               'switch' => c.switchReader(),
               'progress' => openTeacher(context),
@@ -542,7 +616,7 @@ class _BackPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: _indigoText,
+        color: kAccent,
         shape: const StadiumBorder(),
         child: InkWell(
           customBorder: const StadiumBorder(),

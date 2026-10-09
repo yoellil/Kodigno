@@ -6,7 +6,7 @@ import 'package:flutter/scheduler.dart';
 import '../../ui/motion.dart';
 import '../../ui/theme.dart';
 import 'book3d.dart';
-import 'story_view.dart' show kIndigoText, kLine;
+import 'story_view.dart' show kCard, kIndigoText, kLine, kSoft;
 
 /// Topics as real 3D books standing in a ring that revolves. The book at the
 /// front faces you with its cover; the rest turn their spines and fade toward
@@ -302,8 +302,8 @@ class _BookCarouselState extends State<BookCarousel> with SingleTickerProviderSt
           button: true,
           label: label,
           child: Material(
-            color: Colors.white,
-            shape: const CircleBorder(side: BorderSide(color: kLine, width: 1.5)),
+            color: kCard,
+            shape: CircleBorder(side: BorderSide(color: kLine, width: 1.5)),
             child: InkWell(
               customBorder: const CircleBorder(),
               onTap: () => _bringToFront((front + delta) % _n),
@@ -326,7 +326,7 @@ class _BookCarouselState extends State<BookCarousel> with SingleTickerProviderSt
                 style: display(24, color: kIndigoText)),
             const SizedBox(height: 4),
             Text('Click the front book to read it',
-                style: body(13, weight: FontWeight.w600, color: const Color(0xFF6B6680))),
+                style: body(13, weight: FontWeight.w600, color: kSoft)),
           ]),
         ),
       ),

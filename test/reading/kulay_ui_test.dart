@@ -155,4 +155,26 @@ void main() {
     expect(find.text('Reader 27'), findsOneWidget);
     expect(find.text('Reader 01'), findsNothing);
   });
+
+  testWidgets('dark mode is one click away on every Kulay screen, the landing included', (t) async {
+    final (c, _) = await pumpKulay(t);
+    // The landing: no reader picked yet.
+    expect(find.bySemanticsLabel('Switch to dark mode'), findsOneWidget);
+    await t.tap(find.bySemanticsLabel('Switch to dark mode'));
+    await t.pump(const Duration(milliseconds: 500));
+    expect(c.darkMode, isTrue);
+    expect(c.prefs.getBool('kulay.dark'), isTrue);
+    expect(find.bySemanticsLabel('Switch to light mode'), findsOneWidget);
+
+    // Inside, on a reader's page, it is still there.
+    await c.setMode(KulayMode.personal);
+    await c.addReader('Ana');
+    await c.setReaderLevel(c.reader!.id, 1);
+    await c.goHome();
+    await t.pump(const Duration(seconds: 1));
+    await t.tap(find.bySemanticsLabel('Switch to light mode'));
+    await frames(t, 1500); // let the page's entrance animations finish
+    expect(c.darkMode, isFalse);
+    expect(t.takeException(), isNull);
+  }, semanticsEnabled: true);
 }

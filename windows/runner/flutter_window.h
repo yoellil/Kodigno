@@ -33,6 +33,14 @@ class FlutterWindow : public Win32Window {
   // "kodigno/window": minimize, close and drag/resize for the app's own
   // title area, since the window has no native title bar.
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> window_channel_;
+
+  // Full screen covers the whole monitor; the window's normal place and size
+  // are kept to go back to.
+  bool fullscreen_ = false;
+  RECT restore_rect_{};
+
+  // Switches full screen on or off. Returns the new state.
+  bool ToggleFullscreen();
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

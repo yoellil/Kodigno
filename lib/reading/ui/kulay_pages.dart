@@ -17,7 +17,7 @@ import 'kulay_extras.dart';
 import 'story_view.dart';
 
 TextStyle _h(double size) => display(size, color: kIndigoText);
-TextStyle _p(double size, {Color color = kSoft, FontWeight weight = FontWeight.w500}) => body(size, color: color, weight: weight);
+TextStyle _p(double size, {Color? color, FontWeight weight = FontWeight.w500}) => body(size, color: color ?? kSoft, weight: weight);
 
 // ---------- landing panels (shown beside JIM's shelves) ----------
 
@@ -152,7 +152,7 @@ class _ReadersPanelState extends State<ReadersPanel> {
             style: _p(14, color: kIndigoText),
             decoration: InputDecoration(
               hintText: 'Find your name',
-              prefixIcon: const Icon(Icons.search_rounded, size: 18, color: kSoft),
+              prefixIcon: Icon(Icons.search_rounded, size: 18, color: kSoft),
               isDense: true,
               filled: true,
               fillColor: kPaper,
@@ -236,7 +236,7 @@ class _ReaderTile extends StatelessWidget {
                     maxLines: 1, overflow: TextOverflow.ellipsis, style: _p(12)),
               ]),
             ),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: kSoft),
+            Icon(Icons.chevron_right_rounded, size: 18, color: kSoft),
           ]),
         ),
       ),
@@ -436,7 +436,7 @@ class _ColorProgress extends StatelessWidget {
               height: 14,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: i < up ? l.bg : Colors.white,
+                color: i < up ? l.bg : kCard,
                 border: Border.all(color: i < up ? l.fg.withValues(alpha: 0.4) : kLine, width: 1.5),
               ),
             ),
@@ -464,36 +464,42 @@ class _Ladder extends StatelessWidget {
   const _Ladder({required this.level, required this.best});
   final int level, best;
 
+  // One bar: the 8 tiles share the width, so they never wrap to a second line.
   @override
-  Widget build(BuildContext context) => Wrap(spacing: 6, runSpacing: 6, children: [
-        for (final (i, l) in levels.indexed)
-          Opacity(
-            opacity: i > best ? 0.45 : 1,
-            child: Container(
-              width: 92,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: l.bg,
-                borderRadius: BorderRadius.circular(12),
-                border: i == level ? Border.all(color: kIndigoText, width: 3) : null,
-              ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(
-                  children: [
+  Widget build(BuildContext context) => Row(children: [
+        for (final (i, l) in levels.indexed) ...[
+          if (i > 0) const SizedBox(width: 6),
+          Expanded(
+            child: Opacity(
+              opacity: i > best ? 0.45 : 1,
+              child: Container(
+                height: 52,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  color: l.bg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: i == level ? Border.all(color: kIndigoText, width: 3) : null,
+                ),
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
                     Expanded(
-                      child:
-                Text(l.name, style: body(14, weight: FontWeight.w800, color: l.fg),
-                      ),
+                      child: Text(l.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: body(13, weight: FontWeight.w800, color: l.fg)),
                     ),
                     if (i <= best)
-                      Icon(Icons.verified_rounded, size: 16, color: l.fg)
+                      Icon(Icons.verified_rounded, size: 14, color: l.fg)
                     else
-                      Icon(Icons.lock_outline_rounded, size: 14, color: l.fg),
+                      Icon(Icons.lock_outline_rounded, size: 12, color: l.fg),
                   ]),
-                Text('Gr ${l.grades}', style: body(11, weight: FontWeight.w600, color: l.fg)),
-              ]),
+                  Text('Gr ${l.grades}',
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: body(11, weight: FontWeight.w600, color: l.fg)),
+                ]),
+              ),
             ),
           ),
+        ],
       ]);
 }
 
@@ -572,8 +578,14 @@ class WritingPage extends StatelessWidget {
             if (c.error != null) ...[
               const SizedBox(height: 24),
               Text(c.error!, textAlign: TextAlign.center, style: _p(15, color: kBad, weight: FontWeight.w700)),
-              const SizedBox(height: 12),
-              KButton('Pick another topic', ghost: true, onTap: c.goHome),
+              const SizedBox(height: 14),
+              // The reader chooses: never a different topic without asking.
+              Wrap(alignment: WrapAlignment.center, spacing: 10, runSpacing: 10, children: [
+                if (c.topic != null) KButton('Try again', onTap: () => c.readTopic(c.topic!)),
+                if (c.fallbackTopic != null)
+                  KButton('Read a ready ${c.fallbackTopic} story instead', ghost: true, onTap: c.readFallback),
+                KButton('Pick another topic', ghost: true, onTap: c.goHome),
+              ]),
             ],
           ]),
         ),
@@ -614,7 +626,7 @@ class _ReadPageState extends State<ReadPage> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep reading')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: kIndigoText),
+            style: FilledButton.styleFrom(backgroundColor: kAccent),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Go to questions'),
           ),
@@ -727,7 +739,7 @@ class _Reading extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onDone,
               style: FilledButton.styleFrom(
-                backgroundColor: kIndigoText,
+                backgroundColor: kAccent,
                 padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
                 shape: const StadiumBorder(),
               ),
@@ -871,7 +883,7 @@ class _ChoiceTileState extends State<_ChoiceTile> {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
-                color: sel ? widget.color.withValues(alpha: 0.45) : _hover ? kPaper : Colors.white,
+                color: sel ? widget.color.withValues(alpha: 0.45) : _hover ? kPaper : kCard,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: sel ? kIndigoText : kLine, width: sel ? 2 : 1.2),
               ),
@@ -881,12 +893,12 @@ class _ChoiceTileState extends State<_ChoiceTile> {
                   width: 30,
                   height: 30,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: sel ? kIndigoText : kPaper),
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: sel ? kAccent : kPaper),
                   child: Text(widget.letter,
                       style: body(13, weight: FontWeight.w800, color: sel ? Colors.white : kIndigoText)),
                 ),
                 const SizedBox(width: 12),
-                Expanded(child: Text(widget.text, style: readFont(body(16, color: const Color(0xFF1C1A2E)), widget.easy))),
+                Expanded(child: Text(widget.text, style: readFont(body(16, color: kInk), widget.easy))),
               ]),
             ),
           ),
@@ -1151,7 +1163,7 @@ class _SkillSummary extends StatelessWidget {
         for (final e in totals.entries)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(999)),
+            decoration: BoxDecoration(color: kCard.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(999)),
             child: Text('${e.key}  ${e.value.$1} of ${e.value.$2}',
                 style: _p(13, color: e.value.$1 == e.value.$2 ? kGood : kBad, weight: FontWeight.w700)),
           ),
@@ -1319,7 +1331,7 @@ class _TeacherPageState extends State<TeacherPage> {
                                 IconButton(
                                   tooltip:
                                       'Give ${r.reader.name} the reading check again',
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.replay_rounded,
                                     size: 18,
                                     color: kSoft,
@@ -1337,7 +1349,7 @@ class _TeacherPageState extends State<TeacherPage> {
                       if (classroom)
                         DataCell(IconButton(
                           tooltip: 'Delete ${r.reader.name}',
-                          icon: const Icon(Icons.delete_outline_rounded, color: kSoft),
+                          icon: Icon(Icons.delete_outline_rounded, color: kSoft),
                           onPressed: () => _delete(r.reader),
                         )),
                     ]),

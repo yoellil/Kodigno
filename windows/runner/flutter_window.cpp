@@ -42,10 +42,15 @@ bool FlutterWindow::OnCreate() {
       result->Success();
       // The normal close path, so the app can stop its model server first.
       PostMessage(hwnd, WM_CLOSE, 0, 0);
+    } else if (method == "toggleFullscreen") {
+      result->Success(flutter::EncodableValue(ToggleFullscreen()));
+    } else if (method == "isFullscreen") {
+      result->Success(flutter::EncodableValue(fullscreen_));
     } else if (method == "startDrag") {
       // Hand the press to Windows as if it were on the caption; Windows then
-      // runs its own move loop.
+      // runs its own move loop. A full-screen window stays put.
       result->Success();
+      if (fullscreen_) return;
       ReleaseCapture();
       SendMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
     } else {
@@ -73,6 +78,25 @@ bool FlutterWindow::OnCreate() {
   flutter_controller_->ForceRedraw();
 
   return true;
+}
+
+bool FlutterWindow::ToggleFullscreen() {
+  HWND hwnd = GetHandle();
+  if (!fullscreen_) {
+    GetWindowRect(hwnd, &restore_rect_);
+    MONITORINFO info{sizeof(MONITORINFO)};
+    GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &info);
+    const RECT& m = info.rcMonitor;  // the whole screen, taskbar included
+    SetWindowPos(hwnd, HWND_TOP, m.left, m.top, m.right - m.left, m.bottom - m.top,
+                 SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    fullscreen_ = true;
+  } else {
+    const RECT& r = restore_rect_;
+    SetWindowPos(hwnd, nullptr, r.left, r.top, r.right - r.left, r.bottom - r.top,
+                 SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    fullscreen_ = false;
+  }
+  return fullscreen_;
 }
 
 void FlutterWindow::OnDestroy() {

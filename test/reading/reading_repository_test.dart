@@ -135,15 +135,20 @@ void main() {
       expect(c.reader!.placed, isTrue);
     });
 
-    test('with the AI down, a saved story at the color is served with a notice', () async {
+    test('with the AI down, a saved story at the color is offered, then served with a notice', () async {
       await c.setMode(KulayMode.personal);
       await c.addReader('Ana');
       await repo.setLevel(c.reader!.id, 1);
       await c.pickReader(c.reader!);
       await repo.saveStory(story(1, 'Fiesta'), source: 'starter');
       await c.readTopic('Basketball');
+      // Not swapped in: the reader is told and offered the Fiesta story.
+      expect(c.screen, KulayScreenId.writing);
+      expect(c.error, contains('Basketball'));
+      expect(c.fallbackTopic, 'Fiesta');
+      await c.readFallback();
       expect(c.screen, KulayScreenId.story);
-      expect(c.notice, contains('saved story'));
+      expect(c.notice, contains('ready Fiesta story'));
       for (var i = 0; i < c.answers.length; i++) {
         c.choose(i, 1); // all wrong
       }

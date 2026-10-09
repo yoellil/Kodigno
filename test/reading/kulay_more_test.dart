@@ -266,16 +266,25 @@ void main() {
       await c.addReader('Ana'); // starts the reading check
       await t.pump(const Duration(seconds: 1));
       expect(c.textScale, 1.0);
-      await t.tap(find.byTooltip('Reading look: text size and easy-read font'));
+      await t.tap(find.byTooltip('Reading look: text size, easy-read font and dark mode'));
       await t.pumpAndSettle();
       expect(find.text('Make reading easier'), findsOneWidget);
       await t.tap(find.text('Large'));
       await t.pumpAndSettle();
-      await t.tap(find.byType(Switch));
+      await t.tap(find.widgetWithText(SwitchListTile, 'Easy-read letters'));
       await t.pumpAndSettle();
       expect((c.textSize, c.textScale, c.easyFont), (1, 1.2, true));
+      expect(c.darkMode, isFalse);
+
+      // Dark mode: saved, and Kulay redraws with its dark colors.
+      await t.tap(find.widgetWithText(SwitchListTile, 'Dark mode'));
+      await t.pumpAndSettle();
+      expect(c.darkMode, isTrue);
+      expect(c.prefs.getBool('kulay.dark'), isTrue);
       await t.tap(find.text('Done'));
       await t.pumpAndSettle();
+      final scaffold = t.widget<Scaffold>(find.byType(Scaffold).first);
+      expect(scaffold.backgroundColor, const Color(0xFF1C1736)); // the dark frame
       expect(t.takeException(), isNull);
     });
 
