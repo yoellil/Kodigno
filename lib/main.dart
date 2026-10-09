@@ -62,13 +62,17 @@ class KodignoApp extends StatefulWidget {
   State<KodignoApp> createState() => _KodignoAppState();
 }
 
-class _KodignoAppState extends State<KodignoApp> {
+class _KodignoAppState extends State<KodignoApp> with WidgetsBindingObserver {
   final _tab = ValueNotifier(0);
   late final AppLifecycleListener _lifecycle;
 
   @override
+  void didChangePlatformBrightness() => setState(() {}); // "System" theme follows the OS
+
+  @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Stop the bundled model server when the window closes.
     _lifecycle = AppLifecycleListener(onExitRequested: () async {
       await context.read<AppController>().shutdown();
@@ -78,6 +82,7 @@ class _KodignoAppState extends State<KodignoApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _lifecycle.dispose();
     _tab.dispose();
     super.dispose();
@@ -85,8 +90,13 @@ class _KodignoAppState extends State<KodignoApp> {
 
   @override
   Widget build(BuildContext context) {
-    final ready = context.watch<AppController>().modelReady;
+    final c = context.watch<AppController>();
+    final ready = c.modelReady;
+    K.dark = c.themeMode == ThemeMode.dark ||
+        (c.themeMode == ThemeMode.system &&
+            WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
     return MaterialApp(
+      key: ValueKey(K.dark), // K's colors are read at build time: rebuild the whole tree on a flip
       title: 'Kodigno',
       debugShowCheckedModeBanner: false,
       theme: kTheme(),

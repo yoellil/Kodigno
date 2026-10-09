@@ -83,7 +83,7 @@ class _Step extends StatelessWidget {
         ? const Icon(Icons.check_circle, size: 22, key: ValueKey('done'))
         : active
             ? const CircularProgressIndicator(strokeWidth: 2.5, key: ValueKey('active'))
-            : const Icon(Icons.circle_outlined, size: 22, color: K.muted, key: ValueKey('todo'));
+            : Icon(Icons.circle_outlined, size: 22, color: K.muted, key: const ValueKey('todo'));
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(children: [
@@ -100,7 +100,7 @@ class _Step extends StatelessWidget {
         const SizedBox(width: 12),
         Text(label,
             style: body(16, weight: done || active ? FontWeight.w700 : FontWeight.w500,
-                color: done || active ? K.ink : K.muted)),
+                color: done || active ? K.text : K.muted)),
       ]),
     );
   }

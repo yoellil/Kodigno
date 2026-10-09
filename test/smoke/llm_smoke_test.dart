@@ -12,15 +12,15 @@ void main() {
   test('real model returns parseable output', () async {
     final rt = LlamaServerRuntime(serverExe: server!, modelPath: model!);
     final out = await rt.complete(
-      buildPrompt(
+      buildFactsPrompt(
           'The mitochondria is the powerhouse of the cell. '
           'It produces ATP through cellular respiration.',
-          questions: 2,
-          cards: 2),
+          facts: 2),
       maxTokens: 600,
+      schema: factsSchema(2),
     );
     await rt.dispose();
-    expect(() => parseGeneratedSet(out), returnsNormally, reason: out);
+    expect(() => parseFacts(out), returnsNormally, reason: out);
   },
       skip: (model == null || server == null) ? 'set MODEL_PATH and LLAMA_SERVER' : false,
       timeout: const Timeout(Duration(minutes: 5)));

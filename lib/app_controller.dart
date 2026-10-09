@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai/ai_engine.dart';
@@ -8,6 +9,13 @@ import 'data/repository.dart';
 import 'models/device_profiler.dart';
 import 'models/model_manager.dart';
 import 'models/tier.dart';
+
+class ChatFailed implements Exception {
+  ChatFailed(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
 
 class AppController extends ChangeNotifier {
   AppController({
@@ -34,6 +42,7 @@ class AppController extends ChangeNotifier {
   String? error;
   Tier? fallbackOffer;
   bool storageTooLow = false;
+  ThemeMode themeMode = ThemeMode.system;
 
   DeviceProfile? _device;
   AiEngine? _engine;
@@ -44,6 +53,13 @@ class AppController extends ChangeNotifier {
     final saved = prefs.getString('tier');
     tier = saved != null ? tiers.byId(saved) : tiers.pick(_device!.ramMb);
     modelReady = await models.isInstalled(tier!);
+    themeMode = ThemeMode.values.asNameMap()[prefs.getString('theme')] ?? ThemeMode.system;
+    notifyListeners();
+  }
+
+  Future<void> setThemeMode(ThemeMode m) async {
+    themeMode = m;
+    await prefs.setString('theme', m.name);
     notifyListeners();
   }
 
@@ -100,13 +116,7 @@ class AppController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final t = tier!;
-      if (_engine == null || _engineTier != t.id) {
-        await _dropEngine();
-        _engine = engineFactory(t, models.fileFor(t));
-        _engineTier = t.id;
-      }
-      final set = await _engine!.generate(notes, onProgress: (f) {
+      final set = await (await _engineForTier()).generate(notes, onProgress: (f) {
         generationFraction = f;
         notifyListeners();
       });
@@ -126,6 +136,29 @@ class AppController extends ChangeNotifier {
       generating = false;
       notifyListeners();
     }
+  }
+
+  /// Tutor chat: answers the last user turn in [history] from [notes].
+  /// Throws [ChatFailed] with a message fit to show the user.
+  Future<String> ask(String notes, List<ChatTurn> history) async {
+    try {
+      return await (await _engineForTier()).ask(notes, history);
+    } on ModelUnavailableException {
+      await _dropEngine();
+      throw ChatFailed('The AI model could not run. Close other apps and try again.');
+    } catch (e) {
+      throw ChatFailed("Couldn't get an answer, try again.");
+    }
+  }
+
+  Future<AiEngine> _engineForTier() async {
+    final t = tier!;
+    if (_engine == null || _engineTier != t.id) {
+      await _dropEngine();
+      _engine = engineFactory(t, models.fileFor(t));
+      _engineTier = t.id;
+    }
+    return _engine!;
   }
 
   Future<void> acceptFallback() async {

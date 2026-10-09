@@ -78,7 +78,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
             Container(
               width: 248,
               padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(right: BorderSide(color: K.line)),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -115,6 +115,7 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                         child: _SideItem(
                           label: _items[i].$1,
                           icon: _items[i].$2,
+                          selected: i == index,
                           onTap: () => widget.tab.value = i,
                         ),
                       ),
@@ -139,9 +140,11 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
 }
 
 class _SideItem extends StatelessWidget {
-  const _SideItem({required this.label, required this.icon, required this.onTap});
+  const _SideItem(
+      {required this.label, required this.icon, required this.selected, required this.onTap});
   final String label;
   final IconData icon;
+  final bool selected; // yellow pill behind: keep the text dark
   final VoidCallback onTap;
 
   @override
@@ -149,14 +152,15 @@ class _SideItem extends StatelessWidget {
         type: MaterialType.transparency,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          hoverColor: Colors.black.withValues(alpha: 0.05),
+          hoverColor: K.text.withValues(alpha: 0.06),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Row(children: [
-              Icon(icon, size: 20),
+              Icon(icon, size: 20, color: selected ? K.ink : null),
               const SizedBox(width: 12),
-              Text(label, style: body(16, weight: FontWeight.w700)),
+              Text(label,
+                  style: body(16, weight: FontWeight.w700, color: selected ? K.ink : null)),
             ]),
           ),
         ),

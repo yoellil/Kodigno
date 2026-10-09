@@ -7,22 +7,25 @@ class Panel extends StatelessWidget {
   const Panel({
     super.key,
     required this.child,
-    this.color = Colors.white,
+    this.color,
     this.padding = EdgeInsets.zero,
     this.radius = 28,
   });
   final Widget child;
-  final Color color;
+  final Color? color;
   final EdgeInsets padding;
   final double radius;
 
   @override
-  Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(radius)),
-        clipBehavior: Clip.antiAlias,
-        padding: padding,
-        child: child,
-      );
+  Widget build(BuildContext context) {
+    final c = color ?? K.card;
+    return Container(
+      decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(radius)),
+      clipBehavior: Clip.antiAlias,
+      padding: padding,
+      child: inkOnPastel(c, child),
+    );
+  }
 }
 
 /// Primary = yellow with dark text; dark = ink with white text.
@@ -46,7 +49,7 @@ class _PillButtonState extends State<PillButton> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
-    final fg = widget.dark ? Colors.white : K.ink;
+    final fg = widget.dark ? K.bg : K.ink;
     final scale = !enabled || reduceMotion(context) ? 1.0 : (_down ? 0.96 : (_hover ? 1.04 : 1.0));
     return Opacity(
       opacity: enabled ? 1 : 0.4,
@@ -59,7 +62,7 @@ class _PillButtonState extends State<PillButton> {
           duration: Motion.fast,
           curve: Motion.curve,
           child: Material(
-            color: widget.dark ? K.ink : K.yellow,
+            color: widget.dark ? K.text : K.yellow,
             shape: const StadiumBorder(),
             child: InkWell(
               customBorder: const StadiumBorder(),
@@ -85,9 +88,9 @@ class _PillButtonState extends State<PillButton> {
 
 /// Progress bar that eases to its new value.
 class KProgress extends StatelessWidget {
-  const KProgress({super.key, required this.value, this.color = K.ink, this.height = 6});
+  const KProgress({super.key, required this.value, this.color, this.height = 6});
   final double value;
-  final Color color;
+  final Color? color;
   final double height;
 
   @override
@@ -102,8 +105,8 @@ class KProgress extends StatelessWidget {
         builder: (_, v, _) => LinearProgressIndicator(
           value: v,
           minHeight: height,
-          backgroundColor: Colors.black12,
-          valueColor: AlwaysStoppedAnimation(color),
+          backgroundColor: K.line,
+          valueColor: AlwaysStoppedAnimation(color ?? K.text),
         ),
       ),
     );
@@ -117,9 +120,9 @@ class SourceTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(color: K.ink, borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(color: K.text, borderRadius: BorderRadius.circular(8)),
         child: Text(label.toUpperCase(),
-            style: body(10, weight: FontWeight.w800, color: Colors.white)),
+            style: body(10, weight: FontWeight.w800, color: K.bg)),
       );
 }
 
@@ -215,7 +218,7 @@ class _DashedBoxState extends State<DashedBox> with SingleTickerProviderStateMix
         animation: _c,
         builder: (_, child) => CustomPaint(
           painter: _DashedPainter(
-              widget.highlighted ? K.ink : const Color(0xFF9A9AAE), _c.value),
+              widget.highlighted ? K.text : const Color(0xFF9A9AAE), _c.value),
           child: child,
         ),
         child: widget.child,

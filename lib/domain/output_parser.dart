@@ -2,9 +2,7 @@ import 'dart:convert';
 
 import 'models.dart';
 
-/// Parses model output into a [GeneratedSet]. Invalid items are dropped;
-/// throws [FormatException] if nothing valid remains.
-GeneratedSet parseGeneratedSet(String raw) {
+Map<dynamic, dynamic> _jsonObject(String raw) {
   final start = raw.indexOf('{');
   final end = raw.lastIndexOf('}');
   if (start < 0 || end <= start) {
@@ -12,38 +10,48 @@ GeneratedSet parseGeneratedSet(String raw) {
   }
   final decoded = jsonDecode(raw.substring(start, end + 1));
   if (decoded is! Map) throw const FormatException('JSON is not an object');
+  return decoded;
+}
 
-  final questions = <QuizQuestion>[];
-  for (final q in (decoded['questions'] as List? ?? const [])) {
-    if (q is! Map) continue;
-    final prompt = (q['prompt'] as String?)?.trim() ?? '';
-    final choices = [
-      for (final c in (q['choices'] as List? ?? const []))
-        if (c is String && c.trim().isNotEmpty) c.trim()
-    ];
-    final answer = q['answer_index'];
-    if (prompt.isEmpty || choices.length < 2 || choices.length > 6) continue;
-    if (answer is! int || answer < 0 || answer >= choices.length) continue;
-    questions.add(QuizQuestion(
-      prompt: prompt,
-      choices: choices,
-      answerIndex: answer,
-      explanation: (q['explanation'] as String?)?.trim() ?? '',
-    ));
-  }
+/// The model sometimes echoes the format's slots ("<fact 1> The sun..."): strip them.
+final _placeholder = RegExp(r'<[^<>]{2,}>');
 
-  final cards = <Flashcard>[];
-  for (final c in (decoded['flashcards'] as List? ?? const [])) {
-    if (c is! Map) continue;
-    final front = (c['front'] as String?)?.trim() ?? '';
-    final back = (c['back'] as String?)?.trim() ?? '';
-    if (front.isNotEmpty && back.isNotEmpty) {
-      cards.add(Flashcard(front: front, back: back));
-    }
-  }
+String _text(Object? v) => v is String ? v.replaceAll(_placeholder, '').trim() : '';
 
-  if (questions.isEmpty && cards.isEmpty) {
-    throw const FormatException('no valid questions or flashcards');
+/// Key facts from the first pass. Throws [FormatException] if none are usable.
+List<String> parseFacts(String raw) {
+  final facts = [
+    for (final f in (_jsonObject(raw)['facts'] as List? ?? const []))
+      if (_text(f).isNotEmpty) _text(f),
+  ];
+  if (facts.isEmpty) throw const FormatException('no facts');
+  return facts;
+}
+
+/// Question/answer pairs from the second pass. Throws [FormatException] if none are usable.
+List<QaItem> parseQa(String raw) {
+  final items = <QaItem>[];
+  for (final i in (_jsonObject(raw)['items'] as List? ?? const [])) {
+    if (i is! Map) continue;
+    final q = _text(i['question']);
+    final a = _text(i['answer']);
+    if (q.isNotEmpty && a.isNotEmpty) items.add(QaItem(q, a));
   }
-  return GeneratedSet(questions, cards);
+  if (items.isEmpty) throw const FormatException('no question/answer pairs');
+  return items;
+}
+
+/// Wrong answers from the third pass: one list per question, in order (empty
+/// where the model gave none). Throws [FormatException] if there are no items.
+List<List<String>> parseWrong(String raw) {
+  final items = _jsonObject(raw)['items'] as List? ?? const [];
+  if (items.isEmpty) throw const FormatException('no wrong answers');
+  return [
+    for (final i in items)
+      [
+        if (i is Map)
+          for (final w in (i['wrong'] is List ? i['wrong'] as List : const []))
+            if (_text(w).isNotEmpty) _text(w),
+      ],
+  ];
 }

@@ -41,6 +41,11 @@ class ModelSetupPanel extends StatelessWidget {
       if (tooBig)
         Text('Larger than recommended for this computer; it may be slow or run out of memory.',
             style: body(13, color: Colors.orange.shade900)),
+      if (tier.id == 'low')
+        Text(
+            'Basic is small and fast, but it can write wrong or odd questions. '
+            'Pick Standard or High quality for better results if your computer can run it.',
+            style: body(13, color: K.muted)),
       if (c.storageTooLow)
         Text('Not enough free disk space for this model.',
             style: body(13, color: Colors.red.shade700)),
@@ -74,7 +79,7 @@ class SetupScreen extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: K.card,
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(color: K.line),
               ),
@@ -89,12 +94,28 @@ class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.all(28),
-        children: [
-          Text('Settings', style: display(34)),
-          const SizedBox(height: 24),
-          const ModelSetupPanel(heading: 'AI model'),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final c = context.watch<AppController>();
+    return ListView(
+      padding: const EdgeInsets.all(28),
+      children: [
+        Text('Settings', style: display(34)),
+        const SizedBox(height: 24),
+        Text('Appearance', style: display(30)),
+        const SizedBox(height: 12),
+        SegmentedButton<ThemeMode>(
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(value: ThemeMode.system, label: Text('System')),
+            ButtonSegment(value: ThemeMode.light, label: Text('Light')),
+            ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+          ],
+          selected: {c.themeMode},
+          onSelectionChanged: (s) => c.setThemeMode(s.first),
+        ),
+        const SizedBox(height: 32),
+        const ModelSetupPanel(heading: 'AI model'),
+      ],
+    );
+  }
 }

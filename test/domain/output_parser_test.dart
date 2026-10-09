@@ -1,46 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kodigno/domain/output_parser.dart';
 
-const _valid = '''
-{"questions":[{"prompt":"Capital of France?","choices":["Paris","Rome","Madrid","Bonn"],"answer_index":0,"explanation":"It is Paris."}],
- "flashcards":[{"front":"H2O","back":"Water"}]}
-''';
-
 void main() {
-  test('parses valid JSON wrapped in prose', () {
-    final s = parseGeneratedSet('Sure! Here you go:\n$_valid\nHope it helps.');
-    expect(s.questions.single.prompt, 'Capital of France?');
-    expect(s.questions.single.answerIndex, 0);
-    expect(s.flashcards.single.back, 'Water');
+  test('parseFacts reads JSON wrapped in prose and drops placeholders', () {
+    final f = parseFacts('Sure!\n{"facts":["<fact 1> Fact one.","<fact 2>"," "]}\nDone.');
+    expect(f, ['Fact one.']);
   });
 
-  test('skips a question whose answer_index is out of range', () {
-    final s = parseGeneratedSet(
-        '{"questions":[{"prompt":"Q","choices":["a","b"],"answer_index":5}],'
-        '"flashcards":[{"front":"f","back":"b"}]}');
-    expect(s.questions, isEmpty);
-    expect(s.flashcards, hasLength(1));
+  test('parseQa keeps complete pairs only', () {
+    final q = parseQa('{"items":[{"question":"Q?","answer":"A"},'
+        '{"question":"Q2?","answer":""},{"question":"<question>","answer":"<answer>"}]}');
+    expect(q.map((i) => i.question), ['Q?']);
+    expect(q.single.answer, 'A');
   });
 
-  test('skips questions with fewer than 2 choices or empty prompt', () {
-    final s = parseGeneratedSet(
-        '{"questions":[{"prompt":"Q","choices":["a"],"answer_index":0},'
-        '{"prompt":" ","choices":["a","b"],"answer_index":0}],'
-        '"flashcards":[{"front":"f","back":"b"}]}');
-    expect(s.questions, isEmpty);
+  test('parseWrong reads one list of wrong answers per question, in order', () {
+    final w = parseWrong('{"items":[{"wrong":["A","<wrong 2>"," B "]},{"wrong":[]},{"x":1}]}');
+    expect(w, [
+      ['A', 'B'],
+      <String>[],
+      <String>[],
+    ]);
+    expect(() => parseWrong('{"items":[]}'), throwsFormatException);
   });
 
-  test('throws when nothing valid', () {
-    expect(() => parseGeneratedSet('{"questions":[],"flashcards":[]}'),
-        throwsFormatException);
-  });
-
-  test('throws on non-JSON', () {
-    expect(() => parseGeneratedSet('I cannot do that'), throwsFormatException);
-  });
-
-  test('throws on truncated JSON', () {
-    expect(() => parseGeneratedSet('{"questions":[{"prompt":"Q"'),
-        throwsFormatException);
+  test('throw when nothing usable, not JSON, or truncated', () {
+    expect(() => parseFacts('{"facts":[]}'), throwsFormatException);
+    expect(() => parseQa('{"items":[]}'), throwsFormatException);
+    expect(() => parseFacts('I cannot do that'), throwsFormatException);
+    expect(() => parseQa('{"items":[{"question":"Q"'), throwsFormatException);
   });
 }

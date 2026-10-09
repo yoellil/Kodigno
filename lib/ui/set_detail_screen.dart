@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/repository.dart';
 import 'anim.dart';
+import 'chat_screen.dart';
 import 'flashcards_screen.dart';
 import 'motion.dart';
 import 'quiz_screen.dart';
@@ -59,8 +60,13 @@ class SetDetailScreen extends StatelessWidget {
                           .enter(context, index: 4),
                     ),
                     const SizedBox(width: 14),
-                    const Expanded(child: _Tile(Icons.headphones, K.blue, 'Podcast', 'Coming soon'))
-                        .enter(context, index: 5),
+                    Expanded(
+                      child: _Tile(Icons.chat_bubble_outline, K.mint, 'Ask AI', 'Explain this lesson',
+                          onTap: d.set.sourceText.trim().isEmpty
+                              ? null
+                              : () => push(ChatScreen(title: d.set.title, notes: d.set.sourceText)))
+                          .enter(context, index: 5),
+                    ),
                   ]),
                   const SizedBox(height: 26),
                   Align(

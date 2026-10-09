@@ -38,14 +38,14 @@ class Lift extends StatefulWidget {
     super.key,
     required this.child,
     required this.onTap,
-    this.color = K.tile,
+    this.color,
     this.radius = 20,
     this.tilt = 0,
     this.padding = EdgeInsets.zero,
   });
   final Widget child;
   final VoidCallback? onTap;
-  final Color color;
+  final Color? color;
   final double radius;
   final double tilt; // radians; straightens on hover
   final EdgeInsets padding;
@@ -64,6 +64,7 @@ class _LiftState extends State<Lift> {
     final lifted = enabled && _hover;
     final scale = (enabled && _down) ? 0.97 : (lifted ? 1.02 : 1.0);
     final radius = BorderRadius.circular(widget.radius);
+    final color = widget.color ?? K.tile;
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
@@ -77,7 +78,7 @@ class _LiftState extends State<Lift> {
           ..scaleByDouble(scale, scale, 1, 1)
           ..rotateZ(lifted ? 0 : widget.tilt),
         decoration: BoxDecoration(
-          color: widget.color,
+          color: color,
           borderRadius: radius,
           boxShadow: [
             BoxShadow(
@@ -93,7 +94,7 @@ class _LiftState extends State<Lift> {
             borderRadius: radius,
             onTap: widget.onTap,
             onHighlightChanged: (v) => setState(() => _down = v),
-            child: Padding(padding: widget.padding, child: widget.child),
+            child: Padding(padding: widget.padding, child: inkOnPastel(color, widget.child)),
           ),
         ),
       ),

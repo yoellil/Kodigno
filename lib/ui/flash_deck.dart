@@ -169,7 +169,7 @@ class _FlashDeckState extends State<FlashDeck>
     final d = k - rise;
     final panel = Panel(
       key: ValueKey('under$k'),
-      color: Color.lerp(K.lavender, Colors.white, 0.3 * d)!,
+      color: Color.lerp(K.lavender, K.card, 0.3 * d)!,
       child: const SizedBox.expand(),
     );
     return Positioned.fill(

@@ -43,6 +43,8 @@ class _Engine implements AiEngine {
   Future<GeneratedSet> generate(String notes, {void Function(double)? onProgress}) =>
       behavior(onProgress);
   @override
+  Future<String> ask(String notes, List<ChatTurn> history) async => 'ok';
+  @override
   Future<void> dispose() async {}
 }
 

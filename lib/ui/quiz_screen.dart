@@ -175,10 +175,10 @@ class _OptionTile extends StatelessWidget {
             height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-                color: selected ? K.ink : Colors.white,
+                color: selected ? K.ink : K.card,
                 borderRadius: BorderRadius.circular(10)),
             child: Text(letter,
-                style: body(14, weight: FontWeight.w800, color: selected ? Colors.white : K.ink)),
+                style: body(14, weight: FontWeight.w800, color: selected ? Colors.white : K.text)),
           ),
           const SizedBox(width: 14),
           Expanded(child: Text(text, style: body(16, weight: FontWeight.w600))),

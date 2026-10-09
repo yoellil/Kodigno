@@ -68,7 +68,19 @@ class LlamaServerRuntime implements LlmRuntime {
   Future<void>? _starting;
 
   @override
-  Future<String> complete(String prompt, {int maxTokens = 1024}) async {
+  Future<String> complete(String prompt,
+          {int maxTokens = 1024, Map<String, Object?>? schema}) =>
+      chat([
+        {'role': 'user', 'content': prompt},
+      ], maxTokens: maxTokens, temperature: 0.3, schema: schema);
+
+  @override
+  Future<String> chat(
+    List<Map<String, String>> messages, {
+    int maxTokens = 512,
+    double temperature = 0.5,
+    Map<String, Object?>? schema,
+  }) async {
     await _ensureStarted();
     try {
       final (status, body) = await _request(
@@ -76,11 +88,12 @@ class LlamaServerRuntime implements LlmRuntime {
         'POST',
         '/v1/chat/completions',
         {
-          'messages': [
-            {'role': 'user', 'content': prompt},
-          ],
+          'messages': messages,
           'max_tokens': maxTokens,
-          'temperature': 0.3,
+          'temperature': temperature,
+          'repeat_penalty': 1.1,
+          if (schema != null)
+            'response_format': {'type': 'json_object', 'schema': schema},
         },
       );
       if (status != 200)

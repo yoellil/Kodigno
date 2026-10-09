@@ -1,7 +1,19 @@
 import '../domain/models.dart';
 
+/// One message in a tutor chat. [role] is 'user' or 'assistant'.
+class ChatTurn {
+  const ChatTurn(this.role, this.text);
+  final String role;
+  final String text;
+}
+
 abstract class LlmRuntime {
-  Future<String> complete(String prompt, {int maxTokens = 1024});
+  /// With [schema] (a JSON schema) the server can only emit matching JSON.
+  Future<String> complete(String prompt,
+      {int maxTokens = 1024, Map<String, Object?>? schema});
+
+  /// Chat completion over [messages], each {'role': ..., 'content': ...}.
+  Future<String> chat(List<Map<String, String>> messages, {int maxTokens = 512});
   Future<void> dispose();
 }
 
@@ -11,6 +23,9 @@ abstract class AiEngine {
     String notes, {
     void Function(double fraction)? onProgress,
   });
+
+  /// Answers the last user turn in [history] using [notes] as the lesson.
+  Future<String> ask(String notes, List<ChatTurn> history);
   Future<void> dispose();
 }
 

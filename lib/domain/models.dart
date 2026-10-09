@@ -22,3 +22,13 @@ class GeneratedSet {
   final List<QuizQuestion> questions;
   final List<Flashcard> flashcards;
 }
+
+/// One study question and its short answer, written from a [fact] in the notes.
+/// [wrong] holds the model's believable wrong answers, for quiz choices.
+class QaItem {
+  const QaItem(this.question, this.answer, {this.fact = '', this.wrong = const []});
+  final String question;
+  final String answer;
+  final String fact;
+  final List<String> wrong;
+}

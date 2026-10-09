@@ -58,14 +58,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   prefixIcon: const Icon(Icons.search),
                   isDense: true,
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: K.card,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(color: K.line),
+                    borderSide: BorderSide(color: K.line),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(color: K.line),
+                    borderSide: BorderSide(color: K.line),
                   ),
                 ),
               ),
@@ -172,7 +172,7 @@ class _Skeleton extends StatelessWidget {
     if (reduceMotion(context)) return list;
     return list
         .animate(onPlay: (c) => c.repeat())
-        .shimmer(duration: 1300.ms, color: Colors.white);
+        .shimmer(duration: 1300.ms, color: K.card);
   }
 }
 
