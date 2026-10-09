@@ -266,7 +266,7 @@ void main() {
       await c.addReader('Ana'); // starts the reading check
       await t.pump(const Duration(seconds: 1));
       expect(c.textScale, 1.0);
-      await t.tap(find.text('Aa'));
+      await t.tap(find.byTooltip('Reading look: text size and easy-read font'));
       await t.pumpAndSettle();
       expect(find.text('Make reading easier'), findsOneWidget);
       await t.tap(find.text('Large'));

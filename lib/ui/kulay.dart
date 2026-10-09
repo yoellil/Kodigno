@@ -424,52 +424,62 @@ class _Inside extends StatelessWidget {
       KulayScreenId.teacher => const TeacherPage(),
       _ => const SizedBox.shrink(),
     };
-    final link = TextButton.styleFrom(foregroundColor: _indigoText, textStyle: body(14, weight: FontWeight.w700));
+    final reading = c.screen != KulayScreenId.home && c.screen != KulayScreenId.teacher;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 16, 8),
-        child: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runSpacing: 8,
-          children: [
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              const KulayIcon(size: 30),
-              const SizedBox(width: 10),
-              Text('Kulay', style: display(26, color: _indigoText)),
-              if (r != null && c.screen != KulayScreenId.teacher) ...[
-                const SizedBox(width: 16),
-                Text(r.name, style: body(15, weight: FontWeight.w700, color: _indigoText)),
+        padding: const EdgeInsets.fromLTRB(24, 14, 14, 8),
+        child: Row(children: [
+          const KulayIcon(size: 28),
+          const SizedBox(width: 10),
+          Text('Kulay', style: display(24, color: _indigoText)),
+          if (r != null && c.screen != KulayScreenId.teacher) ...[
+            const SizedBox(width: 14),
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 5, 6, 5),
+              decoration: BoxDecoration(color: const Color(0xFFF6F4FB), borderRadius: BorderRadius.circular(999)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(r.name, style: body(14, weight: FontWeight.w700, color: _indigoText)),
                 if (r.placed) ...[const SizedBox(width: 8), LevelChip(r.level)],
-              ],
-            ]),
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              TextButton(style: link, onPressed: () => showReadingLook(context), child: const Text('Aa')),
-              if (r != null && c.screen != KulayScreenId.home && c.screen != KulayScreenId.placement)
-                TextButton(style: link, onPressed: c.goHome, child: const Text('My page')),
-              if (classroom && c.screen != KulayScreenId.teacher)
-                TextButton(style: link, onPressed: c.switchReader, child: const Text('Switch reader')),
-              if (c.screen != KulayScreenId.teacher)
-                TextButton(
-                    style: link,
-                    onPressed: () => openTeacher(context),
-                    child: Text(classroom ? 'Teacher view' : 'My progress')),
-              if (c.screen == KulayScreenId.teacher && r == null)
-                TextButton(style: link, onPressed: c.switchReader, child: const Text('Readers')),
-              PopupMenuButton<KulayMode>(
-                tooltip: 'Who uses Kulay here',
-                icon: const Icon(Icons.more_horiz_rounded, color: _indigoText),
-                onSelected: c.setMode,
-                itemBuilder: (_) => [
-                  CheckedPopupMenuItem(value: KulayMode.personal, checked: !classroom, child: const Text('Just me')),
-                  CheckedPopupMenuItem(value: KulayMode.classroom, checked: classroom, child: const Text('A class, taking turns')),
-                ],
-              ),
-              const SizedBox(width: 8),
-              _BackPill(onTap: onBack),
-            ]),
+              ]),
+            ),
           ],
-        ),
+          const Spacer(),
+          if (r != null && (reading || c.screen == KulayScreenId.teacher) && c.screen != KulayScreenId.placement)
+            IconButton(
+              tooltip: 'My page',
+              onPressed: c.goHome,
+              icon: const Icon(Icons.home_rounded, color: _indigoText),
+            ),
+          IconButton(
+            tooltip: 'Reading look: text size and easy-read font',
+            onPressed: () => showReadingLook(context),
+            icon: const Icon(Icons.text_fields_rounded, color: _indigoText),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            icon: const Icon(Icons.more_horiz_rounded, color: _indigoText),
+            onSelected: (v) => switch (v) {
+              'switch' => c.switchReader(),
+              'progress' => openTeacher(context),
+              'readers' => c.switchReader(),
+              'personal' => c.setMode(KulayMode.personal),
+              _ => c.setMode(KulayMode.classroom),
+            },
+            itemBuilder: (_) => [
+              if (classroom && c.screen != KulayScreenId.teacher)
+                const PopupMenuItem(value: 'switch', child: Text('Switch reader')),
+              if (c.screen != KulayScreenId.teacher)
+                PopupMenuItem(value: 'progress', child: Text(classroom ? 'Teacher view' : 'My progress')),
+              if (c.screen == KulayScreenId.teacher && r == null)
+                const PopupMenuItem(value: 'readers', child: Text('Readers')),
+              const PopupMenuDivider(),
+              CheckedPopupMenuItem(value: 'personal', checked: !classroom, child: const Text('Just me')),
+              CheckedPopupMenuItem(value: 'classroom', checked: classroom, child: const Text('A class, taking turns')),
+            ],
+          ),
+          const SizedBox(width: 6),
+          _BackPill(onTap: onBack),
+        ]),
       ),
       Expanded(
         child: AnimatedSwitcher(
