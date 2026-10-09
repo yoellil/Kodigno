@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'loaders.dart';
 import 'motion.dart';
 import 'theme.dart';
 import 'widgets.dart';
@@ -7,6 +8,7 @@ import 'widgets.dart';
 const _items = [
   ('Library', Icons.grid_view_rounded),
   ('Create', Icons.add_circle_outline),
+  ('Kulay', Icons.palette_outlined),
   ('Settings', Icons.tune),
 ];
 
@@ -14,9 +16,12 @@ const _itemHeight = 46.0;
 const _itemGap = 6.0;
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.pages, required this.tab});
-  final List<Widget> pages; // Library, Create, Settings
+  const AppShell({super.key, required this.pages, required this.tab, this.onHome});
+  final List<Widget> pages; // Library, Create, Kulay, Settings
   final ValueNotifier<int> tab;
+
+  /// Back to the landing screen; the sidebar logo calls it.
+  final VoidCallback? onHome;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -62,7 +67,18 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
       builder: (context, index, _) {
         if (!wide) {
           return Scaffold(
-            body: SafeArea(child: _content(index)),
+            body: SafeArea(
+              child: Column(children: [
+                if (widget.onHome != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: BackHomeButton(onPressed: widget.onHome!)),
+                  ),
+                Expanded(child: _content(index)),
+              ]),
+            ),
             bottomNavigationBar: NavigationBar(
               selectedIndex: index,
               onDestinationSelected: (i) => widget.tab.value = i,
@@ -82,14 +98,24 @@ class _AppShellState extends State<AppShell> with SingleTickerProviderStateMixin
                 border: Border(right: BorderSide(color: K.line)),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  const KSticker(icon: Icons.bolt, size: 34, tilt: -0.1),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: Text('Kodigno',
-                        maxLines: 1, overflow: TextOverflow.ellipsis, style: display(26)),
+                if (widget.onHome != null) ...[
+                  BackHomeButton(onPressed: widget.onHome!),
+                  const SizedBox(height: 24),
+                ],
+                MouseRegion(
+                  cursor: widget.onHome == null ? MouseCursor.defer : SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: widget.onHome,
+                    child: Row(children: [
+                      const KSticker(icon: Icons.bolt, size: 34, tilt: -0.1),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Text('Kodigno',
+                            maxLines: 1, overflow: TextOverflow.ellipsis, style: display(26)),
+                      ),
+                    ]),
                   ),
-                ]),
+                ),
                 const SizedBox(height: 32),
                 SizedBox(
                   height: _items.length * (_itemHeight + _itemGap),

@@ -13,7 +13,12 @@ void main() {
       theme: kTheme(),
       home: AppShell(
         tab: tab,
-        pages: const [Text('page-library'), Text('page-create'), Text('page-settings')],
+        pages: const [
+          Text('page-library'),
+          Text('page-create'),
+          Text('page-kulay'),
+          Text('page-settings'),
+        ],
       ),
     ));
     expect(find.byType(NavigationBar), findsNothing);

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../app_controller.dart';
 import 'motion.dart';
+import 'loaders.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
@@ -69,24 +70,32 @@ class ModelSetupPanel extends StatelessWidget {
 
 /// First run (and whenever the chosen model is not installed).
 class SetupScreen extends StatelessWidget {
-  const SetupScreen({super.key});
+  const SetupScreen({super.key, this.onBack});
+
+  /// Shows a "Home" button when set.
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: K.card,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: K.line),
-              ),
-              child: const ModelSetupPanel(heading: 'Set up Kodigno'),
-            ).enter(context),
+        body: Stack(children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Container(
+                padding: const EdgeInsets.all(32),
+                decoration: BoxDecoration(
+                  color: K.card,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: K.line),
+                ),
+                child: const ModelSetupPanel(heading: 'Set up Kodigno'),
+              ).enter(context),
+            ),
           ),
-        ),
+          if (onBack != null)
+            Positioned(
+                left: 20, top: 20, child: SafeArea(child: BackHomeButton(onPressed: onBack!))),
+        ]),
       );
 }
 

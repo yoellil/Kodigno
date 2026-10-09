@@ -24,7 +24,9 @@ import 'sources/pdf_text.dart';
 import 'sources/source_reader.dart';
 import 'ui/add_source_screen.dart';
 import 'ui/app_shell.dart';
+import 'ui/home_screen.dart';
 import 'ui/library_screen.dart';
+import 'ui/loaders.dart';
 import 'ui/model_setup.dart';
 import 'ui/theme.dart';
 
@@ -64,6 +66,9 @@ class KodignoApp extends StatefulWidget {
 
 class _KodignoAppState extends State<KodignoApp> with WidgetsBindingObserver {
   final _tab = ValueNotifier(0);
+  var _stage = _Stage.home; // landing screen first
+
+  void _go(_Stage s) => setState(() => _stage = s);
   late final AppLifecycleListener _lifecycle;
 
   @override
@@ -100,16 +105,40 @@ class _KodignoAppState extends State<KodignoApp> with WidgetsBindingObserver {
       title: 'Kodigno',
       debugShowCheckedModeBanner: false,
       theme: kTheme(),
-      home: ready
-          ? AppShell(
-              tab: _tab,
-              pages: [
-                LibraryScreen(repo: widget.repo, tab: _tab),
-                AddSourceScreen(repo: widget.repo, reader: widget.reader),
-                const SettingsScreen(),
-              ],
-            )
-          : const SetupScreen(),
+      home: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 550),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, anim) => FadeTransition(
+          opacity: anim,
+          child: ScaleTransition(scale: Tween(begin: 0.96, end: 1.0).animate(anim), child: child),
+        ),
+        child: KeyedSubtree(key: ValueKey((_stage, ready)), child: _page(ready)),
+      ),
     );
   }
+
+  Widget _page(bool ready) => switch (_stage) {
+        _Stage.home => HomeScreen(onOpen: () => _go(_Stage.kodignoLoading)),
+        _Stage.kodignoLoading => LoadingScreen(
+            art: LoaderArt.folder,
+            label: 'Opening Kodigno',
+            onDone: () => _go(_Stage.kodigno),
+          ),
+        _Stage.kodigno => ready
+            ? AppShell(
+                tab: _tab,
+                onHome: () => _go(_Stage.home),
+                pages: [
+                  LibraryScreen(repo: widget.repo, tab: _tab),
+                  AddSourceScreen(repo: widget.repo, reader: widget.reader),
+                  KulayPage(tab: _tab, index: 2),
+                  const SettingsScreen(),
+                ],
+              )
+            : SetupScreen(onBack: () => _go(_Stage.home)),
+      };
 }
+
+/// Landing, then the loader, then the app.
+enum _Stage { home, kodignoLoading, kodigno }
