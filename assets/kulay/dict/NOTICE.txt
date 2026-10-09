@@ -1,0 +1,14 @@
+Kulay word meanings
+===================
+The files in this folder are built from Open English WordNet 2025
+(https://en-word.net), which is released under the Creative Commons
+Attribution 4.0 International licence (https://creativecommons.org/licenses/by/4.0/).
+
+Open English WordNet is derived from Princeton WordNet. Princeton WordNet is
+copyright 2006 by Princeton University and is used under the WordNet licence
+(https://wordnet.princeton.edu/license-and-commercial-use).
+
+Changes made for Kulay: only single lowercase words are kept; each word has at most
+2 meanings per part of speech (5 in all); long definitions are shortened; meanings about
+sex or containing slurs are removed; one simple synonym is chosen per meaning. The
+build script is tool/build_dictionary.py.

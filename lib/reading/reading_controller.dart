@@ -1,21 +1,30 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'dart:io';
+
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../ai/ai_engine.dart';
 import '../data/database.dart';
 import 'levels.dart';
 import 'reading_repository.dart';
+import 'report_pdf.dart';
 import 'story_engine.dart';
 
 enum KulayMode { personal, classroom }
 
+/// A story set aside while the reader does something else.
+enum Waiting { writing, ready, failed }
+
 /// Which Kulay screen shows. Kept here, not in a Navigator, so leaving Kulay
 /// and coming back lands on the same screen with answers intact.
-enum KulayScreenId { welcome, readers, home, placement, writing, story, teacher }
+enum KulayScreenId { welcome, readers, home, placement, writing, story, teacher,
+  words }
 
 const stepNames = [
   'Choose color and topic',
@@ -43,6 +52,19 @@ class ReadingController extends ChangeNotifier {
   KulayMode? get mode => KulayMode.values.asNameMap()[prefs.getString('kulay.mode')];
   bool get hasPin => prefs.getString('kulay.pin') != null;
 
+  /// Reading page text size: 0 normal, 1 large, 2 extra large.
+  int get textSize => (prefs.getInt('kulay.size') ?? 0).clamp(0, 2);
+  double get textScale => const [1.0, 1.2, 1.45][textSize];
+
+  /// Wider, plainer letters (Verdana) for readers who find the normal font hard.
+  bool get easyFont => prefs.getBool('kulay.easy') ?? false;
+
+  Future<void> setLook({int? size, bool? easy}) async {
+    if (size != null) await prefs.setInt('kulay.size', size);
+    if (easy != null) await prefs.setBool('kulay.easy', easy);
+    notifyListeners();
+  }
+
   var screen = KulayScreenId.welcome;
   List<Reader> readers = [];
   Reader? reader;
@@ -65,6 +87,12 @@ class ReadingController extends ChangeNotifier {
   AnswerResult? result; // set once a story is checked
   List<bool>? placementRight; // set once a placement passage is checked
   bool get checked => result != null || placementRight != null;
+  int? wpm; // words a minute, if the reader timed this story
+
+  // Trying the missed questions again after a story is scored. Not scored again.
+  List<int>? retryOf; // indexes of the questions that were missed
+  List<int?> retryAnswers = [];
+  bool retryChecked = false;
 
   final _pending = <String, (Job, Future<int>)>{};
   var _opened = false;
@@ -86,7 +114,16 @@ class ReadingController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The story the reader asked for, when they left the writing screen before it was done.
+  String? waitingTopic;
+  var waitingState = Waiting.writing;
+  String? _asking; // the topic being written for the screen the reader is looking at
+
   void _go(KulayScreenId s) {
+    if (screen == KulayScreenId.writing && s != KulayScreenId.writing && _asking != null) {
+      waitingTopic = _asking;
+      waitingState = Waiting.writing;
+    }
     screen = s;
     error = null;
     notifyListeners();
@@ -116,6 +153,7 @@ class ReadingController extends ChangeNotifier {
   }
 
   Future<void> pickReader(Reader r) async {
+    if (reader?.id != r.id) waitingTopic = null;
     reader = await repo.reader(r.id) ?? r;
     if (!reader!.placed) return startPlacement();
     progress = await repo.progress(reader!);
@@ -124,6 +162,7 @@ class ReadingController extends ChangeNotifier {
 
   void switchReader() {
     reader = null;
+    waitingTopic = null;
     _go(mode == KulayMode.classroom ? KulayScreenId.readers : KulayScreenId.welcome);
   }
 
@@ -146,6 +185,53 @@ class ReadingController extends ChangeNotifier {
     answers = List.filled(p.questions.length, null);
     result = null;
     placementRight = null;
+    wpm = null;
+    retryOf = null;
+    retryChecked = false;
+  }
+
+  /// Starts a second try at the questions the reader missed.
+  void startRetry() {
+    if (result == null) return;
+    final s = passage! as Story;
+    retryOf = [
+      for (final (i, q) in s.questions.indexed)
+        if (answers[i] != q.answer) i,
+    ];
+    retryAnswers = List.filled(retryOf!.length, null);
+    retryChecked = false;
+    notifyListeners();
+  }
+
+  void endRetry() {
+    retryOf = null;
+    retryChecked = false;
+    notifyListeners();
+  }
+
+  void chooseRetry(int question, int choice) {
+    if (retryChecked) return;
+    retryAnswers[question] = choice;
+    notifyListeners();
+  }
+
+  void checkRetry() {
+    retryChecked = true;
+    notifyListeners();
+  }
+
+  /// Only the missed questions, over the same story.
+  Passage get retryPassage {
+    final s = passage!;
+    return Passage(s.level, s.title, s.paras, [
+      for (final i in retryOf!) s.questions[i],
+    ]);
+  }
+
+  /// A timed reading. Kept only if it is believable (5 to 400 words a minute).
+  void setWpm(int? v) {
+    wpm = v != null && v >= 5 && v <= 400 ? v : null;
+    notifyListeners();
   }
 
   void choose(int question, int choice) {
@@ -158,6 +244,7 @@ class ReadingController extends ChangeNotifier {
 
   /// Checks a placement passage: shows what was right, then [nextPlacement] moves on.
   void checkPlacement() {
+    if (checked || !allAnswered) return;
     final p = passage!;
     placementRight = [for (final (i, q) in p.questions.indexed) answers[i] == q.answer];
     final passed = placementRight!.where((x) => x).length >= 2;
@@ -211,6 +298,8 @@ class ReadingController extends ChangeNotifier {
     topic = t.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (topic!.isEmpty) return;
     if (topic!.length > 40) topic = topic!.substring(0, 40);
+    final asked = topic!;
+    if (waitingTopic == asked) waitingTopic = null; // reading it now
     notice = null;
     step = 1;
     stepDetail.fillRange(0, 8, '');
@@ -219,6 +308,7 @@ class ReadingController extends ChangeNotifier {
     final waited = id == null;
     if (id == null) {
       _go(KulayScreenId.writing);
+      _asking = asked;
       try {
         id = await _generate(r.level, topic!, Job(Priority.reader), (n, detail) {
           if (screen != KulayScreenId.writing) return;
@@ -227,8 +317,18 @@ class ReadingController extends ChangeNotifier {
           notifyListeners();
         });
       } on JobCancelled {
+        if (_asking == asked) _asking = null;
         return;
       } catch (e) {
+        if (_asking == asked) _asking = null;
+        if (reader?.id == r.id && screen != KulayScreenId.writing) {
+          // The reader is reading something else: tell them when they look up.
+          if (waitingTopic == asked) {
+            waitingState = Waiting.failed;
+            notifyListeners();
+          }
+          return;
+        }
         // AI down or stuck: any saved story at this color.
         id = await repo.unread(r.id, r.level, null) ?? await repo.anyStory(r.level);
         if (id == null) {
@@ -243,22 +343,71 @@ class ReadingController extends ChangeNotifier {
             : 'Here is a ready story while the AI rests.';
       }
     }
-    // Left the writing screen while waiting: the story stays saved for later.
-    if (reader?.id != r.id || (waited && screen != KulayScreenId.writing)) return;
+    if (_asking == asked) _asking = null;
+    // Left the writing screen while waiting: the story is saved, and the reader is told it is ready.
+    if (waited && reader?.id == r.id && screen != KulayScreenId.writing) {
+      if (waitingTopic == asked) {
+        waitingState = Waiting.ready;
+        notifyListeners();
+      }
+      return;
+    }
+    if (reader?.id != r.id) return;
     final s = (await repo.story(id))!;
     _showPassage(s);
     _go(KulayScreenId.story);
   }
 
+  /// Gives up waiting for the AI: reads a saved story at this color now. The AI
+  /// keeps writing in the background, so the story asked for is ready next time.
+  Future<void> readSavedInstead() async {
+    final r = reader;
+    if (r == null || screen != KulayScreenId.writing) return;
+    final id = await repo.unread(r.id, r.level, null) ?? await repo.anyStory(r.level);
+    if (reader?.id != r.id || screen != KulayScreenId.writing) return; // the reader moved on while we looked
+    if (id == null) {
+      error = 'There are no saved stories for this color yet. Keep waiting, or pick another topic.';
+      notifyListeners();
+      return;
+    }
+    final s = (await repo.story(id))!;
+    topic = s.topic; // the story asked for stays in waitingTopic: _go sets it as the screen changes
+    notice = 'Here is a saved story. The story you asked for keeps writing. A note will tell you when it is ready.';
+    _showPassage(s);
+    _go(KulayScreenId.story);
+  }
+
+  /// Opens the story that was set aside: at once if it is ready, otherwise the writing screen.
+  Future<void> readWaiting() async {
+    final t = waitingTopic;
+    if (t == null) return;
+    waitingTopic = null;
+    await readTopic(t);
+  }
+
+  void dismissWaiting() {
+    waitingTopic = null;
+    notifyListeners();
+  }
+
   /// Checks the reader's answers, moves their color, and starts the next story.
+  var _submitting = false;
+
   Future<void> submitStory() async {
+    if (result != null || _submitting || !allAnswered) return; // a second tap must not save a second score
+    _submitting = true;
     final s = passage! as Story;
     final r = reader!;
-    result = await repo.answer(r, s, [for (final a in answers) a!]);
+    try {
+      result = await repo.answer(r, s, [for (final a in answers) a!], wpm: wpm);
+    } finally {
+      _submitting = false;
+    }
     reader = await repo.reader(r.id);
     progress = (up: result!.up, down: result!.down);
     notifyListeners();
-    _prefetch(r.id, result!.level, s.topic);
+    // A teacher's story has no topic to write more of.
+    if (!s.byTeacher) _prefetch(r.id, result!.level, s.topic);
   }
 
   /// Writes the next story before the reader asks for it.
@@ -269,8 +418,40 @@ class ReadingController extends ChangeNotifier {
 
   // ---------- word help ----------
 
-  Future<({String meaning, String? synonym})> explainWord(String word, String sentence) =>
+  /// Explains a word, and adds it to the reader's My Words.
+
+  Future<({String meaning, String? synonym})> explainWord(String word, String sentence) async {
+    final out = await
       engine.explainWord(word, sentence, passage?.level ?? reader?.level ?? 0);
+    final r = reader;
+    if (r != null) {
+      unawaited(
+        repo
+            .saveWord(r.id, word, out.meaning, out.synonym, sentence)
+            .then((_) {}, onError: (_) {}),
+      );
+    }
+    return out;
+  }
+
+  // ---------- my words ----------
+
+  void openWords() => _go(KulayScreenId.words);
+
+  Future<List<SavedWord>> myWords() => repo.words(reader!.id);
+
+  Future<void> markWord(int id, {required bool right}) =>
+      repo.markWord(id, right: right);
+
+  /// Opens a story the teacher added.
+  Future<void> readStoryById(int id) async {
+    final s = await repo.story(id);
+    if (s == null) return;
+    topic = s.topic;
+    notice = null;
+    _showPassage(s);
+    _go(KulayScreenId.story);
+  }
 
   // ---------- teacher ----------
 
@@ -291,8 +472,43 @@ class ReadingController extends ChangeNotifier {
 
   Future<ClassReport> classReport() => repo.classReport();
 
+  /// Saves the class report as a PDF in Documents\Kodigno and opens it in the
+  /// computer's PDF viewer. Returns the file path. Throws if the file cannot be written.
+  Future<String> saveReport() async {
+    final bytes = await buildReportPdf(
+      await repo.classReport(),
+      classroom: mode == KulayMode.classroom,
+      font: await loadReportFont(),
+    );
+    final dir = Directory(
+      p.join((await getApplicationDocumentsDirectory()).path, 'Kodigno'),
+    );
+    await dir.create(recursive: true);
+    final d = DateTime.now();
+    String two(int n) => n.toString().padLeft(2, '0');
+    final file = File(
+      p.join(
+        dir.path,
+        'Kulay report ${d.year}-${two(d.month)}-${two(d.day)}.pdf',
+      ),
+    );
+    await file.writeAsBytes(bytes);
+    if (Platform.isWindows && !Platform.environment.containsKey('FLUTTER_TEST')) {
+      await Process.start('explorer', [file.path]);
+    }
+    return file.path;
+  }
+
   Future<void> setReaderLevel(int readerId, int level) async {
     await repo.setLevel(readerId, level);
+    readers = await repo.readers();
+    if (reader?.id == readerId) reader = await repo.reader(readerId);
+    notifyListeners();
+  }
+
+  /// The teacher asks for the reading check again. Takes effect when the reader next opens Kulay.
+  Future<void> retestReader(int readerId) async {
+    await repo.resetPlacement(readerId);
     readers = await repo.readers();
     if (reader?.id == readerId) reader = await repo.reader(readerId);
     notifyListeners();
@@ -303,6 +519,50 @@ class ReadingController extends ChangeNotifier {
     readers = await repo.readers();
     if (reader?.id == readerId) reader = null;
     notifyListeners();
+  }
+
+  // ---------- teacher's own stories ----------
+
+  /// True while the AI writes questions for a teacher's text.
+  bool teacherBusy = false;
+
+  /// The AI writes and checks questions for the teacher's [text], and the story
+  /// is saved for readers at its color. Returns an error to show, or null.
+  /// [forReader] limits it to one reader, whatever their color; null = everyone at its color.
+  Future<String?> addTeacherStory(
+    String title,
+    String text,
+    int? level, {
+    int? forReader,
+  }) async {
+    final t = title.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (t.isEmpty) return 'Give the story a title.';
+    teacherBusy = true;
+    notifyListeners();
+    try {
+      final tier = tierInfo?.call();
+      if (tier != null) engine.modelName = tier.model;
+      final s = await engine.makeTeacherStory(
+        t.length > 60 ? t.substring(0, 60) : t,
+        text,
+        level: level,
+        job: Job(Priority.reader),
+      );
+      if (forReader != null) s.checks['for'] = forReader;
+      await repo.saveStory(s, source: 'teacher');
+      return null;
+    } on StoryFailed catch (e) {
+      return e.message;
+    } on JobCancelled {
+      return 'Stopped.';
+    } catch (e) {
+      return e is ModelUnavailableException
+          ? 'The AI could not start on this computer, so it cannot write questions now.'
+          : "Couldn't write questions. Try again.";
+    } finally {
+      teacherBusy = false;
+      notifyListeners();
+    }
   }
 
   /// Stops background writing (app closing or tier change).

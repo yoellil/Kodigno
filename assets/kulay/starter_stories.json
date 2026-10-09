@@ -1918,5 +1918,1117 @@
    "model": "qwen2.5:1.5b",
    "reviewed": true
   }
+ },
+ {
+  "level": 0,
+  "topic": "Carabao",
+  "title": "Pepe and the Carabao",
+  "paras": [
+   [
+    "Pepe lives on a small farm.",
+    "He has a big carabao.",
+    "The carabao is named Bato."
+   ],
+   [
+    "Every morning, Pepe feeds Bato.",
+    "Bato eats green grass.",
+    "Then they walk to the field."
+   ],
+   [
+    "Bato pulls the plow in the mud.",
+    "Pepe sings a happy song.",
+    "Bato likes the song."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What is Bato?",
+    "choices": [
+     "A carabao",
+     "a dog",
+     "a horse",
+     "a goat"
+    ],
+    "answer": 0,
+    "evidence": 2
+   },
+   {
+    "question": "What does Bato eat?",
+    "choices": [
+     "rice cakes",
+     "Green grass",
+     "fish",
+     "bread"
+    ],
+    "answer": 1,
+    "evidence": 4
+   },
+   {
+    "question": "Where does Bato pull the plow?",
+    "choices": [
+     "on the road",
+     "in the river",
+     "In the mud",
+     "in the town"
+    ],
+    "answer": 2,
+    "evidence": 6
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 47,
+   "target": [
+    0,
+    2.5
+   ],
+   "name": "Pepe",
+   "place": "Nueva Ecija",
+   "verified": 3,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 0,
+  "topic": "Dance contest",
+  "title": "Lia Dances",
+  "paras": [
+   [
+    "Lia likes to dance.",
+    "Today is the dance contest.",
+    "She wears a red dress."
+   ],
+   [
+    "Lia feels shy at first.",
+    "Her mom gives her a hug.",
+    "Lia takes a deep breath."
+   ],
+   [
+    "She dances on the stage.",
+    "Everyone claps for her.",
+    "Lia smiles and bows."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What color is Lia's dress?",
+    "choices": [
+     "Red",
+     "blue",
+     "green",
+     "yellow"
+    ],
+    "answer": 0,
+    "evidence": 2
+   },
+   {
+    "question": "Who gives Lia a hug?",
+    "choices": [
+     "her teacher",
+     "Her mom",
+     "her dad",
+     "her friend"
+    ],
+    "answer": 1,
+    "evidence": 4
+   },
+   {
+    "question": "How does Lia feel at first?",
+    "choices": [
+     "angry",
+     "sleepy",
+     "Shy",
+     "hungry"
+    ],
+    "answer": 2,
+    "evidence": 3
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 43,
+   "target": [
+    0,
+    2.5
+   ],
+   "name": "Lia",
+   "place": "Iloilo",
+   "verified": 3,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 1,
+  "topic": "Space and planets",
+  "title": "Ana Looks at the Stars",
+  "paras": [
+   [
+    "Ana lived in a small town in Bohol.",
+    "One night, the lights went out.",
+    "The whole town became dark and quiet.",
+    "Ana went outside with her father."
+   ],
+   [
+    "Ana looked up at the sky.",
+    "She saw hundreds of bright stars.",
+    "Her father pointed to a big, round moon.",
+    "\"The moon is very far away,\" he said."
+   ],
+   [
+    "Ana smiled and counted five shooting stars.",
+    "She made a wish on each star.",
+    "When the lights came back, she did not mind.",
+    "She wanted to see the stars again."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Where did Ana live?",
+    "choices": [
+     "Cebu",
+     "Bohol",
+     "Davao",
+     "Palawan"
+    ],
+    "answer": 1,
+    "evidence": 0
+   },
+   {
+    "question": "Who went outside with Ana?",
+    "choices": [
+     "her teacher",
+     "her cousin",
+     "Her father",
+     "her grandmother"
+    ],
+    "answer": 2,
+    "evidence": 3
+   },
+   {
+    "question": "How many shooting stars did Ana count?",
+    "choices": [
+     "two",
+     "three",
+     "ten",
+     "Five"
+    ],
+    "answer": 3,
+    "evidence": 8
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 85,
+   "target": [
+    1.5,
+    3.5
+   ],
+   "name": "Ana",
+   "place": "Bohol",
+   "verified": 3,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 1,
+  "topic": "Mobile games",
+  "title": "Mark and the Game Rule",
+  "paras": [
+   [
+    "Mark loved to play games on his phone.",
+    "Every day after school, he played for one hour.",
+    "His mother set a rule for him.",
+    "She said, \"Do your homework first.\""
+   ],
+   [
+    "One afternoon, Mark wanted to play right away.",
+    "He opened his phone and started a game.",
+    "Then he saw his school bag by the door.",
+    "He remembered his mother's rule."
+   ],
+   [
+    "Mark closed the game and took out his books.",
+    "He finished his homework in twenty minutes.",
+    "Then he played his game with a happy heart.",
+    "His mother smiled at him."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "How long did Mark play each day?",
+    "choices": [
+     "two hours",
+     "One hour",
+     "ten minutes",
+     "all night"
+    ],
+    "answer": 1,
+    "evidence": 1
+   },
+   {
+    "question": "What did Mark's mother want him to do first?",
+    "choices": [
+     "wash the dishes",
+     "take a nap",
+     "His homework",
+     "feed the dog"
+    ],
+    "answer": 2,
+    "evidence": 3
+   },
+   {
+    "question": "How long did Mark take to finish his homework?",
+    "choices": [
+     "one hour",
+     "five minutes",
+     "three hours",
+     "Twenty minutes"
+    ],
+    "answer": 3,
+    "evidence": 9
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 90,
+   "target": [
+    1.5,
+    3.5
+   ],
+   "name": "Mark",
+   "place": "Laguna",
+   "verified": 3,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 2,
+  "topic": "Taal Volcano",
+  "title": "The Boat to Taal",
+  "paras": [
+   [
+    "Joel lived in Talisay, a town beside Taal Lake.",
+    "His uncle Ramon owned a small boat.",
+    "On Saturday, Uncle Ramon took Joel across the lake.",
+    "They wanted to see the famous volcano from a safe place."
+   ],
+   [
+    "The water was calm and as smooth as glass.",
+    "Joel trailed his hand in the cool water.",
+    "A flock of white birds flew over the boat.",
+    "Uncle Ramon told him about the volcano's long history."
+   ],
+   [
+    "When they reached the far shore, they climbed to a lookout.",
+    "From there, Joel saw the volcano rising from the lake.",
+    "Gray smoke drifted up from the crater far away.",
+    "Joel felt a little nervous but very excited."
+   ],
+   [
+    "Before leaving, they bought grilled corn from a friendly vendor.",
+    "On the way home, Joel watched the sun sink behind the hills.",
+    "He took one last photo with his uncle's old camera.",
+    "It was the best Saturday of his life."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Where did Joel live?",
+    "choices": [
+     "Tagaytay",
+     "Lipa",
+     "Talisay",
+     "Nasugbu"
+    ],
+    "answer": 2,
+    "evidence": 0
+   },
+   {
+    "question": "What did Joel and his uncle do next, once they reached the far shore?",
+    "choices": [
+     "went swimming",
+     "bought corn",
+     "took a nap",
+     "Climbed to a lookout"
+    ],
+    "answer": 3,
+    "evidence": 8
+   },
+   {
+    "question": "How did Joel feel at the lookout?",
+    "choices": [
+     "A little nervous but very excited",
+     "sleepy and bored",
+     "angry and sad",
+     "tired and hungry"
+    ],
+    "answer": 0,
+    "evidence": 11
+   },
+   {
+    "question": "What is this story mostly about?",
+    "choices": [
+     "A boy who buys corn from a vendor",
+     "A boy's special boat trip to see a volcano",
+     "A man who builds a new boat",
+     "A bird that flies over the lake"
+    ],
+    "answer": 1,
+    "evidence": 2
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 149,
+   "target": [
+    2.5,
+    4.5
+   ],
+   "name": "Joel",
+   "place": "Batangas",
+   "verified": 4,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 2,
+  "topic": "Science fair",
+  "title": "Rina and the Rain Gauge",
+  "paras": [
+   [
+    "Rina was in Grade 4 at Santa Rosa Elementary School.",
+    "The class was getting ready for the science fair.",
+    "Her teacher, Mrs. Cruz, asked everyone to pick a project.",
+    "Rina decided to build a rain gauge."
+   ],
+   [
+    "She cut the top off a plastic bottle and turned it upside down.",
+    "She put it inside the bottom half, like a funnel.",
+    "Then she drew lines on the side with a marker.",
+    "Her little brother Ben helped her tape it to a fence post."
+   ],
+   [
+    "It rained hard for three days.",
+    "Each morning, Rina checked how high the water had risen.",
+    "She wrote the numbers in her notebook.",
+    "On the third day, the bottle was almost full."
+   ],
+   [
+    "At the fair, Rina showed her rain gauge to the judges.",
+    "They asked many questions, and she answered every one.",
+    "Mrs. Cruz gave her a big smile.",
+    "Rina won second place and felt very proud."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Who helped Rina tape the bottle to the fence post?",
+    "choices": [
+     "her teacher",
+     "her mother",
+     "Her little brother",
+     "a judge"
+    ],
+    "answer": 2,
+    "evidence": 7
+   },
+   {
+    "question": "What does the word \"judges\" mean in this story?",
+    "choices": [
+     "people who sell tickets",
+     "people who clean the school",
+     "people who bring food",
+     "People who pick the winners"
+    ],
+    "answer": 3,
+    "evidence": 12
+   },
+   {
+    "question": "What did Rina do first when she built her rain gauge?",
+    "choices": [
+     "Cut the top off a plastic bottle",
+     "wrote numbers in a notebook",
+     "showed the judges",
+     "taped it to a post"
+    ],
+    "answer": 0,
+    "evidence": 4
+   },
+   {
+    "question": "What is this story mostly about?",
+    "choices": [
+     "Rina learns to swim at school",
+     "Rina builds a rain gauge for the science fair",
+     "Rina's brother breaks her project",
+     "Rina goes on a trip with her class"
+    ],
+    "answer": 1,
+    "evidence": 3
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 148,
+   "target": [
+    2.5,
+    4.5
+   ],
+   "name": "Rina",
+   "place": "Pampanga",
+   "verified": 4,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 3,
+  "topic": "Coral reef",
+  "title": "Dara and the Quiet Reef",
+  "paras": [
+   [
+    "Dara spent every summer with her grandfather in a fishing village in Palawan.",
+    "Her grandfather, Lolo Ben, had been a fisherman for fifty years.",
+    "Early one morning, he invited her to look at the coral reef near their house.",
+    "They carried masks and a small boat to the calm water.",
+    "Dara had never swum above a reef before."
+   ],
+   [
+    "Under the surface, the reef was full of color.",
+    "Orange fish darted between pink and purple corals.",
+    "A slow green turtle drifted past her shoulder.",
+    "Dara wanted to touch everything, but Lolo Ben shook his head.",
+    "He explained that touching coral can hurt it, because coral is a living animal."
+   ],
+   [
+    "Dara kept her hands close to her sides and floated quietly.",
+    "She noticed a plastic bag caught on a rock.",
+    "Lolo Ben carefully pulled it free and placed it in the boat.",
+    "\"A clean reef is a healthy reef,\" he said with a smile.",
+    "Dara decided to help him every morning."
+   ],
+   [
+    "By the end of the summer, they had collected two full sacks of trash.",
+    "The fish seemed to return in greater numbers each week.",
+    "Dara told her classmates what she had learned when school began.",
+    "Many of them promised to protect their own beaches.",
+    "She felt proud that a small boat and two pairs of hands had made a difference."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Why did Lolo Ben tell Dara not to touch the coral?",
+    "choices": [
+     "coral is very hot",
+     "coral belongs to him",
+     "coral is made of glass",
+     "Coral is a living animal"
+    ],
+    "answer": 3,
+    "evidence": 9
+   },
+   {
+    "question": "What did Lolo Ben do next, after Dara noticed the plastic bag?",
+    "choices": [
+     "Pulled it free",
+     "swam to the turtle",
+     "caught a fish",
+     "took a photo"
+    ],
+    "answer": 0,
+    "evidence": 12
+   },
+   {
+    "question": "What does the word \"darted\" mean in this story?",
+    "choices": [
+     "slept slowly",
+     "Moved quickly",
+     "stood still",
+     "turned black"
+    ],
+    "answer": 1,
+    "evidence": 6
+   },
+   {
+    "question": "What is this story mostly about?",
+    "choices": [
+     "A fisherman who wants to catch more fish",
+     "A girl who is afraid of the ocean",
+     "A girl and her grandfather work to keep a reef clean",
+     "A turtle that gets lost at sea"
+    ],
+    "answer": 2,
+    "evidence": 15
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 219,
+   "target": [
+    3.5,
+    5.5
+   ],
+   "name": "Dara",
+   "place": "Palawan",
+   "verified": 4,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 3,
+  "topic": "School garden",
+  "title": "The Garden Behind Room 5",
+  "paras": [
+   [
+    "Mr. Santos taught Grade 5 at Maligaya Elementary School.",
+    "Behind his classroom was an empty patch of dry, hard soil.",
+    "One Monday, he told his students that they would turn it into a garden.",
+    "Some of them groaned because digging sounded like hard work.",
+    "Mr. Santos only smiled and handed out the shovels."
+   ],
+   [
+    "Paolo broke the ground while Lani carried buckets of water from the faucet.",
+    "Two other students mixed old leaves into the soil to make it rich.",
+    "By Friday, the patch had neat rows ready for planting.",
+    "They planted tomatoes, eggplants, and long green beans.",
+    "Everyone agreed that their arms ached, but nobody wanted to quit."
+   ],
+   [
+    "For the next few weeks, the class took turns watering the plants.",
+    "Paolo pulled out weeds before school every morning.",
+    "At first, nothing seemed to happen, and some students lost hope.",
+    "Then one morning, Lani found tiny green shoots poking out of the soil.",
+    "The whole class cheered when they saw them."
+   ],
+   [
+    "Two months later, the garden was full of ripe vegetables.",
+    "The class cooked a big pot of vegetable soup for the school.",
+    "Even the students who had groaned asked for a second bowl.",
+    "Mr. Santos told them that patience and teamwork had grown the garden.",
+    "Paolo thought the soup was the best he had ever tasted."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Which vegetables did the class plant?",
+    "choices": [
+     "carrots, cabbage, and corn",
+     "lettuce, onions, and peas",
+     "squash, garlic, and radishes",
+     "Tomatoes, eggplants, and long green beans"
+    ],
+    "answer": 3,
+    "evidence": 8
+   },
+   {
+    "question": "Why did some students groan at first?",
+    "choices": [
+     "Digging sounded like hard work",
+     "the shovels were broken",
+     "they did not like Mr. Santos",
+     "the soil was wet"
+    ],
+    "answer": 0,
+    "evidence": 3
+   },
+   {
+    "question": "What did the class do last, after the vegetables were ripe?",
+    "choices": [
+     "sold the vegetables at a market",
+     "Cooked a big pot of vegetable soup",
+     "gave the garden to another class",
+     "dug up the whole garden"
+    ],
+    "answer": 1,
+    "evidence": 16
+   },
+   {
+    "question": "What is this story mostly about?",
+    "choices": [
+     "A teacher who cooks soup at home",
+     "Students who are afraid of digging",
+     "Students work together to grow a school garden",
+     "A garden that never grew"
+    ],
+    "answer": 2,
+    "evidence": 2
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 216,
+   "target": [
+    3.5,
+    5.5
+   ],
+   "name": "Paolo",
+   "place": "Bulacan",
+   "verified": 4,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 4,
+  "topic": "Typhoon day",
+  "title": "The Night the River Rose",
+  "paras": [
+   [
+    "Marisol lived with her family in a small house near the Marikina River.",
+    "Every year, when the rainy season arrived, her father checked the sandbags by the door.",
+    "That August, the radio warned that a strong typhoon was heading toward Luzon.",
+    "Marisol packed a bag with a flashlight, a blanket, and her favorite storybook.",
+    "She was worried, but she tried to stay calm for her little cousin, Jhoy."
+   ],
+   [
+    "By evening, the rain fell so hard that it drummed on the tin roof like a thousand fingers.",
+    "The river began to climb toward the road.",
+    "Her father decided it was time to leave before the water reached the house.",
+    "He carried Jhoy on his shoulders while Marisol held her mother's hand.",
+    "Their neighbors were already walking in a line toward the school on higher ground."
+   ],
+   [
+    "The school gym was crowded, noisy, and warm with the smell of wet clothes.",
+    "Teachers handed out blankets and cups of hot champorado.",
+    "Marisol noticed an old man sitting alone near the wall, shivering in his thin shirt.",
+    "She gave him her blanket without saying a word.",
+    "He thanked her quietly and held it tightly around his shoulders."
+   ],
+   [
+    "Hours later, the wind finally died down and the rain turned to a soft drizzle.",
+    "Marisol curled up beside Jhoy and read her storybook aloud by flashlight.",
+    "Soon the children nearby gathered to listen, and even some adults leaned closer.",
+    "For a little while, the sound of the storm seemed far away.",
+    "When she looked up, the old man was smiling."
+   ],
+   [
+    "The next morning, the river slowly returned to its banks.",
+    "The family walked home carefully and found only a little mud in the kitchen.",
+    "Marisol's father said they had been lucky because they had left early.",
+    "Neighbors worked together to sweep and wash every floor on the street.",
+    "Marisol knew she would remember the night as one of fear, but also of kindness."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Where did the people go to stay safe during the typhoon?",
+    "choices": [
+     "The school on higher ground",
+     "a church by the market",
+     "their uncle's farm",
+     "a boat on the river"
+    ],
+    "answer": 0,
+    "evidence": 9
+   },
+   {
+    "question": "Why did Marisol's father decide it was time to leave?",
+    "choices": [
+     "the roof had fallen down",
+     "Before the water reached the house",
+     "the school was closing",
+     "Jhoy was crying"
+    ],
+    "answer": 1,
+    "evidence": 7
+   },
+   {
+    "question": "What did Marisol do next, after she saw the old man shivering?",
+    "choices": [
+     "read him her storybook",
+     "gave him hot champorado",
+     "Gave him her blanket",
+     "called her father"
+    ],
+    "answer": 2,
+    "evidence": 13
+   },
+   {
+    "question": "Why do you think the old man was smiling at the end?",
+    "choices": [
+     "He had found his lost house key",
+     "He wanted to leave the school",
+     "He was laughing at the storm",
+     "Marisol's kindness and story made him feel better"
+    ],
+    "answer": 3,
+    "evidence": 19
+   },
+   {
+    "question": "What is this story mostly about?",
+    "choices": [
+     "A girl shows kindness to others during a typhoon",
+     "A family that builds a new house",
+     "A river that is cleaned by neighbors",
+     "A school that teaches children to read"
+    ],
+    "answer": 0,
+    "evidence": 13
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 316,
+   "target": [
+    4.5,
+    6.5
+   ],
+   "name": "Marisol",
+   "place": "Marikina",
+   "verified": 5,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 5,
+  "topic": "Mobile games",
+  "title": "The Score Nobody Saw",
+  "paras": [
+   [
+    "Ramil had played the same mobile game every night for three months, and he was proud of his place on the school's top-ten list.",
+    "During the week of the school fair, the list was displayed on a screen near the canteen for everyone to see.",
+    "His best friend Teo stood in front of it, whispering numbers and pointing at names.",
+    "Ramil's name sat in ninth place, only a few points behind a boy from another section.",
+    "He had never wanted anything so badly as to see his name climb higher."
+   ],
+   [
+    "That night, a classmate named Gilbert sent him a message about a secret trick.",
+    "By typing a special code, Gilbert claimed, any player could add thousands of points without playing a single round.",
+    "Ramil stared at the screen for a long time while his thumb hovered over the keys.",
+    "He told himself that nobody would ever find out.",
+    "Still, his stomach felt tight, as if he had swallowed a stone."
+   ],
+   [
+    "The next morning, he found that his score had jumped to second place.",
+    "Students crowded around him and patted his back, and Teo grinned from ear to ear.",
+    "Ramil forced a smile, but he could not look anyone in the eye.",
+    "All day, the number on the screen seemed to glow like an accusation.",
+    "During lunch, he left his rice untouched and walked alone to the back of the school."
+   ],
+   [
+    "He remembered how his grandfather, Lolo Ruben, always repaired broken radios in a tiny shop beside their house.",
+    "Lolo never took money for a job unless the radio truly worked again.",
+    "\"A fixed thing is worth more than a fast promise,\" he often said.",
+    "Ramil realized that the score on the screen was a promise he had not earned.",
+    "After a deep breath, he walked to the computer room and asked the teacher to remove the points."
+   ],
+   [
+    "The teacher listened without raising her voice and thanked him for telling the truth.",
+    "His name dropped back to ninth place, and a few students laughed when they heard what he had done.",
+    "Teo, however, sat beside him at the next recess and shared half of his sandwich.",
+    "\"Ninth place with a clear conscience beats second place any day,\" Teo said quietly.",
+    "For the first time in weeks, Ramil ate without feeling a stone in his stomach."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "Which place was Ramil in at the start of the story?",
+    "choices": [
+     "second place",
+     "Ninth place",
+     "tenth place",
+     "first place"
+    ],
+    "answer": 1,
+    "evidence": 3
+   },
+   {
+    "question": "What does the word \"accusation\" mean in this story?",
+    "choices": [
+     "a prize for winning a game",
+     "a bright kind of light",
+     "A claim that someone did something wrong",
+     "a message from a friend"
+    ],
+    "answer": 2,
+    "evidence": 13
+   },
+   {
+    "question": "What did Ramil do next, after he realized the score was a promise he had not earned?",
+    "choices": [
+     "deleted the game",
+     "told Gilbert to leave",
+     "hid in the canteen",
+     "Asked the teacher to remove the points"
+    ],
+    "answer": 3,
+    "evidence": 19
+   },
+   {
+    "question": "Why do you think Ramil left his rice untouched at lunch?",
+    "choices": [
+     "He felt guilty about his score",
+     "He had already eaten lunch",
+     "He did not like the rice",
+     "He was too busy playing"
+    ],
+    "answer": 0,
+    "evidence": 13
+   },
+   {
+    "question": "What is this story mostly about?",
+    "choices": [
+     "A boy who wins a school contest",
+     "A boy chooses honesty over a higher game score",
+     "A grandfather who repairs radios",
+     "Two friends who share a sandwich"
+    ],
+    "answer": 1,
+    "evidence": 19
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 384,
+   "target": [
+    6,
+    8.5
+   ],
+   "name": "Ramil",
+   "place": "Cebu",
+   "verified": 5,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 6,
+  "topic": "Fiesta",
+  "title": "The Fiesta Budget",
+  "paras": [
+   [
+    "Every May, the barangay of San Isidro prepared for its fiesta weeks in advance.",
+    "Banners were stitched, lechon was ordered, and the youth practiced dances that their grandparents had performed decades earlier.",
+    "This year, however, the barangay captain, Aling Dolores, faced a difficult decision.",
+    "The rainy season had arrived early and had damaged the only footbridge that connected the village to the highway.",
+    "Repairing it would cost almost everything the council had saved for the celebration.",
+    "She called a meeting in the covered court to ask her neighbors what they thought."
+   ],
+   [
+    "The discussion grew heated almost immediately.",
+    "Mang Efren, who ran the biggest canteen in the village, argued that the fiesta brought visitors and money that the community needed.",
+    "\"If we cancel it,\" he said, \"half the stalls will lose their only good week of the year.\"",
+    "A young nurse named Clarisse responded that an ambulance could not cross the broken bridge, and that patients sometimes waited too long for help.",
+    "Several people nodded; others looked at the floor."
+   ],
+   [
+    "Then an elderly woman named Lola Pacing stood up and asked everyone to remember how the first fiesta had begun.",
+    "Her own grandmother had told her that villagers had once gathered after a flood to thank each other for surviving it.",
+    "They had not celebrated with expensive food, but with shared rice and songs sung by lantern light.",
+    "Lola Pacing suggested that this year's fiesta could be a smaller one, with the community building the bridge together.",
+    "The room fell quiet while people considered the idea.",
+    "Slowly, Mang Efren raised his hand and agreed to supply lunch for the volunteers."
+   ],
+   [
+    "On the following Saturday, more than a hundred villagers arrived with hammers, bamboo, and sacks of cement.",
+    "The youth who had practiced their dances carried planks instead, laughing whenever someone slipped in the mud.",
+    "Clarisse measured the supports, since her father had been a carpenter.",
+    "By late afternoon, the new bridge stood firm over the stream, and the first child crossed it running.",
+    "Aling Dolores watched with tired eyes and a growing sense of relief.",
+    "She had been afraid that a hard choice would divide her village, but it had brought them closer."
+   ],
+   [
+    "The fiesta took place two weeks later, quieter than usual but warmer in spirit.",
+    "Instead of a grand parade, the people walked across the bridge together, singing the old song Lola Pacing remembered.",
+    "Visitors still came, and Mang Efren's canteen was crowded after all.",
+    "A small plaque near the bridge now lists the names of every volunteer.",
+    "Years later, the villagers would say that it was the best fiesta they ever had."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "What had the rainy season damaged?",
+    "choices": [
+     "the covered court",
+     "the main road",
+     "The only footbridge",
+     "the canteen"
+    ],
+    "answer": 2,
+    "evidence": 3
+   },
+   {
+    "question": "Why did Clarisse say the bridge mattered?",
+    "choices": [
+     "visitors would stop coming",
+     "the fiesta would cost too much",
+     "the stream was too dangerous to swim",
+     "An ambulance could not cross the broken bridge"
+    ],
+    "answer": 3,
+    "evidence": 9
+   },
+   {
+    "question": "What did Mang Efren do next, after the room fell quiet?",
+    "choices": [
+     "Agreed to supply lunch for the volunteers",
+     "left the meeting angrily",
+     "cancelled the fiesta",
+     "asked for more money"
+    ],
+    "answer": 0,
+    "evidence": 16
+   },
+   {
+    "question": "What can you tell about Aling Dolores from the way she handled the problem?",
+    "choices": [
+     "She wanted to cancel every celebration",
+     "She listened to her neighbors before deciding",
+     "She did not care about the bridge",
+     "She avoided talking to anyone"
+    ],
+    "answer": 1,
+    "evidence": 5
+   },
+   {
+    "question": "What is this story mostly about?",
+    "choices": [
+     "A nurse who treats patients at a clinic",
+     "A canteen owner who earns money",
+     "A village solves a hard problem by working together",
+     "A parade that is held on a bridge"
+    ],
+    "answer": 2,
+    "evidence": 20
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 434,
+   "target": [
+    8,
+    10.5
+   ],
+   "name": "Dolores",
+   "place": "Iloilo",
+   "verified": 5,
+   "handwritten": true,
+   "reviewed": true
+  }
+ },
+ {
+  "level": 7,
+  "topic": "Jeepney ride",
+  "title": "The Last Route",
+  "paras": [
+   [
+    "For thirty-one years, Mang Tomas had driven the same jeepney between the market and the university in Iloilo City.",
+    "The vehicle was older than his daughter Cherry, and every dent on its silver body carried a story.",
+    "When the city announced a plan to replace all old jeepneys with cleaner minibuses, he listened in silence.",
+    "Neighbors at the terminal grumbled that progress always arrived at the expense of ordinary people.",
+    "Cherry, who studied environmental engineering, read the same announcement with a more complicated feeling."
+   ],
+   [
+    "She understood why the city wanted change.",
+    "Studies showed that aging engines released far more smoke than newer ones, and the air along the main avenue had grown heavier.",
+    "Asthma cases among young children in the district had risen over the past decade.",
+    "At the same time, a new minibus cost several times what her father earned in a year.",
+    "Many drivers owned their vehicles outright, but few could afford a loan large enough to join the new system."
+   ],
+   [
+    "At a public hearing, both sides presented their arguments with passion.",
+    "A city official described cleaner air, safer seats, and schedules that commuters could trust.",
+    "A young driver replied that the plan would reward large companies while pushing out families who had worked honestly for generations.",
+    "An elderly commuter added that she valued the jeepney for its low fare, which kept her small pension from disappearing.",
+    "Cherry noticed that nobody in the room was entirely wrong, and that was exactly what made the debate difficult."
+   ],
+   [
+    "Afterward, she sat beside her father on the jeepney's worn bench and asked what he truly wanted.",
+    "Mang Tomas thought for a long moment before he answered.",
+    "He admitted that the smoke troubled him as well, since he coughed more each year.",
+    "What he feared most, he said, was not change itself, but being left without a place in whatever came next.",
+    "Cherry realized that a fair plan would need to address both the air and the people who depended on the road."
+   ],
+   [
+    "Over the following months, she helped draft a proposal with her professor and a drivers' association.",
+    "It suggested that drivers could form cooperatives, share the cost of cleaner vehicles, and receive training for the new routes.",
+    "The city agreed to review the plan, though it warned that compromise would take time.",
+    "Not everyone was satisfied, and some drivers still insisted on keeping their old jeepneys running.",
+    "Cherry accepted that disagreement was part of any real solution."
+   ],
+   [
+    "A year later, the first cooperative minibus rolled out of the terminal with Mang Tomas at the wheel.",
+    "The air above the avenue was still imperfect, and the fares were slightly higher than before.",
+    "Yet the elderly commuter had received a discounted pass, and the drivers who joined had kept their livelihoods.",
+    "Mang Tomas parked his old silver jeepney beside the terminal wall as a reminder of where the road had begun.",
+    "It had not been an easy journey, but it had taken everyone along."
+   ]
+  ],
+  "questions": [
+   {
+    "question": "How long had Mang Tomas driven the same jeepney?",
+    "choices": [
+     "ten years",
+     "twenty years",
+     "fifty years",
+     "Thirty-one years"
+    ],
+    "answer": 3,
+    "evidence": 0
+   },
+   {
+    "question": "Why did the city want to replace the old jeepneys?",
+    "choices": [
+     "Aging engines released far more smoke",
+     "the jeepneys were too slow",
+     "the drivers asked to be replaced",
+     "the fares were too low"
+    ],
+    "answer": 0,
+    "evidence": 6
+   },
+   {
+    "question": "What did Cherry do next, once the hearing ended?",
+    "choices": [
+     "left to study at the university",
+     "Asked what he truly wanted",
+     "wrote a letter to the mayor",
+     "sold the jeepney"
+    ],
+    "answer": 1,
+    "evidence": 15
+   },
+   {
+    "question": "What can you tell about Cherry's view of the debate?",
+    "choices": [
+     "She thought the drivers were completely wrong",
+     "She believed the city was dishonest",
+     "She believed both sides had good reasons",
+     "She wanted the debate to end quickly"
+    ],
+    "answer": 2,
+    "evidence": 14
+   },
+   {
+    "question": "What is this story mostly about?",
+    "choices": [
+     "A student who wins a prize in engineering",
+     "An old jeepney that breaks down on the road",
+     "A city that closes its university",
+     "A fair plan balances cleaner air and drivers' jobs"
+    ],
+    "answer": 3,
+    "evidence": 19
+   }
+  ],
+  "checks": {
+   "v": 2,
+   "words": 492,
+   "target": [
+    10,
+    13
+   ],
+   "name": "Cherry",
+   "place": "Iloilo",
+   "verified": 5,
+   "handwritten": true,
+   "reviewed": true
+  }
  }
 ]

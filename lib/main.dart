@@ -24,6 +24,7 @@ import 'ocr/ocr_service.dart';
 import 'reading/reading_controller.dart';
 import 'reading/reading_repository.dart';
 import 'reading/story_engine.dart';
+import 'reading/word_book.dart';
 import 'sources/pdf_text.dart';
 import 'sources/source_reader.dart';
 import 'ui/add_source_screen.dart';
@@ -58,7 +59,7 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final reading = ReadingController(
     repo: ReadingRepository(db),
-    engine: StoryEngine(controller.runtime),
+    engine: StoryEngine(controller.runtime, book: WordBook()),
     prefs: prefs,
     tierInfo: () => (basic: controller.tier?.id == 'low', model: controller.tier?.model ?? 'the local AI'),
   );

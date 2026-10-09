@@ -78,6 +78,7 @@ class ReadingAttempts extends Table {
   IntColumn get total => integer()();
   IntColumn get moved => integer().withDefault(const Constant(0))(); // -1, 0, +1
   TextColumn get skills => text().withDefault(const Constant('[]'))(); // JSON list of {skill, correct}
+  IntColumn get wpm => integer().nullable()(); // words a minute, if the reader timed their reading
   DateTimeColumn get takenAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -86,12 +87,30 @@ class ReadingAttempts extends Table {
       ];
 }
 
-@DriftDatabase(tables: [StudySets, QuestionRows, FlashcardRows, Attempts, Readers, Stories, ReadingAttempts])
+/// A word a reader asked about. [known] counts right answers in a row in practice.
+class SavedWords extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get readerId => integer().references(Readers, #id, onDelete: KeyAction.cascade)();
+  TextColumn get word => text()(); // lower case
+  TextColumn get meaning => text()();
+  TextColumn get synonym => text().nullable()();
+  TextColumn get sentence => text()();
+  IntColumn get times => integer().withDefault(const Constant(1))();
+  IntColumn get known => integer().withDefault(const Constant(0))();
+  DateTimeColumn get savedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {readerId, word}
+      ];
+}
+
+@DriftDatabase(tables: [StudySets, QuestionRows, FlashcardRows, Attempts, Readers, Stories, ReadingAttempts, SavedWords])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -101,6 +120,8 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(stories);
             await m.createTable(readingAttempts);
           }
+          if (from == 2) await m.addColumn(readingAttempts, readingAttempts.wpm); // v1 just made the table with it
+          if (from < 3) await m.createTable(savedWords);
         },
         beforeOpen: (_) => customStatement('PRAGMA foreign_keys = ON'),
       );
