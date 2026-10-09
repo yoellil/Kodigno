@@ -303,7 +303,7 @@ class ReadingController extends ChangeNotifier {
     step = 1;
     stepDetail.fillRange(0, 8, '');
     stepDetail[0] = '${levels[r.level].name}, $topic';
-    var id = await repo.unread(r.id, r.level, topic);
+    var id = await repo.premade(r.id, r.level, topic!) ?? await repo.unread(r.id, r.level, topic);
     final waited = id == null;
     if (id == null) {
       _go(KulayScreenId.writing);
@@ -329,7 +329,7 @@ class ReadingController extends ChangeNotifier {
           return;
         }
         // AI down or stuck: any saved story at this color.
-        id = await repo.unread(r.id, r.level, null) ?? await repo.anyStory(r.level);
+        id = await repo.savedFor(r.id, r.level, asked);
         if (id == null) {
           error = e is ModelUnavailableException
               ? 'The AI could not start on this computer, and there are no saved stories for this color yet.'
@@ -362,7 +362,7 @@ class ReadingController extends ChangeNotifier {
   Future<void> readSavedInstead() async {
     final r = reader;
     if (r == null || screen != KulayScreenId.writing) return;
-    final id = await repo.unread(r.id, r.level, null) ?? await repo.anyStory(r.level);
+    final id = await repo.savedFor(r.id, r.level, topic);
     if (reader?.id != r.id || screen != KulayScreenId.writing) return; // the reader moved on while we looked
     if (id == null) {
       error = 'There are no saved stories for this color yet. Keep waiting, or pick another topic.';

@@ -54,6 +54,18 @@ void main() {
     expect(await repo.unread(r.id, 2, null), b);
   });
 
+  test('a book starts with its premade story closest to the reader, then the AI takes over', () async {
+    final r = await repo.addReader('Ana');
+    await repo.saveStory(story(1, 'Fiesta'), source: 'starter');
+    final near = await repo.saveStory(story(4, 'Fiesta'), source: 'starter');
+    await repo.saveStory(story(6, 'Fiesta'), source: 'starter');
+    expect(await repo.premade(r.id, 3, 'fiesta'), near); // color 4 is closest to 3
+    expect(await repo.premade(r.id, 3, 'Basketball'), isNull);
+    await repo.answer(r.copyWith(level: 3), (await repo.story(near))!, [0, 0, 0]);
+    expect(await repo.premade(r.id, 3, 'Fiesta'), isNull); // done: the AI writes the next one in this book
+    expect(await repo.savedFor(r.id, 4, 'Fiesta'), near); // AI down: a repeat in this book, not another book
+  });
+
   test('3 strong scores move a reader up; the teacher report counts skills', () async {
     await repo.addReader('Ana');
     await repo.setLevel((await repo.readers()).single.id, 2);

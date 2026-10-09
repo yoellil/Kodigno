@@ -145,15 +145,42 @@ class ReadingRepository {
     return row?.read<int>('id');
   }
 
-  /// Any current story at [level], read or not: the last resort when the AI is down.
-  Future<int?> anyStory(int level) async {
+  /// A book's first story: the premade (starter) story on [topic] closest to [level] that the
+  /// reader has not read. Null once they have read a premade one on this topic, so the AI
+  /// writes the rest within the book.
+  Future<int?> premade(int readerId, int level, String topic) async {
+    final done = await db.customSelect(
+      "SELECT 1 FROM reading_attempts a JOIN stories s ON s.id = a.story_id "
+      "WHERE a.reader_id = ? AND s.source = 'starter' AND s.topic = ? COLLATE NOCASE LIMIT 1",
+      variables: [Variable(readerId), Variable(topic)],
+      readsFrom: {db.readingAttempts, db.stories},
+    ).getSingleOrNull();
+    if (done != null) return null;
     final row = await db.customSelect(
-      "SELECT id FROM stories WHERE level = ? AND pipeline = ? AND source <> 'teacher' ORDER BY RANDOM() LIMIT 1",
-      variables: [Variable(level), Variable(pipelineVersion)],
+      "SELECT id FROM stories WHERE source = 'starter' AND pipeline = ? AND topic = ? COLLATE NOCASE "
+      'AND id NOT IN (SELECT story_id FROM reading_attempts WHERE reader_id = ?) ORDER BY ABS(level - ?), level, id LIMIT 1',
+      variables: [Variable(pipelineVersion), Variable(topic), Variable(readerId), Variable(level)],
+      readsFrom: {db.stories, db.readingAttempts},
+    ).getSingleOrNull();
+    return row?.read<int>('id');
+  }
+
+  /// Any current story at [level] (on [topic] if given), read or not: the last resort when the AI is down.
+  Future<int?> anyStory(int level, [String? topic]) async {
+    final row = await db.customSelect(
+      "SELECT id FROM stories WHERE level = ? AND pipeline = ? AND source <> 'teacher' AND (? IS NULL OR topic = ? COLLATE NOCASE) "
+      'ORDER BY RANDOM() LIMIT 1',
+      variables: [Variable(level), Variable(pipelineVersion), Variable(topic), Variable(topic)],
       readsFrom: {db.stories},
     ).getSingleOrNull();
     return row?.read<int>('id');
   }
+
+  /// A saved story when the AI is down: this book first, then any book at this color.
+  Future<int?> savedFor(int readerId, int level, String? topic) async =>
+      (topic == null ? null : await unread(readerId, level, topic) ?? await anyStory(level, topic)) ??
+      await unread(readerId, level, null) ??
+      await anyStory(level);
 
   /// Teacher stories this reader has not read, oldest first: ones made for them,
   /// and ones for everyone at their color.
