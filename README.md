@@ -1,13 +1,24 @@
-# Kodigno
+# Kulay
 
-An offline study app. Add a photo, PDF, Word document or text file; Kodigno reads the text and uses an AI model running on your own computer to make a quiz and flashcards. No account, and your notes never leave your machine.
+An offline reading and study app for Windows. Kulay has two parts that share one AI model running on your own computer:
+- **Kulay reading lab**: stories, questions and word help at the reader's own color level (Grades 1 to 12).
+- **Study tools**: add a photo, PDF, Word document or text file, and Kulay turns it into a quiz and flashcards.
+
+No account, and your notes never leave your machine.
+
+## Install
+Download `Kulay-Setup.exe` from the [Releases](../../releases) page and run it. The AI model (Qwen2.5 1.5B), the llama server, OCR and the read-aloud voice are all included, so the first run needs no download and works offline.
+
+The app is not code-signed yet, so Windows may warn:
+- SmartScreen "unknown publisher": click **More info**, then **Run anyway**.
+- "An Application Control policy has blocked this file": Smart App Control is on. Turn it off in Windows Security > App & browser control > Smart App Control settings, or use another PC.
 
 Status: Windows desktop first. Android and iOS are planned (see `docs/superpowers/specs/2026-10-09-kodigno-design.md`).
 
 ## How it works
 - Text comes from the file: OCR for images (bundled Tesseract), text layer for PDFs, XML for DOCX.
 - A local llama.cpp server (`llama-server`, bound to 127.0.0.1) runs a small Qwen2.5 model that writes the questions.
-- The model is downloaded once on first run (Standard about 1 GB by default, or High about 2 GB if you pick it). After that it works offline.
+- The model (Qwen2.5 1.5B, about 1 GB) ships inside the installer. A copy built straight from the source has no model: the setup screen then offers a one-click download, checked against its SHA-256, and after that it works offline.
 - Study sets, quiz scores and streaks are stored locally in SQLite.
 
 ## Kulay reading lab
@@ -17,7 +28,7 @@ Kulay (open it from the Kulay button in the nav) is a reading lab for Grades 1 t
 - From Gold up, each story ends with a main-idea question, and from Red up also a thinking (inference) question. The AI must answer each one correctly twice, with the choices in opposite orders.
 - Readers can time their reading (words a minute), save the words they tap to My Words and practice them, retry the questions they missed, and set a larger text size or an easy-read font ("Aa").
 - Teachers can paste their own story (the AI only writes the questions), give it to one reader or a whole color, give a reader the reading check again, and save the class report as a PDF. A teacher's story is extra practice: it never moves a color.
-- Read-aloud uses the speech engine built into Windows. Nothing goes online.
+- Read-aloud uses the Piper voice bundled with the app (LJ Speech, public domain). Nothing goes online.
 - Design: `docs/superpowers/specs/2026-10-09-kulay-reading-design.md`.
 
 ## Word meanings
@@ -35,3 +46,13 @@ dart run build_runner build --delete-conflicting-outputs
 flutter test
 flutter run -d windows
 ```
+
+## Make the installer
+Needs [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`).
+
+1. Build the app: `flutter build windows --release`.
+2. Copy the downloaded model and its `.ok` marker from `%APPDATA%\Kulay\Kulay\models` into `installer/payload/` (not committed). Run the app and click "Download model" once to get them.
+3. Compile `installer/kulay.iss` (Ctrl+F9 in Inno Setup, or `ISCC.exe installer\kulay.iss`). The result is `installer/Output/Kulay-Setup.exe`, about 1.2 GB.
+
+If you drop the model from the installer, remove the two `payload` lines from `installer/kulay.iss` and the file shrinks to about 140 MB.
+
