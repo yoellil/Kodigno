@@ -1,10 +1,10 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
-project(kodigno LANGUAGES CXX)
+project(Kulay LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "kodigno")
+set(BINARY_NAME "Kulay")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
@@ -107,7 +107,7 @@ install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
 
-# Bundled local engines: tesseract/ and llama/ end up next to kodigno.exe.
+# Bundled local engines: tesseract/ and llama/ end up next to Kulay.exe.
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/../third_party/"
   DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime
   PATTERN "README.md" EXCLUDE)

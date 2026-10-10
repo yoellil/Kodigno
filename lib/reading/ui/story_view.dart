@@ -72,7 +72,7 @@ class Speaker {
         final out = Directory(path.join(Directory.systemTemp.path, 'kodigno-voice'))..createSync(recursive: true);
         final ps = await Process.start(
             path.join(dir, 'piper.exe'),
-            ['-m', path.join(dir, 'en_US-lessac-medium.onnx'), '--output_dir', out.path, '--length_scale', '$pace'],
+            ['-m', path.join(dir, 'en_US-ljspeech-medium.onnx'), '--output_dir', out.path, '--length_scale', '$pace'],
             workingDirectory: dir);
         unawaited(ps.stderr.drain<void>());
         unawaited(ps.exitCode.then((_) {

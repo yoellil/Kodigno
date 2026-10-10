@@ -133,7 +133,7 @@ class _KodignoAppState extends State<KodignoApp> with WidgetsBindingObserver {
             WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark);
     return MaterialApp(
       key: ValueKey(K.dark), // K's colors are read at build time: rebuild the whole tree on a flip
-      title: 'Kodigno',
+      title: 'Kulay',
       debugShowCheckedModeBanner: false,
       theme: kTheme(),
       builder: (context, child) => WindowFrame(child: child!),

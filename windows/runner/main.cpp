@@ -48,7 +48,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
         static_cast<unsigned int>(work.top / scale + (work_h - height) / 2));
   }
   Win32Window::Size size(width, height);
-  if (!window.Create(L"kodigno", origin, size)) {
+  if (!window.Create(L"Kulay", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
