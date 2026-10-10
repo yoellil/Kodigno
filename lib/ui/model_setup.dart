@@ -22,7 +22,7 @@ class ModelSetupPanel extends StatelessWidget {
       const SizedBox(height: 12),
       Text(
         c.groqKey.isEmpty
-            ? 'Kodigno downloads its AI model once. After that it works fully offline and your notes never leave this computer.'
+            ? 'Kulay downloads its AI model once. After that it works fully offline and your notes never leave this computer.'
             : 'This model runs on this computer. It answers when there is no internet; online, Groq answers instead.',
         style: body(15, color: K.muted),
       ),
@@ -85,7 +85,7 @@ class SetupScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(color: K.line),
                 ),
-                child: const ModelSetupPanel(heading: 'Set up Kodigno'),
+                child: const ModelSetupPanel(heading: 'Set up Kulay'),
               ).enter(context),
             ),
           ),

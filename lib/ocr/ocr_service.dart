@@ -45,7 +45,7 @@ class TesseractCliOcr implements OcrService {
       r = await _run(exePath,
           [imagePath, 'stdout', '-l', 'eng', '--tessdata-dir', tessdataDir]);
     } on ProcessException {
-      throw OcrFailure('The text recognition engine was not found. Reinstall Kodigno.');
+      throw OcrFailure('The text recognition engine was not found. Reinstall Kulay.');
     }
     if (r.exitCode != 0) {
       throw OcrFailure('Text recognition failed (code ${r.exitCode}).');

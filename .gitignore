@@ -10,3 +10,7 @@ build/
 /models-dev/
 /tool/goldens/
 /third_party/piper/
+
+# installer
+installer/payload/
+installer/Output/
